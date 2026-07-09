@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la /home/bruno/.claude/projects/ 2>&1 | grep -i esquadria; find /home/bruno/.claude/projects -maxdepth 1 -iname \"*esquadria*\" 2>&1)",
+      "Bash(pip install *)",
+      "Bash(python3 -m pip --version)",
+      "Bash(sudo apt install -y python3-pip)",
+      "Bash(python3 -m ensurepip --user)",
+      "Bash(apt list *)",
+      "Bash(python3 -c \"import venv\")",
+      "Bash(python3 -m venv .venv)",
+      "Bash(python3 /tmp/claude-1000/-home-bruno-Documentos-esquadriacore/a99aed61-b12c-4df5-a112-2f9e678768ca/scratchpad/get-pip.py --user)",
+      "Bash(dpkg -l)",
+      "Bash(python3 -m venv --help)",
+      "Bash(.venv/bin/pip install *)",
+      "Bash(.venv/bin/python -m pytest --version)",
+      "Bash(.venv/bin/python -c \"import numpy, matplotlib; print\\('numpy', numpy.__version__\\); print\\('matplotlib', matplotlib.__version__\\)\")",
+      "Bash(tesseract --version)",
+      "Bash(tesseract --list-langs)",
+      "Bash(pdftotext -layout \"dados_exemplo/PERFIS-DE-ALUMINIO-02-07-2026.pdf\" -)",
+      "Bash(pdftotext -layout \"dados_exemplo/catalago-alcoa \\(1\\).pdf\" -)",
+      "Bash(pdftotext -layout -f 168 -l 186 \"dados_exemplo/catalago-alcoa \\(1\\).pdf\" -)",
+      "Bash(pdftotext -layout -f 170 -l 183 \"dados_exemplo/catalago-alcoa \\(1\\).pdf\" -)",
+      "Bash(pdftotext -layout \"dados_exemplo/catalago-alcoa__1_.pdf\" -)",
+      "Bash(git -C /home/bruno/Documentos/esquadriacore status)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}

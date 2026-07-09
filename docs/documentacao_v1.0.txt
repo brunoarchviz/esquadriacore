@@ -1,0 +1,1889 @@
+# Constituição da Documentação — EsquadriaCore
+
+*Sprint 0 — define como o conhecimento do projeto será organizado, não o conteúdo em si.*
+
+**Versão:** 1.0.0
+**Status:** Estável
+**Aprovadores:** Bruno (Especialista de Domínio e Co-Arquiteto de Modelagem de
+Negócio), Claude (Arquiteto de Software e Engenharia de Implementação), ChatGPT
+(Arquiteto de Plataforma e Governança Técnica)
+
+## Critério de alteração desta Constituição
+
+Este documento só é alterado quando muda a **forma de trabalho** da plataforma —
+template, governança, estrutura de volumes, estados de artefato. Nunca para
+incorporar conteúdo técnico de um módulo específico (isso pertence aos Volumes, não
+à Constituição). A partir da versão 1.0.0, o documento é tratado como **Estável**:
+não muda a cada Sprint, só quando houver necessidade real de mudar a própria forma
+de organizar o conhecimento.
+
+---
+
+## Como usar este documento
+
+Esta Constituição é o índice-mestre e o conjunto de regras de governança da
+documentação oficial do EsquadriaCore. Cada Sprint futuro (A, B, C...) preenche um
+ou mais Volumes abaixo — nenhum Sprint deve reorganizar a estrutura em si, apenas
+adicionar conteúdo dentro dela.
+
+---
+
+## Estrutura dos Volumes
+
+| Volume | Conteúdo | Preenchido em |
+|---|---|---|
+| 1 — Visão Geral | Objetivo, filosofia, escopo, princípios fundamentais | Sprint A |
+| 2 — Arquitetura | Visão geral, fluxo completo, dependências, limites entre módulos | Sprint A |
+| 3 — Modelo de Domínio | Todas as entidades, responsabilidades, relacionamentos, diagramas | Sprint A |
+| 4 — ADRs | Registro cronológico das decisões arquiteturais | Sprint A (histórico já existente) |
+| 5 — Providers | Especificação, contratos, implementações, casos conhecidos | Sprint D |
+| 6 — Pipeline de Aquisição | Extração, normalização, curadoria, homologação | Sprint A / D |
+| 7 — Core Engine | Composição, Cena Técnica, Vista, Renderer | Sprint A |
+| 8 — Biblioteca de Conhecimento | Famílias de Mercado, Geometrias Homologadas, Compatibilidades, Regras de montagem | Sprint E |
+| 9 — Validações | Regras por entidade, índices de qualidade, consistência | Sprint B |
+| 10 — Testes | Unitários, integração, regressão, catálogos de referência | Sprint C |
+| 11 — Roadmap | MVP, Alpha, Beta, Comercial | Sprint A (conteúdo já existente, migrar) |
+
+---
+
+## Convenção de template (recomendada, não obrigatória)
+
+Cada Volume **pode** usar as subseções abaixo, mas só as que agregam valor real ao
+conteúdo daquele Volume especificamente — nenhum Volume é obrigado a preencher
+todas.
+
+- Objetivo
+- Escopo
+- Responsabilidades
+- Diagramas
+- Exemplos
+- ADRs relacionados
+- Próximas evoluções previstas
+
+> **Princípio:** Elegância nunca deve vencer utilidade. Um template é um guia, não
+> uma checklist a cumprir. Se uma subseção não tem conteúdo real pra oferecer num
+> Volume específico, ela é omitida — não preenchida com texto de preenchimento.
+
+---
+
+## Numeração de ADRs
+
+Sequência cronológica única e contínua, nunca reiniciada. Histórico já existente
+(resumo, para consolidar no Volume 4 no Sprint A):
+
+- ADR-001 — Geometria é a única fonte de verdade
+- ADR-002 — Renderer nunca conhece regras de engenharia
+- ADR-003 — Provider abstrai a origem dos dados
+- ADR-004 — FamíliaMercado representa linguagem do mercado
+- ADR-005 — GeometriaPadrao representa um ativo de engenharia compartilhado
+- ADR-006 — Pipeline de Aquisição é um extrator de conhecimento técnico, não apenas de perfis
+- ADR-007 — Todo conhecimento estrutural identificado deve ser preservado em forma original, mesmo sem modelo de domínio ainda para representá-lo
+
+---
+
+## Papéis (metodologia de trabalho oficial)
+
+**Bruno — Especialista de Domínio e Co-Arquiteto de Modelagem de Negócio**
+Traz a realidade do mercado, valida hipóteses, identifica padrões e exceções,
+executa a Curadoria Geométrica, prioriza problemas reais. Contribuições diretas já
+registradas: distinção Linha 25 ≠ Suprema, conceito de FamíliaMercado,
+reaproveitamento de geometria entre fabricantes, linguagem de mercado (SU/LG/Blindex).
+
+**Claude — Arquiteto de Software e Engenharia de Implementação**
+Valida arquitetura, identifica riscos e over-engineering, transforma conceitos em
+implementação real, mantém coerência técnica do código.
+
+**ChatGPT — Arquiteto de Plataforma e Governança Técnica**
+Visão sistêmica, evolução do domínio, consistência entre módulos, governança de
+documentação, planejamento de longo prazo.
+
+---
+
+## Acordo de Engenharia (regras vigentes)
+
+1. Nenhuma nova entidade entra no domínio sem evidência prática (implementação,
+   comportamento observado em catálogos reais, necessidade recorrente, ou validação
+   do Bruno) — nunca por elegância arquitetural.
+2. Nenhuma documentação descreve algo sem implementação prevista. Documenta-se
+   realidade, não especulação.
+3. Toda abstração precisa reduzir complexidade líquida. Se cria mais trabalho do que
+   elimina, deve ser revista.
+4. Toda decisão importante gera um ADR, na sequência cronológica única.
+5. Sempre que possível, validar hipóteses em fabricantes/catálogos diferentes antes
+   de transformá-las em regra permanente do domínio.
+
+---
+
+## Princípio da Estabilidade Arquitetural
+
+Depois que uma entidade entra oficialmente no domínio, sua remoção é rara. A
+evolução preferencial ocorre por especialização e refinamento, não por substituição
+constante.
+
+> **Nuance registrada por acordo:** essa raridade é **consequência** de termos
+> evoluído por evidência (Regra 1), não uma resistência à mudança em si. Se
+> evidência nova e forte contradisser uma entidade existente, a remoção continua
+> sendo legítima e deve acontecer — a estabilidade não compete com a Regra 1, ela é
+> o resultado esperado dela.
+
+---
+
+## Rastreabilidade (bidirecional)
+
+Cadeia direta: Mercado → Evidência → ADR → Documento → Código → Teste.
+
+Cadeia reversa: todo artefato implementado deve conseguir responder — qual ADR
+originou isto? qual documento descreve isto? qual evidência de mercado justificou
+isto?
+
+---
+
+## Estados dos artefatos
+
+Documentos, entidades, ADRs e módulos podem estar em um destes estados:
+
+- **Proposto** — hipótese registrada, ainda sem evidência suficiente.
+- **Validado** — implementado e confirmado por evidências reais, mas ainda com
+  baixa diversidade de casos (ex: 1-2 exemplos concretos testados).
+- **Estável** — utilizado repetidamente, testado em diversidade suficiente de
+  casos, sem necessidade de revisão conhecida.
+- **Obsoleto** — substituído ou invalidado, mantido no histórico por
+  rastreabilidade (ex: "Substituído por ADR-012").
+
+Este critério se aplica igualmente a entidades do domínio (Volume 3) e a ADRs
+(Volume 4) — ambos passam a registrar seu Estado explicitamente.
+
+## Definição formal de "Implementado" (nota do Claude, atendendo observação real do ChatGPT)
+
+Para evitar ambiguidade entre "validado", "implementado" e "funcional" (usados de
+forma intercambiável em rodadas anteriores): **Implementado** significa existe
+código, executa de ponta a ponta, e possui ao menos verificação manual — não exige
+teste automatizado (isso é o que o Volume 10 cobre separadamente, e ainda está em
+Proposto). Um Volume/entidade pode estar "Validado" (evidência real) sem estar
+"Implementado" (código rodando) — ex: ADR-006/007 são Validados por evidência de
+catálogo, não por código.
+
+---
+
+## Árvore de dependências entre Volumes
+
+```
+Constituição
+│
+├── Volume 1 (Visão Geral)
+├── Volume 2 (Arquitetura)
+├── Volume 3 (Modelo de Domínio)
+│
+├── Volume 4 (ADRs)
+│
+├── Volume 5 (Providers)
+├── Volume 6 (Pipeline de Aquisição)
+├── Volume 7 (Core Engine)
+│
+├── Volume 8 (Biblioteca de Conhecimento)
+├── Volume 9 (Validações)
+├── Volume 10 (Testes)
+│
+└── Volume 11 (Roadmap)
+```
+
+---
+
+## Evolução futura registrada (não criada agora)
+
+- **Volume de Glossário**: conforme a plataforma acumular termos próprios (Provider,
+  Pipeline, FamíliaMercado, GeometriaPadrao, Curadoria, Cena Técnica, Vista,
+  Renderer, Compatibilidade, Homologação...), criar um Glossário Oficial. Registrado
+  como necessidade futura, não criado nesta versão.
+
+---
+
+## Nota de proporcionalidade (ressalva do Claude, registrada por acordo)
+
+A cadeia de rastreabilidade completa (Mercado → Evidência → ADR → Documento → Código
+→ Teste) é um objetivo válido, mas **hoje deve existir como convenção documentada
+(ex: uma tabela simples ligando ADR ↔ documento ↔ código), não como sistema ou
+ferramenta de enforcement automático.** Construir tooling que *force* essa validação
+é over-engineering de processo para o tamanho atual da equipe — o mesmo tipo de
+risco que já identificamos e evitamos em decisões de arquitetura técnica. Revisitar
+automação de governança apenas se/quando a equipe crescer além do que a disciplina
+manual consegue sustentar.
+
+---
+
+## Validações de documentação (convenção, não sistema)
+
+- Nenhuma entidade existe sem responsabilidade claramente definida.
+- Nenhuma entidade existe sem relacionamento documentado.
+- Todo ADR referencia os documentos/Volumes afetados.
+- Toda implementação relevante referencia o ADR correspondente.
+- Toda regra de domínio possui pelo menos um exemplo real que a originou.
+
+---
+
+## Roadmap de Sprints (pós Sprint 0)
+
+- Sprint A — Documentação Oficial (Volumes 1, 2, 3, 4, 6, 7, 11)
+- Sprint B — Validações de Domínio (Volume 9)
+- Sprint C — Testes Automatizados (Volume 10)
+- Sprint D — Expansão dos Providers (Volume 5)
+- Sprint E — Biblioteca Oficial de Geometrias (Volume 8)
+- Sprint F — Integração completa com Renderer e sistema comercial
+
+---
+
+## Anexo — Padrão Editorial do EsquadriaCore
+
+Regras curtas de consistência editorial, aplicáveis a todos os Volumes:
+
+1. Toda entidade oficial do domínio responde três perguntas: **O que é** / **O que
+   conhece** / **O que nunca conhece**.
+2. Todo ADR possui quatro campos: **Contexto** / **Decisão** / **Evidência** /
+   **Consequências**.
+3. Todo Volume possui o cabeçalho padronizado (versão, status, sprint de origem,
+   última atualização, ADRs relacionados, implementação correspondente,
+   dependências).
+4. Todo exemplo deve ser baseado em evidência real, sempre que possível — nunca
+   hipotético quando existir caso real disponível.
+5. Diagramas representam o estado atual do domínio, nunca hipóteses futuras.
+6. Termos oficiais do domínio (FamíliaMercado, GeometriaPadrao, Provider, Pipeline,
+   Vista, Renderer, Cena Técnica, Perfil, Componente, Tipo, PerfilGeometria, Core
+   Engine) são sempre escritos exatamente como definidos no Modelo de Domínio
+   (Volume 3), independente da posição na frase.
+7. Toda entidade registra seu **Estado** (Proposto / Validado / Estável /
+   Obsoleto), conforme definido nesta Constituição.
+
+---
+
+*Fim da Constituição da Documentação. Após aprovação conjunta (Bruno, Claude,
+ChatGPT), o Sprint A pode começar preenchendo os Volumes indicados.*
+-e 
+
+---
+
+
+# Volume 1 — Visão Geral
+
+---
+**Versão:** 1.0.0
+**Status:** Estável
+**Sprint de origem:** Sprint A
+**Última atualização:** 2026-07-08
+**ADRs relacionados:** ADR-001, ADR-006
+**Implementação correspondente:** N/A (documento de visão, não de código)
+**Dependências:** Constituição da Documentação v1.0.0
+**Responsável:** Bruno, Claude, ChatGPT
+**Volumes dependentes:** 2, 11
+---
+
+## Objetivo da Plataforma
+
+O EsquadriaCore transforma o conhecimento técnico fragmentado da indústria de
+esquadrias de alumínio — hoje disperso em catálogos PDF de dezenas de fabricantes,
+cada um com sua própria convenção — em um domínio estruturado, reutilizável e
+independente de fabricante. A partir desse domínio, a plataforma gera automaticamente
+representações técnicas e comerciais (imagens, vistas, planilhas) para uso em
+orçamento, documentação e apresentação.
+
+## O que o EsquadriaCore não é
+
+Esclarecimentos negativos, registrados porque cada um foi uma decisão explícita
+tomada ao longo do projeto, não uma omissão:
+
+- **Não é um sistema CAD de fabricação.** Não gera sólidos precisos para manufatura,
+  não exporta STEP para CNC. Gera representação visual técnica e comercial.
+- **Não é um leitor de PDF genérico.** PDF é um dos Providers possíveis de aquisição
+  de dados, não o núcleo do sistema.
+- **Não é apenas um gerador de imagens.** A imagem é a saída visível, mas o ativo
+  real é o conhecimento estruturado por trás dela (geometria homologada,
+  compatibilidades, regras de montagem, famílias de mercado).
+
+## Anti-objetivos (consolidado — nota do Claude)
+
+O ChatGPT sugeriu reunir num único lugar tudo que o projeto explicitamente evita,
+hoje espalhado em ADRs e Volumes diferentes. Consolidando aqui, com referência
+cruzada para não duplicar a justificativa:
+
+- Substituir CAD / gerar STEP / gerar CNC — ver seção acima e Volume 7.
+- Armazenar imagem como fonte de verdade — ADR-001.
+- Depender exclusivamente de PDF — ADR-003.
+- Assumir compatibilidade técnica só por pertencer à mesma FamíliaMercado — ADR-004.
+- Inferir geometria automaticamente sem curadoria humana — ADR-005.
+- Automatizar isolamento de contorno ou classificação funcional antes de haver
+  volume de dados que justifique — Volume 11, seção "O que NÃO fazer".
+- Construir Aggregate Roots/Value Objects/entidade Regra sem evidência de
+  necessidade real — Volume 3, observações registradas.
+
+## Filosofia
+
+Três decisões filosóficas atravessam toda a plataforma:
+
+1. **Evidência antes de arquitetura.** Nenhuma entidade de domínio existe porque
+   parecia elegante — toda entidade hoje no domínio nasceu de um problema real
+   encontrado em dados reais (catálogos de Centenário, Euroshow, Alcoa, Vitral Sul).
+2. **Geometria é a única fonte de verdade.** Nenhuma imagem é armazenada; toda
+   imagem é derivada de geometria.
+3. **Separação entre conhecimento e implementação.** Existe uma arquitetura do
+   software (Core Engine, Renderer, Pipeline) e uma arquitetura do conhecimento
+   (FamíliaMercado, GeometriaPadrao, Compatibilidades) — paralelas, não misturadas.
+
+## Escopo atual (o que já existe, validado)
+
+- Core Engine funcional: `Perfil → Componente → Tipo → Cena Técnica → Vista →
+  Renderer → Imagem`.
+- Pipeline de Aquisição de Dados testado em 4 catálogos reais de fabricantes
+  distintos (Centenário, Euroshow, Alcoa, Vitral Sul), com 3 tipos de desafio de
+  extração já identificados e documentados.
+- Modelo de domínio com FamíliaMercado, GeometriaPadrao e PerfilGeometria,
+  implementado e testado com um caso real (SU-019, Alcoa/Vitral Sul).
+
+## Escopo futuro (registrado, não implementado)
+
+- Providers além de PDF com texto (OCR, DXF, DWG, API de fabricante).
+- Biblioteca de Conhecimento em escala (compatibilidades, regras de montagem,
+  usinagens).
+- Integração comercial com sistema de orçamento existente do Bruno.
+
+## Princípios fundamentais (referência resumida — detalhamento no Volume 4, ADRs)
+
+| Princípio | ADR |
+|---|---|
+| Geometria é a única fonte de verdade | ADR-001 |
+| Renderer nunca conhece regras de engenharia | ADR-002 |
+| Provider abstrai a origem dos dados | ADR-003 |
+| FamíliaMercado representa linguagem do mercado | ADR-004 |
+| GeometriaPadrao é ativo de engenharia compartilhado | ADR-005 |
+| Pipeline é extrator de conhecimento técnico, não só de perfis | ADR-006 |
+| Todo conhecimento estrutural é preservado, mesmo sem modelo ainda | ADR-007 |
+
+## Estado Atual do Projeto
+
+Situação nesta versão (2026-07-08):
+
+✓ Core Engine validado (Fase 0, dados manuais e reais)
+✓ Pipeline de Aquisição de Dados validado em 4 fabricantes distintos
+✓ Modelo de Domínio consolidado (FamíliaMercado, GeometriaPadrao, PerfilGeometria)
+✓ Constituição da Documentação aprovada (v1.0.0)
+
+Em andamento:
+• Consolidação da documentação oficial (Sprint A)
+
+Próxima etapa:
+• Volume 3 — Modelo de Domínio, Volume 11 — Roadmap
+
+## Índice de Maturidade
+
+```
+Arquitetura   ██████████ (estável)
+Domínio       ██████████ (estável)
+Pipeline      █████████░ (validado em 4 fabricantes, Providers adicionais pendentes)
+Providers     █████░░░░░ (só PDF-com-texto implementado)
+Testes        ██░░░░░░░░ (Sprint C ainda não iniciado)
+Renderer      ██████░░░░ (funcional via matplotlib, Three.js pendente de ambiente com rede)
+```
+
+## Convenção editorial de nomenclatura
+
+Entidades oficiais do domínio são sempre escritas exatamente como definidas,
+independente da posição na frase: Pipeline, Provider, Renderer, Vista, Cena Técnica,
+Perfil, Componente, Tipo, Core Engine, GeometriaPadrao, FamíliaMercado,
+PerfilGeometria. Isso evita ambiguidade entre o termo do domínio e o uso comum da
+palavra.
+
+
+
+## A Tese do EsquadriaCore
+
+**Nota do Claude:** o ChatGPT propôs isto como um "manifesto" curto, distinto do
+objetivo técnico já descrito acima — citando que projetos duradouros (Kubernetes,
+React, Linux, PostgreSQL) costumam ter um documento assim. Concordo que é barato e
+vale a pena; é texto, não arquitetura.
+
+> A indústria de esquadrias desperdiça conhecimento porque cada fabricante o
+> publica de forma isolada, usando convenções próprias. O EsquadriaCore separa
+> conhecimento técnico da representação comercial, criando um domínio comum capaz
+> de sobreviver às tecnologias, fabricantes e formatos de origem que o alimentam.
+
+## Camadas de valor (visão estratégica, não arquitetura nova)
+
+**Nota do Claude:** o ChatGPT observou que a documentação tende a parecer que o
+projeto "termina no Renderer" — quando na prática o Renderer é só mais um
+consumidor do domínio. Concordo que vale registrar essa visão, deixando claro que
+isso NÃO é uma nova camada arquitetural (não muda o Volume 2), é uma lente
+estratégica sobre o que já existe:
+
+```
+Mercado (vocabulário, convenções, fabricantes)
+      │
+      ▼
+Conhecimento (FamíliaMercado, GeometriaPadrao, Compatibilidades, Regras — o
+               patrimônio que continua válido independente de tecnologia)
+      │
+      ▼
+Pipeline (extrai conhecimento bruto de fontes externas)
+      │
+      ▼
+Modelo de Domínio (estrutura o conhecimento)
+      │
+      ▼
+Core Engine (interpreta e representa)
+      │
+      ▼
+Produtos (orçamento, configurador, catálogo, API, app — hoje só o Core Engine
+           está implementado; os demais são escopo futuro já registrado)
+```
+
+Isso não compromete a produtos que não existem ainda — é só deixar explícito que
+o domínio foi desenhado para ser reutilizável por múltiplas aplicações, não
+apenas pelo Renderer atual.
+
+## Missão (síntese aprovada por Bruno, Claude e ChatGPT)
+
+> "Transformar o conhecimento técnico fragmentado da indústria de esquadrias em um
+> domínio estruturado, reutilizável e independente de fabricantes."
+
+Essa missão permanece válida mesmo que, no futuro, múltiplas aplicações diferentes
+(orçamento, catálogo comercial, configurador) venham a consumir a mesma plataforma.
+-e 
+
+---
+
+
+# Volume 2 — Arquitetura
+
+---
+**Versão:** 1.0.0
+**Status:** Estável
+**Sprint de origem:** Sprint A
+**Última atualização:** 2026-07-08
+**ADRs relacionados:** ADR-001, ADR-002, ADR-003, ADR-006, ADR-007
+**Implementação correspondente:** Core Engine (Fase 0), Pipeline de Aquisição
+(Fases 1-4)
+**Dependências:** Volume 1 (Visão Geral), Volume 3 (Modelo de Domínio)
+**Responsável:** Bruno, Claude, ChatGPT
+**Volumes dependentes:** 6, 7, 11
+---
+
+## Visão geral do fluxo completo
+
+```
+PDF (ou outra fonte — Provider)
+     ↓
+Pipeline de Aquisição de Dados
+     ↓ (extrai: perfis, ferragens, compatibilidades, regras, usinagens, metadados)
+     ↓
+Curadoria (humana) → GeometriaPadrao homologada, PerfilGeometria associada
+     ↓
+Perfil (dados por fabricante) + Componente (categoria/orientação/aplicação)
+     ↓
+Tipo (composição segundo Regra)
+     ↓
+Cena Técnica (posicionamento espacial, por referência)
+     ↓
+Vista (parâmetros de apresentação)
+     ↓
+Renderer (motor de renderização — hoje matplotlib, futuramente Three.js)
+     ↓
+Imagem (derivada, nunca fonte de verdade)
+```
+
+## Dois blocos independentes
+
+O EsquadriaCore é composto por dois grandes blocos, com uma fronteira estrita entre
+eles (ADR-002, ADR-006):
+
+**1. Pipeline de Aquisição de Dados** — descobre conhecimento a partir de fontes
+externas (catálogos de fabricantes). Não sabe nada sobre como esse conhecimento
+será desenhado ou apresentado.
+
+**2. Core Engine** — interpreta e apresenta o conhecimento já estruturado (Perfil,
+Componente, Tipo, Cena Técnica, Vista, Renderer). Não sabe nada sobre PDFs, OCR, ou
+qualquer detalhe de como o dado chegou até ele.
+
+A ponte entre os dois blocos é o **Modelo de Domínio** (Volume 3) — a saída do
+Pipeline é exatamente a entrada do Core Engine, sem camada de tradução adicional.
+
+## Limites entre módulos (o que cada um nunca faz)
+
+| Módulo | Nunca faz |
+|---|---|
+| Provider | Nunca interpreta significado — só extrai dado bruto/normalizado |
+| Pipeline de Aquisição | Nunca decide regra de montagem ou classificação final — prepara para curadoria |
+| Curadoria (humana) | Nunca é substituída por inferência automática de FamíliaMercado |
+| Core Engine | Nunca sabe de onde veio o dado (PDF, OCR, cadastro manual) |
+| Renderer | Nunca conhece regra de engenharia, fabricante, ou montagem (ADR-002) |
+
+## Quatro blocos de agrupamento (mapa de orientação, não fronteira de módulo nova)
+
+**Nota do Claude:** o ChatGPT sugeriu isso sem formalizar como "Bounded Context"
+(DDD), e mantenho a mesma cautela — isto é um mapa de orientação visual para quem
+está chegando agora, não uma nova fronteira de módulo com enforcement de código. A
+fronteira real que já existe e é aplicada (monólito modular, ver seção abaixo) não
+muda.
+
+```
+Aquisição          Domínio              Representação        Conhecimento
+─────────          ───────              ─────────────        ────────────
+Pipeline           Perfil               Cena Técnica          Biblioteca (futura)
+Provider           FamíliaMercado       Vista                 Compatibilidades (futura)
+(OCR futuro)       GeometriaPadrao      Renderer               Regras (futura)
+                   Componente
+                   Tipo
+```
+
+## Dependências proibidas (explícitas, decorrentes do ADR-002 e ADR-003)
+
+- Renderer nunca importa Pipeline.
+- Renderer nunca importa Provider.
+- Provider nunca importa Core Engine.
+- Pipeline nunca importa Renderer ou Vista.
+
+Isso não é regra nova — é o ADR-002/ADR-003 tornado explícito em termos de
+dependência de código, para que uma violação de import seja detectável em revisão
+de código sem precisar reler o ADR toda vez.
+
+## Dependências entre Volumes
+
+```
+Volume 1 (Visão Geral)
+     ↓
+Volume 3 (Modelo de Domínio) ←── Volume 4 (ADRs, fundamenta as decisões)
+     ↓
+Volume 2 (este documento — Arquitetura, une Pipeline + Core Engine)
+     ↓
+Volume 6 (Pipeline em detalhe)     Volume 7 (Core Engine em detalhe)
+     ↓                                   ↓
+Volume 9 (Validações)              Volume 8 (Biblioteca de Conhecimento)
+     ↓
+Volume 10 (Testes)
+```
+
+## Providers — abstração de origem de dados (detalhe em Volume 5)
+
+Já validados/testados na prática: **PDF com texto e vetor nativo** (Centenário,
+Tamboré). Casos reais documentados que motivam Providers futuros: PDF com vetor sem
+texto (Alcoa), PDF com texto e defeito de dado (Euroshow), PDF com desenho raster
+embutido (Vitral Sul). Nenhum desses Providers adicionais está implementado — apenas
+identificados como necessidade real (ADR-003, ADR-007).
+
+## Por que não há microsserviços (decisão registrada)
+
+Na fase atual, o EsquadriaCore é um monólito modular: módulos internos bem
+separados (Pipeline, Core Engine, cada um com submódulos), rodando no mesmo
+processo/deploy. Microsserviços seriam over-engineering para o estágio e a escala
+atuais — não há ainda gargalo de carga identificado que justifique a complexidade
+operacional adicional. Decisão revisitável apenas quando um módulo específico
+precisar escalar de forma independente e comprovada.
+-e 
+
+---
+
+
+# Volume 3 — Modelo de Domínio
+
+---
+**Versão:** 1.0.0
+**Status:** Estável
+**Sprint de origem:** Sprint A
+**Última atualização:** 2026-07-08
+**ADRs relacionados:** ADR-001, ADR-002, ADR-004, ADR-005
+**Implementação correspondente:** Core Engine (Fase 0), prova de conceito
+GeometriaPadrao
+**Dependências:** Volume 1 (Visão Geral), Volume 4 (ADRs)
+**Responsável:** Bruno, Claude, ChatGPT
+**Volumes dependentes:** 2, 6, 7, 8, 9, 11
+---
+
+## Visão geral das entidades
+
+```
+FamíliaMercado
+     │ (vocabulário de mercado — sempre presente quando aplicável)
+     ▼
+Perfil ──── PerfilGeometria ────► GeometriaPadrao
+  │                                (contorno vetorial, versão, homologação)
+  │
+  ▼
+Componente (Perfil | Ferragem | Vidro)
+  │
+  ▼
+Tipo (composição de Componentes segundo uma Regra)
+  │
+  ▼
+Cena Técnica (instâncias posicionadas — aponta pra Componente, nunca copia)
+  │
+  ▼
+Vista (parâmetros de apresentação — nunca dado físico)
+  │
+  ▼
+Renderer (consome só Vistas)
+  │
+  ▼
+Imagem (derivada, nunca armazenada como fonte de verdade)
+```
+
+---
+
+## Diagrama de cardinalidades
+
+```
+FamíliaMercado
+       │ 1:N
+       ▼
+    Perfil ──── 1:1 ──── PerfilGeometria ──── N:1 ──── GeometriaPadrao
+
+    Perfil
+       │ 1:1 (é-um)
+       ▼
+   Componente
+       │ N:1
+       ▼
+      Tipo
+       │ 1:N
+       ▼
+ Cena Técnica
+       │ 1:N
+       ▼
+     Vista
+       │ N:1
+       ▼
+   Renderer
+```
+
+Leitura: uma FamíliaMercado agrupa N Perfis de fabricantes diferentes; cada Perfil
+associa-se a exatamente uma GeometriaPadrao por vez (via PerfilGeometria), mas uma
+GeometriaPadrao pode ser referenciada por N Perfis (mecanismo de reaproveitamento
+validado no ADR-005); um Tipo agrupa N Componentes; uma Cena Técnica pode ter N
+Vistas (frontal, isométrica, explodida); um Renderer atende N Vistas.
+
+## Diagrama de dependência inversa (como o Renderer resolve uma imagem)
+
+**Nota do Claude:** o diagrama de cardinalidades acima mostra o fluxo de definição
+do domínio (de cima pra baixo). Este mostra o fluxo de resolução em tempo de
+renderização (de baixo pra cima) — útil pra quem for implementar o Renderer de
+verdade, é literalmente a ordem de resolução de referências.
+
+```
+Renderer
+   ↑ recebe
+ Vista
+   ↑ referencia
+ Cena Técnica
+   ↑ referencia (N instâncias)
+ Tipo / Componente
+   ↑ é-um
+ Perfil
+   ↑ resolve via PerfilGeometria
+GeometriaPadrao
+```
+
+## Fluxo de vida do Perfil
+
+Diferente do Estado documental (Proposto/Validado/Estável/Obsoleto, aplicável a
+entidades e documentos), um Perfil individual percorre um ciclo de vida
+operacional próprio dentro do Pipeline:
+
+```
+Extraído → Normalizado → Curado → Homologado → Disponível → Obsoleto
+```
+
+- **Extraído** — dado bruto retirado de um Provider (ex: código+peso do PDF).
+- **Normalizado** — validado estruturalmente (Volume 9), pronto para curadoria.
+- **Curado** — classificação funcional atribuída (categoria, orientação, aplicação).
+- **Homologado** — geometria confirmada, associada a uma GeometriaPadrao via
+  PerfilGeometria (ou geometria própria, se não compartilhada).
+- **Disponível** — pronto para uso pelo Core Engine.
+- **Obsoleto** — descontinuado pelo fabricante ou substituído, mantido por
+  rastreabilidade.
+
+Detalhamento operacional deste fluxo pertence ao Volume 6 (Pipeline de Aquisição).
+
+---
+
+## FamíliaMercado
+
+**Estado:** Estável
+
+**Persistência:** Persistente (cadastro de referência, raramente alterado)
+
+**O que é:** o vocabulário usado pelo mercado para se referir a uma linha de
+esquadria (ex: "Suprema", "Gold"), independente de qual fabricante a produz.
+
+**O que possui (atributos próprios):** nome canônico, origem histórica, bitola,
+descrição, lista de aliases por fabricante (prefixo de código, nome local usado).
+
+**O que referencia (relação):** nenhuma entidade — é referenciada pelo Perfil, não
+o contrário.
+
+**O que nunca conhece:** geometria, fabricante específico como "dono", ou
+intercambiabilidade técnica.
+
+**Quem depende dela:** Pipeline de Aquisição (marcação de Perfil), interfaces de
+busca/relatório.
+
+**Exemplo real:** SUPREMA — origem Alcoa, início dos anos 90, bitola 25mm; aliases:
+Alcoa (SU), Tamboré/Centenário (TMS), Vitral Sul (SU, "Nobile 2.5 - Suprema"), ASA
+(MG25, "Mega 25").
+
+---
+
+## GeometriaPadrao
+
+**Estado:** Validado (implementado e testado com GEO-SU-019; ainda não em escala)
+
+**Persistência:** Persistente (ativo de engenharia, versionado)
+
+**O que é:** um ativo de engenharia reutilizável — o contorno vetorial curado e
+homologado de um perfil, independente de qual fabricante o implementa.
+
+**O que possui (atributos próprios):** contorno em mm (polígono), versão, status
+de homologação (bruto/homologado), referência ao SVG bruto de origem (auditoria).
+
+**O que referencia (relação):** nenhuma entidade — é referenciada por N Perfis via
+PerfilGeometria, não o contrário.
+
+**O que nunca conhece:** peso, fabricante, preço, disponibilidade — esses são do
+Perfil.
+
+**Quem depende dela:** Renderer, Curadoria Geométrica, PerfilGeometria.
+
+**Quem pode usá-la:** Renderer (via resolução Perfil → PerfilGeometria →
+GeometriaPadrao), processo de Curadoria Geométrica.
+
+**Exemplo real:** GEO-SU-019, compartilhada entre `ALCOA-SU-019` e
+`VITRALSUL-SU-019` — testado e confirmado: ambos os Perfis geram imagem com
+geometria idêntica.
+
+---
+
+## PerfilGeometria
+
+**Estado:** Validado
+
+**Persistência:** Persistente (registro de auditoria — nunca descartável, ver
+ADR-005)
+
+**O que é:** entidade de associação auditável entre um Perfil e uma GeometriaPadrao.
+A decisão de compartilhar geometria é **sempre curadoria humana caso a caso**, nunca
+inferida automaticamente pela FamíliaMercado.
+
+**O que possui (atributos próprios):** nível de confiança, responsável pela
+homologação, método de validação, data, observações.
+
+**O que referencia (relação):** um Perfil (perfil_id) e uma GeometriaPadrao
+(geometria_padrao_id).
+
+**O que nunca conhece:** regra de negócio de quando reaproveitar geometria — essa
+decisão vem de fora, de quem homologa.
+
+**Quem depende dela:** Perfil (via referência), Renderer (indiretamente, ao
+resolver a cadeia).
+
+---
+
+## Perfil
+
+**Estado:** Estável
+
+**Persistência:** Persistente
+
+**O que é:** a implementação de um fabricante específico de um item de catálogo.
+
+**O que possui (atributos próprios):** fabricante, código local, peso, acabamento,
+liga.
+
+**O que referencia (relação):** FamíliaMercado (opcional), geometria via
+PerfilGeometria (nunca geometria embutida diretamente).
+
+**O que nunca conhece:** como é renderizado, ou regra de montagem de um Tipo.
+
+**Quem depende dele:** Componente, Cena Técnica (por referência).
+
+---
+
+## Componente
+
+**Estado:** Estável
+
+**Persistência:** Persistente (geralmente derivado de um Perfil/Ferragem/Vidro já
+persistente)
+
+**O que é:** abstração comum sobre Perfil, Ferragem e Vidro — qualquer peça que
+compõe um Tipo.
+
+**O que possui (atributos próprios):** categoria (função: marco, folha, montante,
+trilho...), orientação (vertical/horizontal/ambos), aplicação (porta, janela,
+box...).
+
+**O que referencia (relação):** o Perfil/Ferragem/Vidro concreto que implementa.
+
+---
+
+## Tipo
+
+**Estado:** Estável
+
+**Persistência:** Persistente
+
+**O que é:** uma composição de Componentes segundo uma Regra de montagem (ex:
+"Janela de Correr Simples").
+
+**O que possui (atributos próprios):** a Regra aplicada (hoje texto/parâmetro, ver
+observação abaixo), dimensões gerais.
+
+**O que referencia (relação):** a lista de Componentes que participam.
+
+**O que nunca conhece:** como será desenhado — isso é responsabilidade da Cena
+Técnica e da Vista.
+
+**Quem depende dele:** Cena Técnica.
+
+---
+
+## Cena Técnica
+
+**Estado:** Estável
+
+**Persistência:** Transitória (gerada por Tipo, descartável e regerável)
+
+**O que é:** o posicionamento espacial de instâncias de Componentes para um Tipo
+específico.
+
+**O que possui (atributos próprios):** posição, rotação, comprimento por
+instância.
+
+**O que referencia (relação):** o Componente/Perfil de cada instância — nunca
+copia dado físico dele.
+
+**O que nunca conhece:** peso, espessura ou qualquer dado físico do Componente —
+ela referencia, nunca copia (validado no ADR-001 e testado na Fase 0).
+
+**Quem depende dela:** Vista.
+
+---
+
+## Vista
+
+**Estado:** Estável
+
+**Persistência:** Transitória (parâmetro de renderização, descartável)
+
+**O que é:** os parâmetros de apresentação de uma Cena Técnica — como ela deve ser
+desenhada.
+
+**O que possui (atributos próprios):** ângulo, tipo de projeção, escala, estilo
+visual, nível de detalhe, estilo de sombreamento, cores/estilo de material.
+
+**O que referencia (relação):** exatamente uma Cena Técnica.
+
+**O que nunca conhece:** dado físico real (espessura, liga) — se precisar, pergunta
+à Cena/Componente, nunca guarda cópia (ADR-001, ADR-002).
+
+**Quem depende dela:** Renderer.
+
+---
+
+## Renderer
+
+**Estado:** Estável (detalhe de motor de renderização — matplotlib vs. Three.js —
+pertence ao Volume 7, não ao domínio; nota do Claude: corrigido após observação do
+ChatGPT de que Volume 3 deve sobreviver a qualquer troca de tecnologia)
+
+**Persistência:** N/A — Renderer é código/serviço, não dado.
+
+**O que é:** o motor que transforma uma Vista em imagem.
+
+**O que possui (atributos próprios):** nenhum estado persistente — é motor de
+execução, não dado.
+
+**O que referencia (relação):** a Vista recebida como entrada, no momento da
+renderização.
+
+**O que nunca conhece:** regra de engenharia, regra de montagem, ou fabricante
+(ADR-002) — comprovado ao renderizar Perfis de fabricantes diferentes sem
+distinção.
+
+**Quem depende dele:** Exportador de imagem (PNG/SVG), futuras Vistas adicionais
+(explodida, corte).
+
+---
+
+---
+
+## Invariantes do Domínio
+
+Regras que devem ser sempre verdadeiras, independente de implementação — base para
+a futura suíte de testes (Sprint C):
+
+- Todo Perfil pertence exatamente a um Fabricante.
+- Todo Perfil associa-se a no máximo uma GeometriaPadrao por vez (via PerfilGeometria).
+- Toda GeometriaPadrao pode ter zero, um ou múltiplos Perfis associados.
+- Toda associação Perfil↔GeometriaPadrao é auditável (responsável, método, data).
+- FamíliaMercado nunca implica intercambiabilidade técnica entre Perfis.
+- Toda Vista referencia exatamente uma Cena Técnica.
+- Toda Cena Técnica referencia Componentes por identificador, nunca copia seus dados físicos.
+- Renderer nunca referencia Perfil diretamente — sempre via Vista → Cena → Componente.
+- Todo Tipo é uma composição de Componentes segundo uma Regra — nunca um desenho fixo armazenado.
+- Renderer nunca altera dado — apenas lê e produz imagem (somente leitura).
+- Pipeline de Aquisição nunca cria uma FamíliaMercado nova por conta própria — associação a uma FamíliaMercado existente é automatizável, criação de uma nova é decisão humana.
+- Vista nunca modifica a Cena Técnica que referencia — leitura apenas.
+- GeometriaPadrao nunca conhece qual fabricante a utiliza — isso é papel do Perfil/PerfilGeometria.
+
+---
+
+## Observação registrada — conceito de "Regra" ainda não formalizado
+
+O conceito de Regra (ex: "Janela de Correr 2 Folhas exige 2 folhas + 2 trilhos +
+marco + fecho + encontro + vidro + limites/posições") aparece recorrentemente em
+Tipo, mas ainda não é uma entidade própria do domínio — hoje é tratado como
+parâmetro textual/implícito de Tipo. **Não será formalizado como entidade agora**,
+por falta de evidência suficiente (poucos Tipos implementados até o momento). A
+recorrência será reavaliada quando existirem múltiplos Tipos reais implementados
+que revelem o padrão de forma inequívoca — mantendo a Regra 1 da Constituição.
+
+## Observação registrada — Aggregate Roots e Value Objects (DDD) ainda não aplicados
+
+Terminologia formal de DDD (Aggregate Root, Value Object) foi sugerida para o
+domínio, mas não será adotada nesta versão: Aggregate Roots só ganham sentido
+prático quando existir camada de persistência/transação real que precise de limite
+de consistência explícito — isso ainda não foi implementado. Value Objects (Peso,
+Bitola, Escala, Posição, Rotação, Cor, Material) são hoje campos tipados simples;
+formalizá-los como categoria própria do domínio só se justifica quando um problema
+real de modelagem aparecer (ex: necessidade de validação ou igualdade que
+primitivos não resolvam). Ambos registrados como observação para reavaliação
+futura — mesma régua aplicada à Regra acima.
+
+---
+
+## Evolução futura registrada (não aplicada agora)
+
+Identificadores permanentes por entidade (ex: DOM-001 = FamíliaMercado, DOM-002 =
+GeometriaPadrao, DOM-003 = Perfil, DOM-004 = PerfilGeometria...), permitindo que
+ADRs e outros Volumes referenciem entidades sem depender da posição no texto (ex:
+"Afeta: DOM-002, DOM-004"). Registrado como evolução natural quando o domínio
+estabilizar ainda mais — não aplicado nesta versão para não adicionar uma camada de
+indireção sem necessidade comprovada ainda.
+
+---
+
+## Camadas estáveis vs. em evolução
+
+**Nota do Claude:** isso é apenas uma leitura agregada do campo Estado que cada
+entidade já possui — não é informação nova, é uma vista de conveniência para quem
+quer saber rápido "onde posso mexer com segurança" sem abrir cada seção.
+
+| Praticamente estável | Ainda em evolução |
+|---|---|
+| FamíliaMercado | Pipeline (Providers novos ainda virão) |
+| GeometriaPadrao | Provider (só 1 implementado) |
+| Perfil | Biblioteca de Conhecimento (não existe em escala) |
+| Componente | Compatibilidades (não formalizada) |
+| Cena Técnica, Vista, Renderer | Regra (observação registrada, não é entidade ainda) |
+
+---
+
+## Resumo por entidade (leitura rápida)
+
+| Entidade | Responsabilidade | Fonte da verdade |
+|---|---|---|
+| FamíliaMercado | Vocabulário de mercado | Domínio (curadoria humana) |
+| GeometriaPadrao | Geometria homologada compartilhada | Biblioteca de Conhecimento |
+| PerfilGeometria | Associação auditável Perfil↔Geometria | Curadoria |
+| Perfil | Dados físicos por fabricante (peso, acabamento) | Fabricante (catálogo de origem) |
+| Componente | Categoria/orientação/aplicação | Curadoria |
+| Tipo | Composição de Componentes por Regra | Domínio |
+| Cena Técnica | Posicionamento espacial | Core Engine (gerado) |
+| Vista | Configuração visual | Core Engine (gerado) |
+| Renderer | Execução da renderização | Core Engine (código) |
+
+## Tabela-resumo de responsabilidades
+
+| Entidade | Conhece | Nunca conhece |
+|---|---|---|
+| FamíliaMercado | vocabulário de mercado, aliases | geometria, fabricante "dono" |
+| GeometriaPadrao | contorno, versão, homologação | peso, fabricante, preço |
+| PerfilGeometria | associação Perfil↔Geometria, auditoria | regra automática de quando associar |
+| Perfil | fabricante, código, peso, acabamento | renderização, regra de montagem |
+| Componente | categoria, orientação, aplicação | posição espacial |
+| Tipo | composição, regra aplicada | forma de desenho |
+| Cena Técnica | posição/rotação/comprimento (por referência) | dado físico do Componente |
+| Vista | ângulo, escala, estilo | dado físico real |
+| Renderer | o que a Vista manda | regra de engenharia, fabricante |
+-e 
+
+---
+
+
+# Volume 4 — Architecture Decision Records (ADRs)
+
+---
+**Versão:** 1.0.0
+**Status:** Estável (histórico cumulativo — novos ADRs são adicionados, os
+existentes não são reescritos)
+**Sprint de origem:** Sprint A (consolidação); decisões originais tomadas ao longo
+de todo o processo de design review
+**Última atualização:** 2026-07-08
+**ADRs relacionados:** este Volume é o registro de todos
+**Implementação correspondente:** Core Engine (Fase 0), Pipeline de Aquisição
+(Fases 1-4), Prova de conceito GeometriaPadrao
+**Dependências:** nenhuma — este é o registro-fonte
+**Responsável:** Bruno, Claude, ChatGPT
+**Volumes dependentes:** todos
+---
+
+## Convenção deste Volume
+
+Cada ADR abaixo documenta: o contexto que motivou a decisão, a decisão em si, e a
+evidência real que a validou (nunca especulação). Numeração cronológica única,
+nunca reiniciada (regra estabelecida na Constituição da Documentação).
+
+---
+
+### ADR-001 — Geometria é a única fonte de verdade
+
+**Estado:** Estável
+
+**Contexto:** definição inicial da arquitetura do Core Engine.
+**Decisão:** nenhuma imagem é armazenada como artefato primário; toda imagem
+(frontal, isométrica, explodida) é derivada da geometria vetorial do perfil no
+momento da renderização.
+**Evidência:** confirmado pela Fase 0 (Core Engine), onde a mesma geometria gerou
+vistas diferentes sem duplicação de dado.
+**Consequências:** nenhum artefato de imagem é fonte de verdade — todos são
+descartáveis e regeráveis; qualquer mudança de estilo visual não exige reprocessar
+dado de engenharia, só re-renderizar.
+**Afeta:** Volumes 3, 7 | Entidades: GeometriaPadrao, Vista, Renderer
+
+---
+
+### ADR-002 — Renderer nunca conhece regras de engenharia
+
+**Estado:** Estável
+
+**Contexto:** definição da separação entre Vista e Cena Técnica.
+**Decisão:** o Renderer consome apenas Vistas (parâmetros de apresentação: ângulo,
+escala, estilo). Nunca acessa diretamente regras de montagem ou dados físicos do
+Perfil sem passar pela Cena.
+**Evidência:** implementado e testado na Fase 0 e na prova de conceito de
+GeometriaPadrao — o Renderer renderizou perfis de fabricantes diferentes (Alcoa,
+Vitral Sul) sem nunca "saber" que eram fabricantes distintos.
+**Consequências:** o Renderer pode ser substituído (matplotlib → Three.js) sem
+tocar em regra de negócio; qualquer bug de montagem/compatibilidade nunca pode ser
+corrigido "no Renderer", sempre na Cena Técnica ou no domínio.
+**Afeta:** Volumes 3, 7 | Entidades: Renderer, Vista, Cena Técnica
+
+---
+
+### ADR-003 — Provider abstrai a origem dos dados
+
+**Estado:** Validado (4 casos reais confirmam o princípio; poucos Providers implementados além de PDF-com-texto)
+
+**Contexto:** ao testar o Pipeline de Aquisição em catálogos de fabricantes
+diferentes (Centenário, Euroshow, Alcoa, Vitral Sul), identificou-se que cada PDF
+tem uma combinação diferente de (texto disponível?) × (vetor ou raster?).
+**Decisão:** o Pipeline nunca depende exclusivamente do formato PDF. PDF-com-texto é
+apenas um Provider entre vários possíveis (futuros: OCR, DXF, DWG, API de
+fabricante, cadastro manual).
+**Evidência:** 4 casos reais e distintos de extração documentados: (1) Centenário/
+Tamboré — vetor + texto real; (2) Euroshow — vetor + texto real, com defeito pontual
+de dado (dígito corrompido "0" → "O"); (3) Alcoa (seção Suprema testada) — vetor sem
+texto extraível (fonte convertida em contorno); (4) Vitral Sul — desenho como
+imagem raster embutida.
+**Consequências:** Providers novos (OCR, DXF, DWG, API de fabricante) podem ser
+adicionados sem alterar o Core Engine; o Pipeline nunca pode depender
+exclusivamente de PDF; OCR passa a ser apenas mais um Provider, não uma mudança
+estrutural.
+**Afeta:** Volumes 2, 5, 6 | Entidades: Provider, Pipeline de Aquisição
+
+---
+
+### ADR-004 — FamíliaMercado representa linguagem do mercado
+
+**Estado:** Validado (confirmado com evidência cruzada real — SU-019 entre Alcoa e Vitral Sul)
+
+**Contexto:** análise de domínio trazida pelo Bruno — profissionais do setor pedem
+"SU" ou "LG" (nomenclatura originada pela Alcoa), nunca os códigos internos de cada
+fabricante (TMS, MG25, Nobile 2.5), o mesmo fenômeno de genericização de marca visto
+em "Blindex" para vidro temperado.
+**Decisão:** o domínio inclui uma entidade FamíliaMercado (nome canônico, origem
+histórica, bitola, aliases por fabricante), representando exclusivamente o
+vocabulário usado pelo mercado — não conhece geometria nem implica
+intercambiabilidade técnica.
+**Evidência:** confirmação cruzada real — código SU-019 aparece com peso muito
+próximo (1,770 kg/m Alcoa vs. 1,678 kg/m Vitral Sul) em dois fabricantes sem relação
+societária conhecida; o próprio catálogo da Vitral Sul declara "Linha Nobile 2.5 -
+Suprema", reconhecendo a equivalência comercial.
+**Consequências:** buscas/relatórios podem ser feitos pelo nome que o mercado usa
+("Suprema"), não pelo código interno de cada fabricante; a existência de uma
+FamíliaMercado nunca autoriza, por si só, tratar dois perfis como intercambiáveis
+tecnicamente (ver ADR-005).
+**Afeta:** Volume 3, 8 | Entidades: FamíliaMercado, Perfil
+
+---
+
+### ADR-005 — GeometriaPadrao é ativo de engenharia compartilhado
+
+**Estado:** Validado (prova de conceito implementada; ainda não em escala de produção)
+
+**Contexto:** decorrência direta do ADR-004 — se FamíliaMercado agrupa perfis
+comercialmente equivalentes de fabricantes diferentes, redesenhar a mesma geometria
+para cada fabricante é retrabalho evitável.
+**Decisão:** GeometriaPadrao é uma entidade própria (contorno vetorial, versão,
+status de homologação), referenciada por múltiplos Perfis através da entidade de
+associação auditável PerfilGeometria (responsável pela homologação, método de
+validação, nível de confiança). A associação nunca é inferida automaticamente pela
+FamíliaMercado — é sempre decisão de curadoria humana caso a caso.
+**Evidência:** prova de conceito implementada e testada — `ALCOA-SU-019` e
+`VITRALSUL-SU-019`, dois Perfis de fabricantes distintos, resolvidos através de
+`PerfilGeometria` para a mesma `GeometriaPadrao` (GEO-SU-019), gerando imagens com
+geometria idêntica (confirmado por contagem de pixel).
+**Consequências:** a Curadoria Geométrica de um código de mercado acontece uma
+única vez, não uma vez por fabricante; toda associação Perfil↔GeometriaPadrao é
+auditável (quem homologou, com que método, com que confiança) — nunca inferida
+automaticamente.
+**Afeta:** Volumes 3, 6, 8 | Entidades: GeometriaPadrao, Perfil, PerfilGeometria
+**Nota explícita:** PerfilGeometria não é cache, não é otimização de performance,
+não é tabela auxiliar descartável — é entidade de auditoria de primeira classe.
+Removê-la eliminaria a rastreabilidade de quem homologou o compartilhamento de
+geometria entre fabricantes, comprometendo o ADR-005 por completo.
+
+---
+
+### ADR-006 — Pipeline de Aquisição é extrator de conhecimento técnico, não apenas de perfis
+
+**Estado:** Validado (seção Usinagens do Euroshow confirma o princípio; ainda sem consumidor formal desses dados)
+
+**Contexto:** o catálogo Euroshow revelou uma seção ("Usinagens") documentando
+explicitamente conexões perfil↔ferragem por tipologia — dado de Regra/Compatibilidade
+que se assumia, com base só no catálogo Centenário, que precisaria ser sempre
+construído manualmente.
+**Decisão:** ampliar a visão do Pipeline — perfis são apenas um dos produtos
+gerados; a arquitetura de saída também contempla ferragens, compatibilidades,
+regras, tipologias, usinagens, documentação técnica e metadados. Sem alterar o Core
+Engine, apenas ampliando o que o Pipeline procura extrair.
+**Evidência:** seção "Usinagens" do catálogo Euroshow, documentando pares como
+"CONEXÃO ES-054 - PERFIL ES-001".
+**Consequências:** todo novo catálogo importado deve ser varrido também em busca de
+seções de conexão/montagem, não só de fichas de perfil individuais; o Pipeline passa
+a ter saída multi-tipo (perfis, ferragens, compatibilidades, regras...), mesmo que
+alguns tipos ainda não tenham consumidor definido (ver ADR-007).
+**Afeta:** Volumes 6, 8 | Entidades: Pipeline de Aquisição
+
+---
+
+### ADR-007 — Todo conhecimento estrutural é preservado, mesmo sem modelo ainda
+
+**Estado:** Estável
+
+**Contexto:** decorrência do ADR-006 — nem todo conhecimento encontrado num catálogo
+tem, ainda, uma entidade de domínio pronta para representá-lo.
+**Decisão:** todo conhecimento estrutural identificado pelo Pipeline deve ser
+capturado e preservado em sua forma original (bruto), mesmo que ainda não exista um
+modelo de domínio para representá-lo formalmente. Primeiro preservar, depois
+compreender, depois modelar — sem obrigar estruturação imediata.
+**Evidência:** princípio aplicado retroativamente às seções "Usinagens" (Euroshow) e
+ao teor de conexões — capturadas como texto bruto, sem forçar schema antes de haver
+exemplos suficientes de fabricantes diferentes documentando esse tipo de informação.
+**Consequências:** o Pipeline nunca descarta informação estrutural só por falta de
+entidade pronta; schemas novos (ex: Compatibilidade, Regra de Montagem) só são
+formalizados depois de exemplos reais suficientes — evita generalização prematura.
+**Afeta:** Volumes 6, 8 | Entidades: nenhuma ainda formalizada (por decisão)
+
+---
+
+## Índice de referência rápida
+
+| ADR | Título curto |
+|---|---|
+| 001 | Geometria como fonte única de verdade |
+| 002 | Renderer isolado de regras de engenharia |
+| 003 | Provider abstrai origem dos dados |
+| 004 | FamíliaMercado = linguagem de mercado |
+| 005 | GeometriaPadrao = ativo compartilhado |
+| 006 | Pipeline = extrator de conhecimento técnico |
+| 007 | Preservar antes de modelar |
+-e 
+
+---
+
+
+# Volume 6 — Pipeline de Aquisição de Dados
+
+---
+**Versão:** 1.0.0
+**Status:** Estável (núcleo validado); Providers adicionais em Proposto
+**Sprint de origem:** Sprint A (consolidação); implementado nas Fases 1-4
+**Última atualização:** 2026-07-08
+**ADRs relacionados:** ADR-003, ADR-006, ADR-007
+**Implementação correspondente:** parsers Linha 25/30 (Centenário), teste Euroshow,
+diagnóstico Alcoa/Vitral Sul
+**Dependências:** Volume 2 (Arquitetura), Volume 3 (Modelo de Domínio)
+**Responsável:** Bruno, Claude, ChatGPT
+**Volumes dependentes:** 8, 9, 10, 11
+---
+
+## Objetivo
+
+Transformar catálogos de fabricantes (hoje: PDF) em dados estruturados e
+normalizados — código, peso, geometria vetorial, e qualquer conhecimento estrutural
+adicional (compatibilidades, regras de montagem) — prontos para Curadoria e consumo
+pelo Core Engine.
+
+## Etapas do Pipeline
+
+1. **Descoberta de página/seção** — localizar onde, no documento, está o conteúdo
+   técnico relevante. Testado com dois métodos: intervalo fixo de página (funciona
+   quando o catálogo organiza por blocos contíguos, ex: Centenário) e varredura por
+   padrão de código em todo o documento (necessário quando o catálogo intercala
+   conteúdos, ex: Euroshow).
+2. **Extração de dado textual** — código, peso, descrição, via posição real das
+   palavras na página (não regex ingênuo em texto corrido — necessário para lidar
+   com layouts em grade de múltiplas colunas).
+3. **Extração de geometria vetorial** — isolamento dos paths SVG correspondentes à
+   região de cada perfil, com filtro de tamanho para excluir elementos de
+   fundo/watermark.
+4. **Validação de qualidade por campo** — código válido, peso válido (numérico),
+   vetor encontrado, descrição encontrada, escala identificada. Cada perfil recebe
+   um indicador de confiabilidade (detalhe em Volume 9).
+5. **Saída normalizada** — JSON estruturado + planilha Excel técnica + arquivo
+   vetorial (SVG) por perfil.
+6. **Curadoria (humana)** — homologação da geometria (Curadoria Geométrica),
+   associação a GeometriaPadrao quando aplicável, classificação funcional
+   (categoria/orientação/aplicação).
+
+## Casos reais de extração já testados (base do ADR-003)
+
+| Fabricante | Texto extraível? | Vetor nativo? | Desafio específico |
+|---|---|---|---|
+| Centenário/Tamboré | Sim | Sim | Nenhum — caso de referência |
+| Euroshow | Sim | Sim | Defeito pontual de dado (dígito "0"→"O" corrompido) |
+| Alcoa (seção testada) | Não | Sim (sem texto) | Fonte convertida em contorno — precisa OCR |
+| Vitral Sul | Não (na região do desenho) | Não (raster embutido) | Desenho é imagem JPEG — precisa OCR sobre imagem |
+
+## Regra de validação de peso (decorrente do caso Euroshow)
+
+Todo perfil sem peso numericamente válido é marcado como `peso_suspeito` (não
+apenas `peso_ausente`) — sinaliza defeito de dado de origem para revisão humana, em
+vez de tentar "consertar" a extração para aceitar formatos inválidos.
+
+## O que o Pipeline nunca faz
+
+- Nunca decide regra de montagem definitiva — no máximo preserva texto bruto de
+  seções que parecem descrever conexões (ADR-007), para estruturação futura.
+- Nunca infere compatibilidade entre fabricantes automaticamente — mesmo quando
+  encontra o mesmo código em catálogos diferentes (ex: SU-019), a associação via
+  GeometriaPadrao exige curadoria humana explícita.
+- Nunca redistribui a arte original do fabricante como artefato de produto — o SVG
+  extraído é Material de Referência interno (auditoria), não saída comercial.
+
+## Casos de teste de referência (para a futura suíte automatizada, Sprint C)
+
+Centenário (Linha 25, Linha 30), Euroshow, Alcoa (seção Suprema), Vitral Sul (Nobile
+2.5) — mantidos como conjunto permanente de regressão.
+-e 
+
+---
+
+
+# Volume 7 — Core Engine
+
+---
+**Versão:** 1.0.0
+**Status:** Estável
+**Sprint de origem:** Sprint A (consolidação); implementado na Fase 0
+**Última atualização:** 2026-07-08
+**ADRs relacionados:** ADR-001, ADR-002, ADR-005
+**Implementação correspondente:** `/core_engine/src/renderer.py`, prova de conceito
+GeometriaPadrao
+**Dependências:** Volume 2 (Arquitetura), Volume 3 (Modelo de Domínio)
+**Responsável:** Bruno, Claude, ChatGPT
+**Volumes dependentes:** 8, 9, 10, 11
+---
+
+## Objetivo
+
+Transformar geometria + composição em representações visuais (frontal, isométrica,
+explodida) sem nunca gerar um sólido de fabricação (decisão consciente — ver "O que
+o Core Engine não é" no Volume 1).
+
+## Fluxo interno
+
+```
+Componente(s) resolvido(s) via GeometriaPadrao
+     ↓
+Composição em Tipo (regra de montagem)
+     ↓
+Cena Técnica (posição, rotação, comprimento por instância — referência, nunca cópia)
+     ↓
+Vista (ângulo, projeção, escala, estilo — nunca dado físico)
+     ↓
+Renderer (extrusão linear simples + sombreamento + projeção isométrica)
+     ↓
+Imagem (PNG/SVG)
+```
+
+## Domínio vs. Implementação (separação explícita)
+
+**Nota do Claude:** o ChatGPT apontou, com razão, que este Volume misturava domínio
+com biblioteca específica (matplotlib, Three.js) de forma que envelheceria mal.
+Corrigindo agora — a separação abaixo garante que o Volume continue válido mesmo
+que nenhuma dessas bibliotecas exista daqui a 5 anos.
+
+**Domínio (nunca muda):** o Renderer recebe uma Vista e produz uma Imagem.
+
+**Implementação atual:** `RendererMatplotlib` — extrusão linear + sombreamento
+lambertiano + projeção isométrica via matplotlib/numpy.
+
+**Implementação futura (planejada, não construída):** `RendererThreeJS` — mesma
+interface (recebe Vista, produz Imagem), motor trocado por restrição de ambiente já
+documentada (Volume 7, seção seguinte).
+
+## Renderer — implementação atual (RendererMatplotlib)
+
+Extrusão linear do contorno 2D do perfil (sem operação booleana / kernel CAD),
+sombreamento lambertiano simples por normal de face, projeção isométrica via
+matplotlib/numpy. Implementação validada com dados manuais (Fase 0) e dados reais
+(SU-019, Alcoa/Vitral Sul via GeometriaPadrao).
+
+**Nota de ambiente:** a implementação atual usa matplotlib por restrição de rede do
+ambiente de prototipagem (sem acesso para instalar Node/Puppeteer/Three.js). A
+arquitetura já isola o Renderer atrás da Vista especificamente para permitir essa
+troca sem alterar mais nada — decisão pendente de ambiente com rede disponível, não
+de arquitetura.
+
+## Por que extrusão simples, não CAD completo (decisão registrada)
+
+Decisão consciente de escopo: o objetivo do produto é gerar imagem técnica e
+comercial de alta qualidade visual, não sólido preciso para fabricação/CNC. Isso
+elimina a necessidade de kernel CAD (OpenCascade/CadQuery), operações booleanas de
+sólidos, e exportação STEP — trade-off que fecha a porta (por ora) para
+configurador de fabricação real, aceito conscientemente dado o objetivo atual do
+produto.
+
+## Bug real encontrado e corrigido (registrado por valor histórico)
+
+Na primeira versão da função de extrusão, perfis horizontais (marco) descartavam a
+dimensão de profundidade do contorno, resultando em peça "achatada" sem volume real.
+Corrigido mapeando corretamente os dois eixos do contorno 2D para os eixos globais
+conforme a direção de extrusão. Exemplo do valor de ter ido direto a um protótipo
+funcional em vez de permanecer só em design — esse tipo de erro só aparece com
+código rodando.
+
+## Testes de integração já realizados
+
+- Fase 0: dados manuais (4 perfis de teste, 1 Tipo de janela de correr).
+- Prova de conceito GeometriaPadrao: `ALCOA-SU-019` e `VITRALSUL-SU-019`, dois
+  Perfis de fabricantes distintos resolvidos para a mesma geometria — confirmado
+  por contagem de pixel que o Renderer produz imagens idênticas, sem nunca "saber"
+  que eram fabricantes diferentes (validação direta do ADR-002 e ADR-005).
+-e 
+
+---
+
+
+# Volume 9 — Validações de Domínio
+
+---
+**Versão:** 1.0.0
+**Status:** Estável (especificação validada — implementação ainda não existe, ver
+cabeçalho "Implementação correspondente")
+**Sprint de origem:** Sprint B
+**Última atualização:** 2026-07-08
+**ADRs relacionados:** ADR-003, ADR-004, ADR-005
+**Implementação correspondente:** ainda não codificado — este Volume é a
+especificação; a implementação (validators por entidade) é o próximo passo natural,
+não coberto aqui
+**Dependências:** Volume 3 (Modelo de Domínio)
+**Responsável:** Bruno, Claude, ChatGPT
+**Volumes dependentes:** 10
+---
+
+## Objetivo
+
+Definir as regras de consistência que cada entidade do domínio deve respeitar,
+antes de existir volume real de importação que torne erros silenciosos caros.
+
+## Nota do Claude (registrada, não uma pergunta em aberto)
+
+Este Volume documenta **regras**, não implementa **enforcement**. Construir um
+framework de validação automática agora, sem volume real de dados para validar
+contra, seria o mesmo padrão de over-engineering que já evitamos em outras
+decisões (ex: Providers sem demanda, Aggregate Roots sem persistência). A
+implementação de código das validações abaixo só se justifica quando o Sprint D
+(expansão de Providers) trouxer volume de importação que realmente precise disso.
+Sigo com a especificação porque ela é barata e útil por si só (serve de contrato
+para quem for implementar depois) — não estou propondo construir o validator agora.
+
+---
+
+## Perfil
+
+- fabricante: obrigatório, não nulo.
+- codigo_fabricante: obrigatório, único dentro do mesmo fabricante (não único
+  globalmente — o mesmo código, ex: "SU-019", existe legitimamente em fabricantes
+  diferentes, confirmado pelo caso real Alcoa/Vitral Sul).
+- peso_kg_m: obrigatório; se não numericamente válido, marcar `peso_suspeito`
+  (nunca descartar o registro, ver ADR-006/007 e o caso real Euroshow).
+- categoria: obrigatória antes do estado "Curado" no fluxo de vida (Volume 3) —
+  pode ficar em aberto em "Extraído"/"Normalizado".
+- familia_mercado_id: opcional; se ausente, não impede nenhuma etapa do fluxo de
+  vida.
+
+## GeometriaPadrao
+
+- contorno_mm: obrigatório; deve ser um polígono fechado (primeiro ponto = último
+  ponto, ou fechamento implícito consistente).
+- unidade: sempre milímetros — nunca outra unidade sem conversão explícita na
+  entrada.
+- versao: obrigatória, incremental.
+- status: obrigatório (bruto_aproximado | homologado) — só pode ser referenciada
+  por um Perfil em produção quando `homologado`.
+- svg_bruto_ref: opcional, mas recomendado (auditoria/proveniência).
+
+## PerfilGeometria
+
+- perfil_id e geometria_padrao_id: ambos obrigatórios, referência deve existir.
+- só pode apontar para uma GeometriaPadrao com status `homologado` (nota do Claude:
+  isso não estava explícito antes — a prova de conceito usou `bruto_aproximado`
+  deliberadamente para provar o pipeline; em produção real essa regra deve ser
+  respeitada de fato, o exemplo já implementado é uma exceção documentada, não o
+  padrão).
+- responsavel_homologacao: obrigatório.
+- nivel_de_confianca: obrigatório, um de um conjunto fechado (ex: alto/médio/baixo)
+  — nunca texto livre, para permitir filtragem/relatório.
+
+## FamíliaMercado
+
+- nome_canonico: obrigatório, único.
+- aliases_conhecidos: cada alias deve referenciar um fabricante existente; sem
+  duplicidade de (fabricante, prefixo_codigo).
+
+## Componente
+
+- categoria: obrigatória.
+- orientação: obrigatória, um de (vertical | horizontal | ambos).
+
+## Tipo
+
+- regra_aplicada: obrigatória (mesmo que hoje seja texto livre — ver observação no
+  Volume 3 sobre "Regra" ainda não ser entidade formal).
+- componentes: lista não pode ser vazia.
+
+## Cena Técnica
+
+- toda instância deve referenciar um componente_id existente — nunca dado
+  embutido (é a regra mais importante deste Volume, ela é o que torna o ADR-001 e
+  ADR-002 verificáveis por código, não só por convenção).
+- posicao_mm, rotacao_graus, comprimento_mm: obrigatórios e numéricos.
+
+## Vista
+
+- cena_id: obrigatório, deve referenciar Cena Técnica existente.
+- tipo_projecao: obrigatório, um de um conjunto fechado (frontal | isometrica |
+  explodida | corte).
+
+## Índice de qualidade por Perfil — formalizado como Value Object `QualidadePerfil`
+
+**Nota do Claude:** o ChatGPT sugeriu virar entidade própria; concordo com a
+substância (evita espalhar essa lógica em cada Provider) mas ajusto a forma —
+`QualidadePerfil` é um **Value Object embutido no Perfil**, não uma entidade com
+identidade e ciclo de vida próprios. Diferença prática: não tem `id`, não é
+referenciada por outras entidades, existe só como atributo composto do Perfil que
+a contém. Isso mantém a régua já aplicada às observações de Aggregate
+Root/Value Objects no Volume 3 (só formalizar quando houver necessidade concreta) —
+aqui a necessidade já existe (múltiplos Providers vão calcular a mesma coisa), o
+que diferencia este caso dos ainda especulativos.
+
+```
+QualidadePerfil (Value Object, sem identidade própria)
+  - codigo_valido: bool
+  - peso_valido: bool
+  - vetor_encontrado: bool
+  - descricao_encontrada: bool
+  - escala_identificada: bool
+  - indice: int (0-5, soma dos campos acima)
+  - prioridade_revisao: string (derivada do índice, ex: "revisar_primeiro" se
+    indice <= 2) — nota do Claude: renomeado de "status" após observação correta
+    do ChatGPT de que o Perfil já tem um status no fluxo de vida (Volume 3); dois
+    campos chamados "status" com significados diferentes seria fonte de confusão
+```
+
+Cada Perfil extraído possui exatamente um `QualidadePerfil`. Índice baixo prioriza
+revisão humana.
+
+**Nota do Claude:** não proponho fórmula de peso diferenciado por indicador (ex:
+"peso vale mais que descrição") — isso é decisão de produto/domínio que só Bruno
+deveria calibrar depois de ver o índice funcionando contra volume real de dados.
+Registrar aqui como pergunta em aberto, não decisão pendente de mais discussão de
+arquitetura: a fórmula simples (soma) é suficiente para começar.
+
+## Modelo de Erros (especificação, não implementação)
+
+**Nota do Claude:** o ChatGPT apontou corretamente uma lacuna real — Validação
+(Volume 9, acima) previne estado inválido; Erro é o que acontece quando algo já
+falhou em tempo de execução. São conceitos diferentes e este Volume só cobria o
+primeiro. Adicionando agora, como lista fechada de tipos esperados (não como
+hierarquia de exceções em código — isso é implementação, fora de escopo deste
+Volume):
+
+- `GeometryNotFound` — PerfilGeometria aponta para GeometriaPadrao inexistente.
+- `InvalidProfile` — Perfil falha nas validações estruturais acima.
+- `InvalidFamily` — FamíliaMercado referenciada não existe.
+- `MissingComponent` — Cena Técnica referencia Componente inexistente (o erro que
+  torna o ADR-001 verificável em runtime, não só em revisão de código).
+- `ProviderFailure` — Provider não conseguiu extrair dado da fonte (ex: OCR falhou).
+- `PipelineFailure` — **categoria residual**: exclusivamente para falhas de
+  orquestração não enquadradas em nenhuma das categorias anteriores. Não usar como
+  atalho genérico — se uma falha se repete e tem causa identificável, ela merece
+  categoria própria.
+- `RendererFailure` — Renderer não conseguiu produzir imagem a partir da Vista.
+
+## Sobre "Modelo de Eventos" (não adotado — já coberto)
+
+**Nota do Claude:** o ChatGPT também sugeriu documentar o Pipeline como eventos
+(`PerfilExtraido`, `PerfilNormalizado`, `GeometriaHomologada`...). Considero isso já
+coberto pelo "Fluxo de vida do Perfil" no Volume 3 (`Extraído → Normalizado →
+Curado → Homologado → Disponível → Obsoleto`) — são a mesma informação, só que
+descrita como estados em vez de eventos discretos. Não vejo motivo para duplicar em
+dois formatos diferentes sem uma necessidade concreta (ex: fila de mensagens, event
+sourcing real) que hoje não existe. Se o Pipeline evoluir para arquitetura orientada
+a eventos de fato, este Volume é o lugar certo para essa mudança — não antes.
+
+---
+
+## Próxima ação concreta
+
+Sprint C (Volume 10 — Testes), usando os Invariantes do Domínio (Volume 3) e as
+validações acima como especificação direta dos casos de teste unitário. Sigo para
+esse rascunho já no próximo arquivo, sem esperar aprovação intermediária, salvo se
+o Bruno ou o ChatGPT sinalizarem discordância de algum ponto acima.
+-e 
+
+---
+
+
+# Volume 10 — Testes
+
+---
+**Versão:** 1.0.0
+**Status:** Proposto
+**Sprint de origem:** Sprint C
+**Última atualização:** 2026-07-08
+**ADRs relacionados:** ADR-001, ADR-002, ADR-003
+**Implementação correspondente:** nenhuma ainda — este Volume é especificação;
+código de teste é o próximo passo, fora do escopo deste documento
+**Dependências:** Volume 3 (Modelo de Domínio), Volume 9 (Validações)
+**Responsável:** Bruno, Claude, ChatGPT
+**Volumes dependentes:** nenhum
+---
+
+## Objetivo
+
+Especificar a suíte de testes (unitário, integração, regressão) que protege as
+regras já registradas no Volume 9, antes de existir volume de dados que torne
+erros silenciosos caros.
+
+| Tipo | Objetivo |
+|---|---|
+| Unitário | Validar regras de cada entidade individualmente |
+| Integração | Validar comunicação entre módulos (Provider → Pipeline → Core Engine) |
+| Regressão | Garantir que catálogos conhecidos continuam funcionando após mudanças |
+
+## Testes Unitários
+
+Cobertura direta das validações do Volume 9 — um teste por regra, não um teste
+genérico por entidade.
+
+- `Perfil` sem `peso_kg_m` numericamente válido → deve resultar em
+  `peso_suspeito=True`, nunca exceção nem descarte.
+- `PerfilGeometria` apontando para `GeometriaPadrao` com `status=bruto_aproximado`
+  → deve gerar aviso de exceção documentada, não erro silencioso.
+- `Cena Técnica` com instância sem `componente_id` válido → deve falhar
+  explicitamente (é o teste que torna o ADR-001 verificável em código, não só em
+  convenção).
+
+## Testes de Integração
+
+Ponta a ponta: Provider → extração → normalização → Curadoria simulada → Core
+Engine → imagem. Formaliza como suíte repetível a implementação de referência já
+rodada manualmente (Fase 0 + Fase 1) — não constrói do zero.
+
+## Testes de Regressão
+
+Conjunto permanente de fixtures, usando os catálogos já processados:
+
+| Catálogo | O que valida |
+|---|---|
+| Centenário (Linha 25) | Caso de referência — extração limpa, vetor+texto nativo |
+| Centenário (Linha 30) | Generalização intra-fabricante sem alteração de código |
+| Euroshow | Layout não-contíguo, defeito de dado (peso corrompido) |
+| Alcoa (seção Suprema) | Ausência de texto extraível — caso que exige Provider futuro (OCR), marcado `xfail` até existir |
+| Vitral Sul | Desenho raster embutido — outro caso que exige Provider futuro, marcado `xfail` até existir |
+
+## Critério de Execução
+
+- Unitários: a cada mudança de código, sempre.
+- Integração: a cada mudança no Pipeline ou Core Engine.
+- Regressão: antes de qualquer Sprint que toque Providers ou Pipeline (D, E).
+
+---
+
+## Notas (histórico e justificativas — separado do corpo normativo acima)
+
+**Nota do Claude:** este Volume reorganizado após observação do ChatGPT — antes
+misturava especificação de teste com histórico/justificativa no mesmo bloco;
+agora o corpo acima é direto, e o histórico fica só aqui.
+
+- Este Volume está em **Proposto**, não Validado — diferente dos Volumes
+  anteriores, aqui não há evidência de execução real ainda, só especificação. Só
+  sobe para Validado depois que ao menos os testes de regressão rodarem contra os
+  catálogos reais uma vez.
+- Exemplo real por trás do teste de `peso_suspeito`: Euroshow ES-002, peso gravado
+  como `"0,95O Kg/m"` (letra "O" no lugar do dígito "0").
+- Exemplo real por trás do teste de `PerfilGeometria`/`bruto_aproximado`:
+  `GEO-SU-019`, usado deliberadamente com contorno aproximado na prova de conceito.
+- Sobre os dois casos `xfail` (Alcoa, Vitral Sul): a intenção é que, no dia em que
+  alguém implementar o Provider de OCR, o teste vire verde sozinho e sirva de
+  prova objetiva de que funcionou — em vez de descobrir isso manualmente de novo.
+
+## Próxima ação concreta
+
+Nenhuma automática — este Volume fecha o escopo original do Sprint A→C. O próximo
+passo de fato exige decisão do Bruno: seguir para Sprint D (Providers, incluindo o
+OCR que os testes acima já preveem como pendente) ou pausar consolidação e voltar a
+produto/implementação. Não vou presumir essa escolha no lugar dele.
+-e 
+
+---
+
+
+# Volume 11 — Roadmap
+
+---
+**Versão:** 1.0.0
+**Status:** Estável (atualizado incrementalmente conforme Sprints avançam)
+**Sprint de origem:** originado nas fases de planejamento inicial, consolidado no
+Sprint A
+**Última atualização:** 2026-07-08
+**ADRs relacionados:** todos
+**Implementação correspondente:** Fases 0-4 já concluídas; Sprints A-F em andamento
+**Dependências:** Volume 1 (Visão Geral), Volume 3 (Modelo de Domínio)
+**Responsável:** Bruno, Claude, ChatGPT
+**Volumes dependentes:** nenhum (Volume consolidador, topo da árvore)
+---
+
+## Situação em uma linha
+
+**Nota do Claude:** corrigido após observação real do ChatGPT — este quadro estava
+desatualizado (dizia Sprint B/C pendentes quando os Volumes 9 e 10 já existiam).
+
+| Situação | Status |
+|---|---|
+| Fases Técnicas (0-4) | Concluídas |
+| Sprint Atual | Sprint C concluído — aguardando decisão sobre Sprint D |
+| Próximo Sprint | Sprint D (Providers) |
+| Estado Geral | Consolidação documental concluída; implementação retomando |
+
+## Estado Geral (indicador visual)
+
+**Nota do Claude:** separado Documentação de Implementação — antes uma única
+barra escondia que Volumes 9 e 10 já estão escritos mesmo sem código
+correspondente ainda.
+
+```
+                     Documentação   Implementação
+Arquitetura          ██████████     ██████████
+Pipeline             ██████████     ██████████
+Domínio              ██████████     ██████████
+Providers            ██████░░░░     █░░░░░░░░░
+Validações           ██████████     ░░░░░░░░░░
+Testes               ██████████     ░░░░░░░░░░
+Renderer Comercial   ███░░░░░░░     ███░░░░░░░
+```
+
+# Roadmap Técnico
+
+## Eixo histórico — Fases de validação técnica (concluídas)
+
+| Fase | Objetivo | Status |
+|---|---|---|
+| Fase 0 | Core Engine com dados manuais (prova de conceito do pipeline completo) | ✓ Concluída |
+| Fase 1 | Parser real conectado à Linha 25 (Centenário) | ✓ Concluída |
+| Fase 2 | Teste do parser sem modificação na Linha 30 (mesmo fabricante) | ✓ Concluída |
+| Fase 3 (Sprint 4) | Teste em fabricante diferente (Euroshow) + relatório comparativo | ✓ Concluída |
+| Sprint de Intercambiabilidade | Confirmação da hipótese de Linha-Padrão (Alcoa, Vitral Sul) | ✓ Concluída |
+
+## Eixo atual — Sprints de consolidação (em andamento)
+
+| Sprint | Objetivo | Volumes afetados | Status |
+|---|---|---|---|
+| Sprint 0 | Constituição da Documentação | — | ✓ Concluído |
+| Sprint A | Documentação oficial | 1, 2, 3, 4, 6, 7, 11 | ✓ Concluído |
+| Sprint B | Validações de domínio | 9 | ✓ Concluído |
+| Sprint C | Testes automatizados | 10 | ✓ Concluído |
+| Sprint D | Expansão dos Providers | 5 | Próximo — aguardando decisão do Bruno |
+| Sprint E | Biblioteca Oficial de Geometrias | 8 | Pendente |
+| Sprint F | Integração com Renderer real e sistema comercial | — | Pendente |
+
+# Roadmap Comercial
+
+## Fases de produto (visão de médio prazo, registradas no plano original)
+
+- **MVP:** Core Engine + 1 linha de 1 fabricante funcionando ponta a ponta —
+  concluído nas Fases 0-1.
+- **Alpha:** múltiplas linhas, múltiplos fabricantes, classificação assistida por
+  IA com revisão humana, Vista explodida — em andamento (Sprints D, E).
+- **Beta:** multi-fabricante maduro, compatibilidades como entidade completa,
+  integração com sistema de orçamento existente, Renderer com qualidade visual de
+  produção (Three.js) — depende de ambiente com acesso à rede para implementar o
+  motor de renderização definitivo.
+- **Comercial:** robustez, performance, parcerias formais com fabricantes (ver nota
+  legal abaixo), avaliação de exportação técnica real (DXF preciso, STEP) apenas se
+  a demanda aparecer.
+
+## Nota registrada sobre uso de material de fabricantes (relevante para Beta/Comercial)
+
+Distinção arquitetural em vigor: **Material de Referência** (PDF original, SVG
+extraído, layout, textos) existe apenas para alimentar o Pipeline de Aquisição e
+para auditoria técnica — nunca é distribuído ao cliente final. O produto comercial
+trabalha exclusivamente com o **Modelo Paramétrico Próprio** (geometria homologada,
+propriedades, regras, compatibilidades), do qual são derivadas todas as
+imagens/vistas/documentação. Antes do lançamento comercial, recomenda-se consulta
+formal com advogado de propriedade industrial, e busca-se priorizar parcerias
+diretas com fabricantes.
+
+## O que NÃO fazer nas próximas fases (disciplina já estabelecida)
+
+- Não introduzir novas entidades de arquitetura sem evidência concreta (Constituição
+  da Documentação, Regra 1).
+- Não implementar kernel CAD/STEP — decisão consciente já tomada, fora de escopo
+  atual.
+- Não construir Providers (OCR, DXF, DWG) sem demanda real de um fabricante que
+  exija especificamente aquele formato.
+- Não automatizar classificação funcional ou isolamento de contorno antes de ter
+  volume de dados que justifique o investimento (ver Sprint de Intercambiabilidade).
+
+## Evolução futura registrada (não criada agora)
+
+- **Volume 12 — Estudos de Caso:** cada grande descoberta (Centenário, Euroshow,
+  Alcoa, Vitral Sul) documentada como estudo de caso (problema, hipótese,
+  investigação, decisão, ADR originado). Transformaria a documentação numa base de
+  conhecimento da indústria, não só do software. Registrado como possibilidade
+  futura, não criado nesta versão — aguarda material suficiente acumulado.
+
+## Próxima ação concreta
+
+Iniciar o Sprint D (Providers — OCR para os casos Alcoa/Vitral Sul já mapeados)
+quando houver decisão do Bruno de retomar implementação. A documentação v1.0 está
+congelada como baseline; próximas alterações documentais só por evidência de
+implementação (novos ADRs) ou pelos itens do backlog quando alguém precisar deles.
+-e 
+
+---
+
+
+# Backlog — Melhorias Editoriais Futuras
+
+*Este backlog existe fora dos Volumes estáveis, propositalmente. Nenhum item aqui
+muda arquitetura ou domínio — são melhorias de apresentação/navegação, sem
+prioridade definida, a serem puxadas quando fizer sentido (nunca como justificativa
+para reabrir um Sprint já encerrado).*
+
+- Diagramas Mermaid (substituindo os blocos de texto ASCII atuais)
+- Imagens e exemplos ilustrados (ex: a imagem real gerada pelo Core Engine)
+- Hyperlinks internos entre Volumes
+- Referências cruzadas automáticas (ADR ↔ Volume ↔ Entidade)
+- IDs permanentes por entidade (DOM-001, DOM-002...) — já registrado como
+  evolução futura no Volume 3
+- Glossário oficial (Volume 12 ou anexo) — já registrado como evolução futura
+  no Volume 11
+- Volume 12 — Estudos de Caso — já registrado como evolução futura no Volume 11
+- v2.0: reduzir duplicação de explicação entre ADR-002 e Volume 7 (Renderer) via
+  referência cruzada única, em vez de reafirmar o mesmo conteúdo em dois lugares
+- v2.0: mover as "Notas do Claude" espalhadas pelos Volumes para um anexo/histórico
+  editorial único, deixando o texto principal mais enxuto — só depois que a
+  documentação atingir maturidade ainda maior (essas notas hoje têm valor de
+  registrar a discordância no momento em que ela ocorreu)
+
+## Itens de longo prazo (v2.0/v3.0, explicitamente não agora)
+
+**Volume 8 subdividido (8A-8E)** quando crescer demais — registrado para quando o
+Volume 8 (ainda não escrito, Sprint E) existir de fato e revelar se precisa mesmo
+de subdivisão. Não decido isso antecipadamente sem o conteúdo real na frente.
+
+**Volume 0 — Visão Executiva** (10 páginas, para investidor/novo colaborador não-
+técnico) — ideia razoável, mas o próprio ChatGPT enquadrou como "não agora, quando
+o projeto crescer". Concordo com o adiamento.
+
+**ADR futuro sobre Pipeline determinístico** (mesmo Provider + mesmo catálogo =
+mesmo resultado) — nota do Claude: não crio esse ADR agora porque ADR documenta
+decisão com evidência real, e isso hoje é presunção razoável, não algo que já
+precisou ser decidido contra uma alternativa concreta. Registro aqui como
+candidato a ADR-008 quando (e se) o determinismo do Pipeline vira uma decisão de
+verdade — ex: se aparecer necessidade de cache/paralelismo que dependa disso.
+
+**Versão "oficial" sem atribuição** (remover "Nota do Claude", "ChatGPT sugeriu",
+"Bruno observou" do texto principal, movendo para anexo/histórico de repositório).
+Nota do Claude: concordo com o raciocínio (daqui a 5 anos importa a decisão, não
+quem propôs) mas discordo do timing. Reescrever todos os Volumes agora para remover
+atribuição significaria manter duas versões em paralelo enquanto o conteúdo ainda
+muda a cada rodada — dobrando custo de edição por benefício que só se realiza
+quando a documentação parar de mudar de fato. As notas de atribuição hoje têm valor
+operacional real: permitem a qualquer um dos três rastrear por que uma decisão foi
+tomada, no momento em que isso ainda importa para decidir a próxima. Revisitar essa
+limpeza quando o projeto sair da fase de consolidação ativa (pós Sprint D/E).
+
+
+
+**Carta de Princípios do EsquadriaCore** — documento curto (1-2 páginas) acima da
+própria Constituição, com princípios permanentes e atemporais (ex: "conhecimento é
+mais importante que implementação", "geometria é a fonte de verdade", "fabricantes
+são provedores de conhecimento, não proprietários do modelo interno"). Diferença
+de propósito: a Constituição organiza *como* a documentação é mantida; a Carta
+explicaria *por que* o projeto existe. Nota do Claude: o próprio ChatGPT enquadrou
+isso como "não agora, talvez v2.0 ou v3.0" — concordo integralmente com o adiamento.
+Boa parte do conteúdo sugerido já está coberto pela Tese do EsquadriaCore (Volume 1)
+e pelos Princípios Fundamentais (Volume 1) — a Carta seria uma consolidação
+posterior desses dois, não conteúdo genuinamente novo hoje.
+
+**Volume 12 — Arquitetura Física do código** (apps/, packages/, providers/, etc.) e
+**Convenções de Código** (Interfaces, Repositories, DTOs, naming, imports
+proibidos): o ChatGPT propôs ambos. Nota do Claude: recusado por agora, não por
+serem ideias ruins — porque hoje não existe repositório de código real além dos
+protótipos desta conversa (Fase 0, parser de Linha 25/30, prova de conceito de
+GeometriaPadrao). Documentar estrutura de pastas e convenções de implementação
+antes de existir um repositório de produção real seria a mesma generalização
+prematura que a Regra 1 existe para evitar — organização de código nasce de
+código real crescendo, não de antecipação. Retomar quando o projeto migrar de
+protótipo para repositório de desenvolvimento contínuo.
+
+**Volume 2 — visão física** (Providers → Pipeline → Banco → Core Engine →
+Renderer → Aplicações): recusado por dois motivos concretos. (1) Pressupõe um
+"Banco" que ainda não foi escolhido/implementado — documentar isso agora seria a
+mesma antecipação sem repositório real que já recusamos para o Volume 12
+(Arquitetura Física). (2) É redundante com o diagrama "Camadas de valor" já
+adicionado ao Volume 1 (Mercado → Conhecimento → Pipeline → Domínio → Core Engine
+→ Produtos) — mesma ideia, dois lugares.
+
+**"Patrimônio Técnico" como conceito formal novo**: recusado por ser redundante —
+já é exatamente o que a camada "Conhecimento" do diagrama do Volume 1 descreve
+(FamíliaMercado, GeometriaPadrao, Compatibilidades, Regras...). Criar um terceiro
+nome para a mesma coisa (depois de "Biblioteca de Conhecimento" e "Conhecimento")
+aumentaria confusão de vocabulário, não clareza.
+
+**Volume de Convenções de Dados** (nomenclatura de IDs como GEO-0001/PER-0001,
+convenção de unidades, versionamento v1/v2/deprecated): recusado pelo mesmo motivo
+já registrado para Volume 12 e para a "visão física" do Volume 2 — pressupõe um
+esquema de geração de ID e persistência real que ainda não existe. Os IDs usados
+até agora nesta conversa (`GEO-SU-019`, `ALCOA-SU-019`) são ad-hoc, criados pra
+provar o conceito, não uma convenção formal de produção. Formalizar isso antes de
+haver banco de dados real seria decidir um detalhe de implementação sem o
+implementador na mesa. Retomar junto com o Sprint que de fato escolher a
+tecnologia de persistência.
+
+## Regra de uso deste backlog
+
+Qualquer item aqui só é implementado quando alguém precisar dele de verdade (ex:
+um novo colaborador se perdeu por falta de link cruzado) — não por antecipação.
+Mesma disciplina de evidência aplicada ao domínio, aplicada agora à forma da
+documentação.

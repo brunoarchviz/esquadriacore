@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+output/
+*.png
+!docs/**/*.png
+.venv/
+# catálogos reais (colocados manualmente — ver CLAUDE.md)
+dados_exemplo/*.pdf
