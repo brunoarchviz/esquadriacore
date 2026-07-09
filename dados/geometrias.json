@@ -17,6 +17,26 @@
       "curado_por": "Bruno",
       "data_curadoria": "2026-07-09",
       "_nota": "contorno_mm ainda precisa ser traçado com precisão a partir das cotas. Homologação de equivalência (Alcoa=VitralSul) confirmada visualmente; traçado do contorno é etapa seguinte."
+    },
+    {
+      "id": "GEO-SU-228",
+      "descricao": "Suprema — perfil SU-228",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "SUPREMA",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-09",
+      "_nota": "Equivalencia Alcoa=VitralSul confirmada visualmente. Peso identico 0.688 kg/m (delta 0.0%). Contorno preciso pendente."
+    },
+    {
+      "id": "GEO-SU-230",
+      "descricao": "Suprema — perfil SU-230",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "SUPREMA",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-09",
+      "_nota": "Equivalencia Alcoa=VitralSul confirmada visualmente. Peso 0.954 (Alcoa) x 0.936 (VitralSul), delta 1.9% dentro da tolerancia. Contorno preciso pendente."
     }
   ]
 }

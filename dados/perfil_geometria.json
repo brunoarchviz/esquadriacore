@@ -18,6 +18,42 @@
       "data": "2026-07-09",
       "nivel_de_confianca": "alto",
       "observacoes": "Família comercial local: Nobile 2.5. Mesma geometria da Alcoa Suprema."
+    },
+    {
+      "perfil_id": "ALCOA-SU-228",
+      "geometria_padrao_id": "GEO-SU-228",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual lado a lado + peso idêntico",
+      "data": "2026-07-09",
+      "nivel_de_confianca": "alto",
+      "observacoes": "Peso idêntico: 0.688 kg/m (delta 0.0%). Alcoa índice (texto nativo) × Vitral Sul OCR."
+    },
+    {
+      "perfil_id": "VITRALSUL-SU-228",
+      "geometria_padrao_id": "GEO-SU-228",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual lado a lado + peso idêntico",
+      "data": "2026-07-09",
+      "nivel_de_confianca": "alto",
+      "observacoes": "Família comercial local: Nobile 2.5. Peso idêntico ao da Alcoa: 0.688 kg/m."
+    },
+    {
+      "perfil_id": "ALCOA-SU-230",
+      "geometria_padrao_id": "GEO-SU-230",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual lado a lado + peso dentro da tolerância",
+      "data": "2026-07-09",
+      "nivel_de_confianca": "alto",
+      "observacoes": "Peso Alcoa: 0.954 kg/m (índice + OCR concordam). Peso VitralSul OCR: 0.936. Delta 1.9%."
+    },
+    {
+      "perfil_id": "VITRALSUL-SU-230",
+      "geometria_padrao_id": "GEO-SU-230",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual lado a lado + peso dentro da tolerância",
+      "data": "2026-07-09",
+      "nivel_de_confianca": "alto",
+      "observacoes": "Família comercial local: Nobile 2.5. Delta de peso 1.9% em relação à Alcoa — dentro da tolerância."
     }
   ]
 }
