@@ -7,3 +7,4 @@ output/
 .venv/
 # catálogos reais (colocados manualmente — ver CLAUDE.md)
 dados_exemplo/*.pdf
+.claude/
