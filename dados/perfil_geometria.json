@@ -1,0 +1,23 @@
+{
+  "_comentario": "Associações auditáveis Perfil -> GeometriaPadrao (ADR-005). Cada associação é uma decisão humana de curadoria, nunca automática.",
+  "associacoes": [
+    {
+      "perfil_id": "ALCOA-SU-005",
+      "geometria_padrao_id": "GEO-SU-005",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual lado a lado + peso e cotas idênticos",
+      "data": "2026-07-09",
+      "nivel_de_confianca": "alto",
+      "observacoes": "Função, cotas (69.6/46/35) e peso (1.108 kg/m) idênticos. Código legado Alcoa: P-634/E."
+    },
+    {
+      "perfil_id": "VITRALSUL-SU-005",
+      "geometria_padrao_id": "GEO-SU-005",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual lado a lado + peso e cotas idênticos",
+      "data": "2026-07-09",
+      "nivel_de_confianca": "alto",
+      "observacoes": "Família comercial local: Nobile 2.5. Mesma geometria da Alcoa Suprema."
+    }
+  ]
+}

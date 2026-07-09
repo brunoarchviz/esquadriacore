@@ -33,3 +33,25 @@ Priorização de curadoria baseada em conhecimento de mercado do Bruno
 
 ## Pendências de investigação do Bruno
 - [ ] Diferença real entre Gold 3 e Gold 4
+
+## Achados de Curadoria (Sprint E, sessão 1)
+
+### Mapeamento de FamíliaMercado por fabricante (ADR-004 em ação)
+O mesmo código SU-XXX aparece sob nomes comerciais diferentes por fabricante:
+- Alcoa: "Suprema"
+- Vitral Sul: "Nobile 2.5"
+Confirma que FamiliaMercado é vocabulário, não identidade. "Suprema" (Alcoa) e
+"Nobile 2.5" (Vitral Sul) são aliases da MESMA família de mercado. Já estava
+previsto no ADR-004; agora é dado confirmado, não hipótese.
+
+### Códigos legados como chave de rastreabilidade
+A Alcoa referencia códigos legados entre parênteses (ex: SU-005 = "P-634/E").
+Podem servir como chave histórica de rastreabilidade. Registrar quando aparecerem,
+não estruturar ainda (ADR-007).
+
+### SU-005 — primeira homologação de alta confiança
+- Função idêntica: TRAVESSA BANDEIRA / MARCO / CORRER 2 (Alcoa e Vitral Sul)
+- Peso idêntico: 1.108 kg/m (delta 0.0%)
+- Cotas idênticas: largura 69.6, altura 46, espaçamento trilhos 35
+- Fabricantes independentes (sem vínculo societário)
+- Candidato a GEO-SU-005 compartilhada, nivel_de_confianca = alto

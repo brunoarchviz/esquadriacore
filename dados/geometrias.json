@@ -1,0 +1,22 @@
+{
+  "_comentario": "Biblioteca de GeometriasPadrao homologadas (ADR-005). Dado, não código. Cada geometria é curada uma vez e compartilhada entre fabricantes via perfil_geometria.json.",
+  "geometrias": [
+    {
+      "id": "GEO-SU-005",
+      "descricao": "Travessa Bandeira / Marco / Correr 2 — família Suprema",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "SUPREMA",
+      "cotas_confirmadas_mm": {
+        "largura": 69.6,
+        "altura": 46,
+        "espacamento_trilhos": 35,
+        "caixa": 13,
+        "queda_trilhos": 20
+      },
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-09",
+      "_nota": "contorno_mm ainda precisa ser traçado com precisão a partir das cotas. Homologação de equivalência (Alcoa=VitralSul) confirmada visualmente; traçado do contorno é etapa seguinte."
+    }
+  ]
+}
