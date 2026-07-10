@@ -37,6 +37,16 @@
       "curado_por": "Bruno",
       "data_curadoria": "2026-07-09",
       "_nota": "Equivalencia Alcoa=VitralSul confirmada visualmente. Peso 0.954 (Alcoa) x 0.936 (VitralSul), delta 1.9% dentro da tolerancia. Contorno preciso pendente."
+    },
+    {
+      "id": "GEO-SU-009",
+      "descricao": "Coluna para maxim-ar — família Suprema",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "SUPREMA",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Peso 0.908 kg/m (Alcoa) confirmado. Equivalencia visual confirmada. Contorno preciso pendente."
     }
   ]
 }

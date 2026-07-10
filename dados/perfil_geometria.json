@@ -54,6 +54,24 @@
       "data": "2026-07-09",
       "nivel_de_confianca": "alto",
       "observacoes": "Família comercial local: Nobile 2.5. Delta de peso 1.9% em relação à Alcoa — dentro da tolerância."
+    },
+    {
+      "perfil_id": "ALCOA-SU-009",
+      "geometria_padrao_id": "GEO-SU-009",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "Alcoa: catálogo pág 159, PDF físico pág 172."
+    },
+    {
+      "perfil_id": "VITRALSUL-SU-009",
+      "geometria_padrao_id": "GEO-SU-009",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "VitralSul: catálogo pág 74, PDF físico pág 74. Família local: Nobile 2.5."
     }
   ]
 }
