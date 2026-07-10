@@ -77,6 +77,16 @@
       "curado_por": "Bruno",
       "data_curadoria": "2026-07-10",
       "_nota": "Equivalência visual confirmada. Contorno preciso pendente."
+    },
+    {
+      "id": "GEO-SU-280",
+      "descricao": "Montante lateral/folha — família Suprema",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "SUPREMA",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Equivalência visual confirmada. Contorno preciso pendente."
     }
   ]
 }
