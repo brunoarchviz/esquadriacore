@@ -18,6 +18,8 @@ from openpyxl.utils import get_column_letter
 PESOS_CANDIDATOS = {
     "SU-005": (1.108, 1.108),
     "SU-009": (0.908, 0.877),
+    # SU-024: VS 0.959 era erro de OCR — no impresso o delta real é ~3.2%
+    # (conferido por Bruno em 2026-07-10, na homologação)
     "SU-024": (1.024, 0.959),
     "SU-025": (0.973, 0.919),
     "SU-056": (0.539, 0.519),
