@@ -53,12 +53,25 @@ não estruturar ainda (ADR-007).
 ### Gold 3 × Gold 4 — gerações, não subdivisão (achado 2026-07-10)
 Evidência dos catálogos (alcoa_gold3.pdf, ~2004 × CATALOGO_IVGOLD.pdf, Hydro):
 - Gold 3 = "Linha III Gold" (era Alcoa), 93 códigos LG-.
-- Gold 4 = "Linha IV Gold" / "Gold IV®" (Hydro, que absorveu a extrusão da
-  Alcoa), 139 códigos LG-.
+- Gold 4 = "Linha IV Gold" / "Gold IV®", 139 códigos LG- no IVGold.
 - Núcleo compartilhado: 35 códigos LG- presentes nas duas gerações.
   58 códigos do Gold 3 saíram; 104 novos no Gold 4 (quase todos LG-100+).
 Conclusão: sucessão geracional da mesma linha de bitola 32mm, com ~1/3 de
 continuidade de perfis — não é subdivisão estética.
+
+CORREÇÃO (2026-07-10, com catálogos adicionais): Gold 4 NÃO nasceu na Hydro —
+alcoa_gold-4.pdf prova que a geração IV já existia na era Alcoa (112 dos seus
+122 códigos LG estão no IVGold da Hydro; a Hydro CONTINUOU a linha).
+Nota de grafia: catálogos da era Hydro escrevem os códigos sem hífen ("LG159");
+os da era Alcoa, com hífen ("LG-159") — parsers precisam de hífen opcional.
+catalogo_ivgold-r06.pdf é revisão contida no IVGold de referência (111 ⊂ 139).
+
+### Nova Gold — terceira ramificação, sistema de código GN- (achado 2026-07-10)
+nova_gold-r36.pdf (317 págs, Hydro) e catalogo_gold.pdf (234 págs) usam
+códigos GN-, não LG-. O guarda-chuva comercial "Gold" cobre DUAS famílias de
+código distintas: LG (Gold III → Gold IV → IVGold) e GN (Nova Gold).
+Relação geométrica entre LG e GN ainda não investigada — não presumir
+equivalência. cortes_alcoa.pdf é material de tipologias (sem códigos/pesos).
 
 REGRA DE CURADORIA ESPECÍFICA DA GOLD (decisão Bruno, 2026-07-10): código
 idêntico entre GERAÇÕES da MESMA marca é hipótese mais fraca que código
