@@ -50,13 +50,13 @@
     },
     {
       "id": "GEO-SU-024",
-      "descricao": "Marco Superior / Correr / Veneziana camarão para maxim-ar — família Suprema",
+      "descricao": "Marco Superior / Correr / Veneziana camarão — família Suprema",
       "status": "bruto_aproximado",
       "versao": "1.0",
       "familia_mercado": "SUPREMA",
       "curado_por": "Bruno",
       "data_curadoria": "2026-07-10",
-      "_nota": "Delta peso ~3.2% conforme peso lido por Bruno no catálogo impresso da Vitral Sul — o OCR havia lido 0.959 (erro conhecido de OCR; Alcoa índice: 1.024). Equivalência visual confirmada. Contorno preciso pendente."
+      "_nota": "Delta peso ~3.2% conforme peso lido por Bruno no catálogo impresso da Vitral Sul — o OCR havia lido 0.959 (erro conhecido de OCR; Alcoa índice: 1.024). Equivalência visual confirmada. Contorno preciso pendente. CORRECAO: descricao anterior incluia 'maxim-ar' por engano do operador — removido."
     }
   ]
 }
