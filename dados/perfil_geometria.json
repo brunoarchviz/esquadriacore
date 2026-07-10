@@ -90,6 +90,24 @@
       "data": "2026-07-10",
       "nivel_de_confianca": "alto",
       "observacoes": "VitralSul: catálogo pág ~75. Família local: Nobile 2.5."
+    },
+    {
+      "perfil_id": "ALCOA-SU-025",
+      "geometria_padrao_id": "GEO-SU-025",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "Alcoa: catálogo ~pág 160, PDF físico ~pág 173."
+    },
+    {
+      "perfil_id": "VITRALSUL-SU-025",
+      "geometria_padrao_id": "GEO-SU-025",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "VitralSul: catálogo ~pág 75. Família local: Nobile 2.5."
     }
   ]
 }
