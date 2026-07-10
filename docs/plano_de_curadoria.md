@@ -32,7 +32,8 @@ Priorização de curadoria baseada em conhecimento de mercado do Bruno
 3. Linha 30, depois 25 e 42 — conforme necessidade
 
 ## Pendências de investigação do Bruno
-- [ ] Diferença real entre Gold 3 e Gold 4
+- [x] Diferença real entre Gold 3 e Gold 4 — RESPONDIDA em 2026-07-10, ver
+      "Gold 3 × Gold 4" nos Achados abaixo
 
 ## Achados de Curadoria (Sprint E, sessão 1)
 
@@ -48,6 +49,22 @@ previsto no ADR-004; agora é dado confirmado, não hipótese.
 A Alcoa referencia códigos legados entre parênteses (ex: SU-005 = "P-634/E").
 Podem servir como chave histórica de rastreabilidade. Registrar quando aparecerem,
 não estruturar ainda (ADR-007).
+
+### Gold 3 × Gold 4 — gerações, não subdivisão (achado 2026-07-10)
+Evidência dos catálogos (alcoa_gold3.pdf, ~2004 × CATALOGO_IVGOLD.pdf, Hydro):
+- Gold 3 = "Linha III Gold" (era Alcoa), 93 códigos LG-.
+- Gold 4 = "Linha IV Gold" / "Gold IV®" (Hydro, que absorveu a extrusão da
+  Alcoa), 139 códigos LG-.
+- Núcleo compartilhado: 35 códigos LG- presentes nas duas gerações.
+  58 códigos do Gold 3 saíram; 104 novos no Gold 4 (quase todos LG-100+).
+Conclusão: sucessão geracional da mesma linha de bitola 32mm, com ~1/3 de
+continuidade de perfis — não é subdivisão estética.
+
+REGRA DE CURADORIA ESPECÍFICA DA GOLD (decisão Bruno, 2026-07-10): código
+idêntico entre GERAÇÕES da MESMA marca é hipótese mais fraca que código
+idêntico entre fabricantes independentes (caso Suprema) — a Hydro pode ter
+redesenhado perfis mantendo a numeração. Confirmação visual é OBRIGATÓRIA em
+TODOS os casos da Gold, não só nos de peso divergente.
 
 ### SU-005 — primeira homologação de alta confiança
 - Função idêntica: TRAVESSA BANDEIRA / MARCO / CORRER 2 (Alcoa e Vitral Sul)
