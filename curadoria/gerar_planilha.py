@@ -80,8 +80,12 @@ def gerar():
     ws = wb.create_sheet("Associações")
     cabecalho(ws, ["Perfil", "Fabricante", "Geometria", "Responsável",
                    "Método de validação", "Data", "Confiança", "Observações"])
+    nomes_fabricante = {"ALCOA": "Alcoa", "VITRALSUL": "Vitral Sul",
+                        "TAMBORE": "Tamboré", "CENTENARIO": "Centenário",
+                        "ASA": "ASA"}
     for r, a in enumerate(assocs, 2):
-        fab = "Alcoa" if a["perfil_id"].startswith("ALCOA") else "Vitral Sul"
+        prefixo = a["perfil_id"].split("-")[0]
+        fab = nomes_fabricante.get(prefixo, prefixo)
         linha = [a["perfil_id"], fab, a["geometria_padrao_id"],
                  a["responsavel_homologacao"], a["metodo_validacao"],
                  a["data"], a["nivel_de_confianca"], a["observacoes"]]

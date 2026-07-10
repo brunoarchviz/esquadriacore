@@ -144,6 +144,159 @@
       "data": "2026-07-10",
       "nivel_de_confianca": "alto",
       "observacoes": "VitralSul: catálogo ~pág 80. Família local: Nobile 2.5."
+    },
+    {
+      "perfil_id": "TAMBORE-TMS-005",
+      "geometria_padrao_id": "GEO-SU-005",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "Tamboré TMS-005. Mesma geometria Alcoa/VitralSul já homologada."
+    },
+    {
+      "perfil_id": "CENTENARIO-TMS-005",
+      "geometria_padrao_id": "GEO-SU-005",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "Centenário TMS-005. Peso difere ligeiramente do Tamboré apesar da mesma nomenclatura — observação de mercado registrada."
+    },
+    {
+      "perfil_id": "ASA-MG25-005",
+      "geometria_padrao_id": "GEO-SU-005",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "ASA MG25-005. Mesma geometria confirmada por Bruno."
+    },
+    {
+      "perfil_id": "TAMBORE-TMS-009",
+      "geometria_padrao_id": "GEO-SU-009",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "Tamboré TMS-009."
+    },
+    {
+      "perfil_id": "CENTENARIO-TMS-009",
+      "geometria_padrao_id": "GEO-SU-009",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "Centenário TMS-009. Peso difere ligeiramente do Tamboré."
+    },
+    {
+      "perfil_id": "ASA-MG25-009",
+      "geometria_padrao_id": "GEO-SU-009",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "ASA MG25-009."
+    },
+    {
+      "perfil_id": "TAMBORE-TMS-056",
+      "geometria_padrao_id": "GEO-SU-056",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "Tamboré TMS-056."
+    },
+    {
+      "perfil_id": "CENTENARIO-TMS-056",
+      "geometria_padrao_id": "GEO-SU-056",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "Centenário TMS-056. Peso difere ligeiramente do Tamboré."
+    },
+    {
+      "perfil_id": "ASA-MG25-056",
+      "geometria_padrao_id": "GEO-SU-056",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "ASA MG25-056."
+    },
+    {
+      "perfil_id": "TAMBORE-TMS-228",
+      "geometria_padrao_id": "GEO-SU-228",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "Tamboré TMS-228."
+    },
+    {
+      "perfil_id": "CENTENARIO-TMS-228",
+      "geometria_padrao_id": "GEO-SU-228",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "Centenário TMS-228. Peso difere ligeiramente do Tamboré."
+    },
+    {
+      "perfil_id": "ASA-MG25-228",
+      "geometria_padrao_id": "GEO-SU-228",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "ASA MG25-228. Altura 1mm maior que SU-228 — não altera usabilidade. Decisão Bruno: mesma GeometriaPadrao."
+    },
+    {
+      "perfil_id": "TAMBORE-TMS-230",
+      "geometria_padrao_id": "GEO-SU-230",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "Tamboré TMS-230."
+    },
+    {
+      "perfil_id": "CENTENARIO-TMS-230",
+      "geometria_padrao_id": "GEO-SU-230",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "Centenário TMS-230. Peso difere ligeiramente do Tamboré."
+    },
+    {
+      "perfil_id": "ASA-MG25-230",
+      "geometria_padrao_id": "GEO-SU-230",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "ASA MG25-230. Altura 1mm maior que SU-230 — não altera usabilidade. Decisão Bruno: mesma GeometriaPadrao."
+    },
+    {
+      "perfil_id": "TAMBORE-TMS-280",
+      "geometria_padrao_id": "GEO-SU-280",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "Tamboré TMS-280."
+    },
+    {
+      "perfil_id": "CENTENARIO-TMS-280",
+      "geometria_padrao_id": "GEO-SU-280",
+      "responsavel_homologacao": "Bruno",
+      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+      "data": "2026-07-10",
+      "nivel_de_confianca": "alto",
+      "observacoes": "Centenário TMS-280. Peso difere ligeiramente do Tamboré."
     }
   ]
 }
