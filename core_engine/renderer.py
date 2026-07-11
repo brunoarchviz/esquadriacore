@@ -75,6 +75,64 @@ def extrudar_perfil(contorno_mm, comprimento_mm, rotacao_graus, posicao_mm):
     return faces
 
 
+def extrudar_com_furos(contorno_externo, vazios_internos, comprimento_mm,
+                       rotacao_graus, posicao_mm, passo_mm=1.5):
+    """Extrusão de perfil OCO (ADR-008, rascunho): paredes do contorno externo
+    e de cada vazio interno + tampas em grade que respeitam os furos.
+
+    Validado em protótipo externo (Sprint E.2); portado aqui para a MESMA
+    convenção de eixos do extrudar_perfil (o protótipo usava frame próprio,
+    que ignoraria rotacao/posicao e reintroduziria o bug de achatamento)."""
+    def _mapear(pontos_2d, avanco):
+        pts = np.asarray(pontos_2d, dtype=float)
+        n = len(pts)
+        dx, dy = posicao_mm
+        if abs(rotacao_graus - 90) < 1e-6:
+            return np.stack([pts[:, 0] + dx, np.full(n, dy + avanco),
+                             pts[:, 1]], axis=1)
+        return np.stack([np.full(n, dx + avanco), pts[:, 1] + dy,
+                         pts[:, 0]], axis=1)
+
+    faces = []
+    for poligono in [contorno_externo] + list(vazios_internos or []):
+        ini = _mapear(poligono, 0.0)
+        fim = _mapear(poligono, comprimento_mm)
+        n = len(ini)
+        for i in range(n):
+            j = (i + 1) % n
+            faces.append([ini[i].tolist(), ini[j].tolist(),
+                          fim[j].tolist(), fim[i].tolist()])
+    for avanco in (0.0, comprimento_mm):
+        faces.extend(_tampa_com_furos(contorno_externo, vazios_internos or [],
+                                      avanco, _mapear, passo_mm))
+    return faces
+
+
+def _tampa_com_furos(externo, vazios, avanco, mapear, passo):
+    """Tampa da extrusão triangulada por grade: célula entra se o centro está
+    dentro do contorno externo e fora de todos os vazios."""
+    from matplotlib.path import Path
+    ext = np.asarray(externo, dtype=float)
+    xmin, ymin = ext.min(axis=0)
+    xmax, ymax = ext.max(axis=0)
+    caminho_ext = Path(externo)
+    caminhos_vazios = [Path(v) for v in vazios]
+    faces = []
+    x = xmin
+    while x < xmax:
+        y = ymin
+        while y < ymax:
+            cx, cy = x + passo / 2, y + passo / 2
+            if caminho_ext.contains_point((cx, cy)) and not any(
+                    p.contains_point((cx, cy)) for p in caminhos_vazios):
+                celula = [(x, y), (x + passo, y),
+                          (x + passo, y + passo), (x, y + passo)]
+                faces.append(mapear(celula, avanco).tolist())
+            y += passo
+        x += passo
+    return faces
+
+
 def sombrear_face(face, cor_base_rgb, direcao_luz=np.array([0.5, 0.4, 0.75])):
     face = np.array(face)
     if len(face) < 3:
@@ -127,8 +185,13 @@ def renderizar(vista: Vista,
                 f"Cena {cena.id} referencia perfil inexistente: {inst.perfil_id}")
         geo = resolver_geometria(perfil, associacoes, geometrias)
 
-        faces = extrudar_perfil(geo.contorno_mm, inst.comprimento_mm,
-                                inst.rotacao_graus, inst.posicao_mm)
+        if geo.contorno_externo:
+            faces = extrudar_com_furos(geo.contorno_externo, geo.vazios_internos,
+                                       inst.comprimento_mm, inst.rotacao_graus,
+                                       inst.posicao_mm)
+        else:
+            faces = extrudar_perfil(geo.contorno_mm, inst.comprimento_mm,
+                                    inst.rotacao_graus, inst.posicao_mm)
         e_vidro = (perfil.categoria == "vidro")
         cor_base = cor_vidro if e_vidro else cor_aluminio
         alpha = vista.opacidade_vidro if e_vidro else 1.0

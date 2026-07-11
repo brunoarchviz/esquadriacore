@@ -55,6 +55,12 @@ class GeometriaPadrao:
     svg_bruto_ref: Optional[str] = None
     curado_por: Optional[str] = None
     data_curadoria: Optional[str] = None
+    # formato novo (ADR-008, rascunho): perfil de alumínio é OCO — silhueta
+    # externa + câmaras vazadas. Opcional: geometrias antigas seguem válidas
+    # com contorno_mm (polígono preenchido simples).
+    contorno_externo: Optional[list] = None   # lista de (x,y) da silhueta externa
+    vazios_internos: Optional[list] = None    # lista de listas de (x,y) — câmaras ocas
+    nivel_contorno: str = "0_bruto_aproximado"  # escala de fidelidade (plano de curadoria, Sprint E.2)
 
 
 @dataclass
