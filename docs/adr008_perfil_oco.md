@@ -1,8 +1,14 @@
 # ADR-008 — GeometriaPadrao suporta contorno externo + vazios internos
 
-**Status: RASCUNHO — aguardando revisão do ChatGPT** (a pedido do Bruno; este é
-o tipo de decisão de entidade+módulo que ele designou para revisão externa).
-Quando aprovado, integrar ao Volume 4 na próxima revisão da documentação.
+**Status: Validado por evidência técnica, aguardando revisão de governança**
+(revisão do ChatGPT, a pedido do Bruno; este é o tipo de decisão de
+entidade+módulo que ele designou para revisão externa). Quando aprovado,
+integrar ao Volume 4 na próxima revisão da documentação.
+
+> A validação do modelo de representação e extrusão NÃO implica homologação
+> automática das geometrias individuais que o utilizam. Cada seção traçada
+> com este modelo passa pela revisão geométrica e validação visual do
+> especialista antes de ser considerada homologada.
 
 ## Contexto
 Perfil de alumínio extrudado é OCO — contorno externo com câmaras vazadas.
