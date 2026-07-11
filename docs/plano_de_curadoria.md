@@ -66,6 +66,26 @@ Nota de grafia: catálogos da era Hydro escrevem os códigos sem hífen ("LG159"
 os da era Alcoa, com hífen ("LG-159") — parsers precisam de hífen opcional.
 catalogo_ivgold-r06.pdf é revisão contida no IVGold de referência (111 ⊂ 139).
 
+### O risco geracional mora na troca de ERA, não de geração (achado 2026-07-10)
+Comparação de pesos com dado real (curadoria/comparar_gold_geracoes.py):
+- Gold 3 × Gold 4 DENTRO da era Alcoa: 38 códigos comuns com peso, 30 com
+  peso IDÊNTICO (0.0%), 7 com Δ ≤ 2.2%. Único divergente: LG-020 (9.0%).
+- Era Alcoa × era Hydro (IVGold): LG-003, LG-015 e LG-027 divergem 13-16% —
+  os MESMOS códigos que batem 0.0% entre Gold 3 e Gold 4 Alcoa.
+Conclusão: a transição geracional III→IV (Alcoa) preservou os perfis quase
+intactos; o ponto de ruptura real é a troca de fabricante/era (Alcoa→Hydro),
+onde a Hydro reprojetou perfis mantendo códigos (nova liga/ferramental/
+otimização de peso — lógica de negócio plausível).
+A suposição original ("geração diferente = risco") errava ONDE o risco mora;
+o dado real corrigiu.
+
+ESTRATÉGIA DA CURADORIA GOLD EM DOIS EIXOS (decisão Bruno, 2026-07-10):
+- Eixo 1 (seguro): Gold 3 ↔ Gold 4 Alcoa — evidência forte, curadoria em lote
+  mais ágil; atenção especial só no LG-020.
+- Eixo 2 (arriscado): era Alcoa ↔ era Hydro (IVGold) — cautela dobrada,
+  confirmação visual obrigatória, sem pressa.
+Sequência: validar o método no Eixo 1 primeiro, depois atacar o Eixo 2.
+
 ### Nova Gold — terceira ramificação, sistema de código GN- (achado 2026-07-10)
 nova_gold-r36.pdf (317 págs, Hydro) e catalogo_gold.pdf (234 págs) usam
 códigos GN-, não LG-. O guarda-chuva comercial "Gold" cobre DUAS famílias de
