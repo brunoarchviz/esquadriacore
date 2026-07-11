@@ -87,6 +87,386 @@
       "curado_por": "Bruno",
       "data_curadoria": "2026-07-10",
       "_nota": "Equivalência visual confirmada. Contorno preciso pendente. ASA (MG25) não possui equivalente catalogado para este perfil."
+    },
+    {
+      "id": "GEO-LG-002",
+      "descricao": "Marco Lateral Vertical — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: ASA: MG32-016."
+    },
+    {
+      "id": "GEO-LG-003",
+      "descricao": "Marco Bandeira / Peitoril — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: ASA: MG32-017."
+    },
+    {
+      "id": "GEO-LG-004",
+      "descricao": "Travessa Intermediária - Bandeira — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: ASA: MG32-018."
+    },
+    {
+      "id": "GEO-LG-006",
+      "descricao": "Folha Inferior e Superior Horizontal — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: ASA: MG32-020."
+    },
+    {
+      "id": "GEO-LG-007",
+      "descricao": "Folha Inferior Horizontal — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: ASA: MG32-032."
+    },
+    {
+      "id": "GEO-LG-008",
+      "descricao": "Trilho superior — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. NOTA: presente só nos catálogos Alcoa/Hydro."
+    },
+    {
+      "id": "GEO-LG-009",
+      "descricao": "Marco — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. NOTA: presente só nos catálogos Alcoa/Hydro."
+    },
+    {
+      "id": "GEO-LG-010",
+      "descricao": "Marco — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. NOTA: presente só nos catálogos Alcoa/Hydro."
+    },
+    {
+      "id": "GEO-LG-011",
+      "descricao": "Trilho superior 3 planos — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. NOTA: presente só nos catálogos Alcoa/Hydro."
+    },
+    {
+      "id": "GEO-LG-014",
+      "descricao": "Marco — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. NOTA: presente só nos catálogos Alcoa/Hydro."
+    },
+    {
+      "id": "GEO-LG-015",
+      "descricao": "Baguete — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: ASA: MG32-115."
+    },
+    {
+      "id": "GEO-LG-016",
+      "descricao": "Arremate Porta de Giro — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: ASA: MG32-029."
+    },
+    {
+      "id": "GEO-LG-017",
+      "descricao": "Folha Lateral Vertical com Reforço — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente."
+    },
+    {
+      "id": "GEO-LG-018",
+      "descricao": "Mão de amigo — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: ASA: MG32-055."
+    },
+    {
+      "id": "GEO-LG-019",
+      "descricao": "Mão de amigo — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente."
+    },
+    {
+      "id": "GEO-LG-020",
+      "descricao": "Folha — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. NOTA: peso G3 1.016 x G4 1.116 (9%), mas Bruno confirmou MESMA geometria."
+    },
+    {
+      "id": "GEO-LG-021",
+      "descricao": "Mão de amigo — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente."
+    },
+    {
+      "id": "GEO-LG-022",
+      "descricao": "Travessa — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente."
+    },
+    {
+      "id": "GEO-LG-023",
+      "descricao": "Mão de amigo — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente."
+    },
+    {
+      "id": "GEO-LG-025",
+      "descricao": "Trilho 2 planos — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente."
+    },
+    {
+      "id": "GEO-LG-026",
+      "descricao": "Baguete Vertical — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. NOTA: MG32 3mm de diferença — não altera usabilidade. Aliases: ASA: MG32-057."
+    },
+    {
+      "id": "GEO-LG-027",
+      "descricao": "Baguete Veneziana — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: ASA: MG32-114."
+    },
+    {
+      "id": "GEO-LG-028",
+      "descricao": "Complemento - Marco Lateral — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: ASA: MG32-024."
+    },
+    {
+      "id": "GEO-LG-042",
+      "descricao": "Folha — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. NOTA: sem equivalente em alguns catálogos; existe em Gold3 e Gold4 Alcoa."
+    },
+    {
+      "id": "GEO-LG-043",
+      "descricao": "Folha Perimetral Porta de Giro — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: ASA: MG32-011."
+    },
+    {
+      "id": "GEO-LG-044",
+      "descricao": "Marco Superior Horizontal — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: Alcoa base: SI-301; ASA: MG32-001."
+    },
+    {
+      "id": "GEO-LG-048",
+      "descricao": "Folha Mão de Amigo - Interno — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: Alcoa base: SI-309; ASA: MG32-005."
+    },
+    {
+      "id": "GEO-LG-049",
+      "descricao": "Folha Mão de Amigo - Externo — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: Alcoa base: SI-310; ASA: MG32-006."
+    },
+    {
+      "id": "GEO-LG-050",
+      "descricao": "Folha Lateral / Central Vertical — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: Alcoa base: SI-311."
+    },
+    {
+      "id": "GEO-LG-051",
+      "descricao": "Folha Central Vertical — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: Alcoa base: SI-312."
+    },
+    {
+      "id": "GEO-LG-052",
+      "descricao": "Mão de amigo — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: ASA: MG32-054."
+    },
+    {
+      "id": "GEO-LG-053",
+      "descricao": "Folha — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. NOTA: 1mm de diferença na medida — não altera usabilidade. Aliases: Alcoa base: SI-314; ASA: MG32-053."
+    },
+    {
+      "id": "GEO-LG-054",
+      "descricao": "Folha — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. NOTA: 1mm de diferença na medida — não altera usabilidade. Aliases: Alcoa base: SI-315; ASA: MG32-056."
+    },
+    {
+      "id": "GEO-LG-055",
+      "descricao": "Travessa Horizontal — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: Alcoa base: SI-317; ASA: MG32-009."
+    },
+    {
+      "id": "GEO-LG-056",
+      "descricao": "Marco Porta de Giro — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: Alcoa base: SI-319; ASA: MG32-010."
+    },
+    {
+      "id": "GEO-LG-058",
+      "descricao": "Folha — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: Alcoa base: SI-324; ASA: MG32-026."
+    },
+    {
+      "id": "GEO-LG-059",
+      "descricao": "Baguete Horizontal — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. NOTA: MG32 2mm de diferença — não altera usabilidade. Aliases: Alcoa base: SI-328; ASA: MG32-012."
+    },
+    {
+      "id": "GEO-LG-062",
+      "descricao": "Marco Superior Horizontal — família Gold",
+      "status": "bruto_aproximado",
+      "versao": "1.0",
+      "familia_mercado": "GOLD",
+      "curado_por": "Bruno",
+      "data_curadoria": "2026-07-10",
+      "_nota": "Homologação em lote família Gold. Equivalência confirmada por curadoria visual do Bruno em todos os catálogos. Contorno preciso pendente. Aliases: Alcoa base: SI-343."
     }
   ]
 }
