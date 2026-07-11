@@ -105,3 +105,38 @@ TODOS os casos da Gold, não só nos de peso divergente.
 - Cotas idênticas: largura 69.6, altura 46, espaçamento trilhos 35
 - Fabricantes independentes (sem vínculo societário)
 - Candidato a GEO-SU-005 compartilhada, nivel_de_confianca = alto
+
+## Sprint E.2 — Contornos Renderizáveis (decisão dos três: Bruno, Claude, ChatGPT)
+
+### Princípio orientador
+> Um contorno pode ser comercialmente utilizável sem ser geometricamente exato
+> para fabricação.
+
+O EsquadriaCore alimenta orçamento, imagem técnica, tipologia e comparação — não
+corte/fabricação CNC. A meta dos contornos é "renderizável comercial" (reconhecível,
+proporcional, coerente), NÃO "CAD exato". Isso protege o projeto de virar um poço de
+esforço técnico sem retorno proporcional.
+
+### Escala de fidelidade do contorno (metadado nivel_contorno, não entidade nova)
+- 0_bruto_aproximado    — sabemos que a geometria existe, não desenhamos ainda (estado atual das 46)
+- 1_envelope_funcional  — contorno simples (largura/altura/abas principais)
+- 2_renderizavel_comercial — ALVO IMEDIATO: visualmente coerente, reconhecível, suficiente para orçamento/apresentação
+- 3_vetorial_validado   — path extraído do PDF com confiança + validado pelo Bruno
+- 4_alta_fidelidade     — futuro, talvez nunca necessário para o produto principal
+
+### Método (híbrido e progressivo — Opção C)
+1. Escolher geometria prioritária
+2. Tentar extrair vetor do PDF; se limpo, usar como base
+3. Se sujo, usar cotas + desenho simplificado próprio
+4. Gerar preview renderizado
+5. Bruno valida visualmente
+6. Registrar nivel_contorno e observação; promover para renderizavel_comercial
+
+### Nota estratégica (técnica + jurídica)
+Priorizar contorno simplificado PRÓPRIO sobre cópia vetorial exata do catálogo.
+Alinha o técnico com o jurídico (Modelo Paramétrico Próprio, não redistribuição).
+
+### Escopo do Sprint E.2
+Amostra inicial de 8-12 geometrias com funções variadas (marco, folha, travessa,
+montante, mão de amigo, coluna). Critério de pronto: Renderer gera imagem coerente +
+Bruno valida + nivel_contorno sobe para renderizavel_comercial.
