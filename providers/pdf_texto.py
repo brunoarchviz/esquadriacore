@@ -43,12 +43,17 @@ class PdfTextoProvider(Provider):
     real da Fase 1)."""
 
     def __init__(self, caminho_pdf: str, pagina_inicio: int, pagina_fim: int,
-                 fabricante: str, prefixo_id: str = ""):
+                 fabricante: str, prefixo_id: str = "",
+                 padrao_codigo: re.Pattern | None = None):
         self.caminho_pdf = caminho_pdf
         self.pagina_inicio = pagina_inicio
         self.pagina_fim = pagina_fim
         self.fabricante = fabricante
         self.prefixo_id = prefixo_id or fabricante.upper().replace(" ", "")
+        # catálogos da era Hydro grafam código sem hífen ("LG159") — quem
+        # precisar passa um padrão próprio; o default preserva o comportamento
+        # validado nos 5 catálogos da Suprema
+        self.padrao_codigo = padrao_codigo or PADRAO_CODIGO
 
     # -- infra -------------------------------------------------------------
 
@@ -81,7 +86,7 @@ class PdfTextoProvider(Provider):
         for pagina in range(self.pagina_inicio, self.pagina_fim + 1):
             palavras = self._palavras_da_pagina(pagina)
             for p in palavras:
-                if not PADRAO_CODIGO.match(p.texto):
+                if not self.padrao_codigo.match(p.texto):
                     continue
                 peso_texto = self._buscar_peso_abaixo(p, palavras)
                 peso_valido = peso_texto is not None
