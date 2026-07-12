@@ -11,3 +11,7 @@ dados_exemplo/*.pdf
 
 # Evidência visual de homologações (auditoria do ADR-005)
 !curadoria/comparacao/*_lado_a_lado.png
+# Iterações de contorno do Sprint E.2 (versionadas por decisão do Bruno)
+!curadoria/contornos/*_lado_a_lado*.png
+!curadoria/contornos/GEO-*_secao_*.png
+!curadoria/contornos/feedback/*.png
