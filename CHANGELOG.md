@@ -2,6 +2,28 @@
 
 Formato baseado em Keep a Changelog. Versionamento semântico.
 
+## [0.3.0-alpha] — 2026-07-12 — "Hollow Profile Release"
+
+### Adicionado
+- ADR-008 aceito: GeometriaPadrao suporta `contorno_externo` + `vazios_internos`
+  (perfil oco), com `contorno_mm` preservado como legado. Salvaguarda: a
+  validação do modelo não homologa automaticamente geometrias individuais.
+- `core_engine.extrudar_com_furos`: extrusão com paredes internas e tampas
+  que respeitam os vazios.
+- `domain.validar_contornos` + `ContornoInvalido`: validações do novo formato
+  (domínio puro, falha explícita).
+- `tests/test_perfil_oco.py`: 14 testes (validações, extrusão com furos e
+  regressão de DADOS do GEO-SU-005 — nunca comparação de imagem).
+- `docs/adendos/`: adendos aos Volumes 3, 7, 9 e 10 (v1.0 permanece congelada).
+- Método de curadoria fina registrado no plano de curadoria (feedback do Bruno
+  por marcação colorida, iterações versionadas, aprovação explícita).
+
+### Validado
+- GEO-SU-005: primeiro contorno `2_renderizavel_comercial` da biblioteca —
+  11 iterações de curadoria fina, aprovado visualmente pelo Bruno
+  (evidência: curadoria/contornos/SU-005_lado_a_lado_iter11.png).
+- 25/25 testes passando (11 da base + 14 do perfil oco).
+
 ## [0.2.0-alpha] — 2026-07-09 — "Multi Provider Release"
 
 ### Adicionado

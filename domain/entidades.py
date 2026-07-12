@@ -228,3 +228,108 @@ class RendererFailure(ErroDominio):
 class PipelineFailure(ErroDominio):
     """CATEGORIA RESIDUAL: exclusivamente para falhas de orquestração não
     enquadradas nas categorias anteriores. Não usar como atalho genérico."""
+
+
+class ContornoInvalido(ErroDominio):
+    """Contorno da GeometriaPadrao falha nas validações do ADR-008."""
+
+
+# ---------------------------------------------------------------------------
+# Validações de contorno (ADR-008 / Volume 9 via adendo) — domínio puro,
+# sem dependências externas. Fechamento é implícito (último ponto != primeiro).
+# ---------------------------------------------------------------------------
+
+def _area_poligono(pontos) -> float:
+    s = 0.0
+    n = len(pontos)
+    for i in range(n):
+        x1, y1 = pontos[i]
+        x2, y2 = pontos[(i + 1) % n]
+        s += x1 * y2 - x2 * y1
+    return abs(s) / 2.0
+
+
+def _ponto_no_poligono(pt, poligono) -> bool:
+    """Ray casting clássico."""
+    x, y = pt
+    dentro = False
+    n = len(poligono)
+    for i in range(n):
+        x1, y1 = poligono[i]
+        x2, y2 = poligono[(i + 1) % n]
+        if (y1 > y) != (y2 > y):
+            x_cruz = x1 + (y - y1) * (x2 - x1) / (y2 - y1)
+            if x < x_cruz:
+                dentro = not dentro
+    return dentro
+
+
+def _segmentos_se_cruzam(p1, p2, p3, p4) -> bool:
+    """Interseção própria (cruzamento real, não toque em vértice)."""
+    def orient(a, b, c):
+        v = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+        return 0 if abs(v) < 1e-12 else (1 if v > 0 else -1)
+    o1, o2 = orient(p1, p2, p3), orient(p1, p2, p4)
+    o3, o4 = orient(p3, p4, p1), orient(p3, p4, p2)
+    return o1 != o2 and o3 != o4 and 0 not in (o1, o2, o3, o4)
+
+
+def _autointersecta(poligono) -> bool:
+    n = len(poligono)
+    for i in range(n):
+        a1, a2 = poligono[i], poligono[(i + 1) % n]
+        for j in range(i + 1, n):
+            if j == i or (j + 1) % n == i or (i + 1) % n == j:
+                continue  # arestas adjacentes compartilham vértice
+            b1, b2 = poligono[j], poligono[(j + 1) % n]
+            if _segmentos_se_cruzam(a1, a2, b1, b2):
+                return True
+    return False
+
+
+def _validar_anel(pontos, nome: str):
+    if len(pontos) < 3:
+        raise ContornoInvalido(f"{nome} tem menos de 3 pontos")
+    if tuple(pontos[0]) == tuple(pontos[-1]):
+        raise ContornoInvalido(
+            f"{nome}: fechamento deve ser implícito (último ponto repete o primeiro)")
+    if _area_poligono(pontos) <= 0:
+        raise ContornoInvalido(f"{nome} tem área nula")
+    if _autointersecta(pontos):
+        raise ContornoInvalido(f"{nome} se auto-intersecta")
+
+
+def validar_contornos(geo: "GeometriaPadrao") -> None:
+    """Validações do ADR-008. Falha explícita (ContornoInvalido), nunca silenciosa.
+
+    Regra 1: pelo menos um formato (contorno_mm legado OU contorno_externo).
+    Regras 2-4: anéis válidos, vazios contidos no externo e sem cruzamento
+    entre si. Quando os dois formatos coexistem, o novo é preferencial."""
+    tem_legado = bool(geo.contorno_mm)
+    tem_novo = bool(geo.contorno_externo)
+    if not tem_legado and not tem_novo:
+        raise ContornoInvalido(
+            f"{geo.id}: nenhum formato de contorno presente "
+            f"(contorno_mm legado ou contorno_externo)")
+    if not tem_novo:
+        return  # formato legado puro: sem validações adicionais (compatibilidade)
+
+    _validar_anel(geo.contorno_externo, f"{geo.id}.contorno_externo")
+    vazios = geo.vazios_internos or []
+    for k, vazio in enumerate(vazios):
+        nome = f"{geo.id}.vazios_internos[{k}]"
+        _validar_anel(vazio, nome)
+        if not all(_ponto_no_poligono(p, geo.contorno_externo) for p in vazio):
+            raise ContornoInvalido(f"{nome} não está contido no contorno_externo")
+    for k in range(len(vazios)):
+        for m in range(k + 1, len(vazios)):
+            cruza_aresta = any(
+                _segmentos_se_cruzam(vazios[k][i], vazios[k][(i + 1) % len(vazios[k])],
+                                     vazios[m][j], vazios[m][(j + 1) % len(vazios[m])])
+                for i in range(len(vazios[k])) for j in range(len(vazios[m])))
+            contem_vertice = (
+                any(_ponto_no_poligono(p, vazios[m]) for p in vazios[k])
+                or any(_ponto_no_poligono(p, vazios[k]) for p in vazios[m]))
+            if cruza_aresta or contem_vertice:
+                raise ContornoInvalido(
+                    f"{geo.id}: vazios_internos[{k}] e [{m}] se cruzam")

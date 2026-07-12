@@ -140,3 +140,22 @@ Alinha o técnico com o jurídico (Modelo Paramétrico Próprio, não redistribu
 Amostra inicial de 8-12 geometrias com funções variadas (marco, folha, travessa,
 montante, mão de amigo, coluna). Critério de pronto: Renderer gera imagem coerente +
 Bruno valida + nivel_contorno sobe para renderizavel_comercial.
+
+## Método de Curadoria Fina de Contornos (procedimento padrão, validado no GEO-SU-005)
+
+Fluxo obrigatório para os próximos contornos do Sprint E.2 (origem: ADR-008):
+
+1. Claude Code gera a seção 2D olhando a evidência `*_lado_a_lado.png` da geometria.
+2. Bruno marca as correções por COR sobre a imagem + envia legenda textual.
+3. A imagem marcada vai para `curadoria/contornos/feedback/` — versionada e
+   nunca apagada (evidência de auditoria).
+4. Claude Code corrige olhando a imagem marcada diretamente.
+5. Iterações versionadas, sem sobrescrever as anteriores.
+6. Validação visual final do Bruno (aprovação explícita, nunca presumida).
+7. Gravação em dados/geometrias.json somente após a aprovação.
+8. Atualizar `nivel_contorno` e `status_contorno` após a gravação.
+
+Precedente: GEO-SU-005, 11 iterações (2026-07-11/12), aprovado na iteração 11.
+Aprendizado estrutural: restrições de extrudabilidade (peça única) devem ser
+verificadas a cada iteração — conectividade é checada automaticamente
+(Polygon único no shapely) antes de apresentar ao Bruno.

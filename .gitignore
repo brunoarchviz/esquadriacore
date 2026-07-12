@@ -15,3 +15,4 @@ dados_exemplo/*.pdf
 !curadoria/contornos/*_lado_a_lado*.png
 !curadoria/contornos/GEO-*_secao_*.png
 !curadoria/contornos/feedback/*.png
+!curadoria/contornos/*_render3d_*.png
