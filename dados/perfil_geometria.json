@@ -1,2210 +1,2210 @@
 {
-  "_comentario": "Associações auditáveis Perfil -> GeometriaPadrao (ADR-005). Cada associação é uma decisão humana de curadoria, nunca automática.",
-  "associacoes": [
-    {
-      "perfil_id": "ALCOA-SU-005",
-      "geometria_padrao_id": "GEO-SU-005",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual lado a lado + peso e cotas idênticos",
-      "data": "2026-07-09",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Função, cotas (69.6/46/35) e peso (1.108 kg/m) idênticos. Código legado Alcoa: P-634/E."
-    },
-    {
-      "perfil_id": "VITRALSUL-SU-005",
-      "geometria_padrao_id": "GEO-SU-005",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual lado a lado + peso e cotas idênticos",
-      "data": "2026-07-09",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família comercial local: Nobile 2.5. Mesma geometria da Alcoa Suprema."
-    },
-    {
-      "perfil_id": "ALCOA-SU-228",
-      "geometria_padrao_id": "GEO-SU-228",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual lado a lado + peso idêntico",
-      "data": "2026-07-09",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Peso idêntico: 0.688 kg/m (delta 0.0%). Alcoa índice (texto nativo) × Vitral Sul OCR."
-    },
-    {
-      "perfil_id": "VITRALSUL-SU-228",
-      "geometria_padrao_id": "GEO-SU-228",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual lado a lado + peso idêntico",
-      "data": "2026-07-09",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família comercial local: Nobile 2.5. Peso idêntico ao da Alcoa: 0.688 kg/m."
-    },
-    {
-      "perfil_id": "ALCOA-SU-230",
-      "geometria_padrao_id": "GEO-SU-230",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual lado a lado + peso dentro da tolerância",
-      "data": "2026-07-09",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Peso Alcoa: 0.954 kg/m (índice + OCR concordam). Peso VitralSul OCR: 0.936. Delta 1.9%."
-    },
-    {
-      "perfil_id": "VITRALSUL-SU-230",
-      "geometria_padrao_id": "GEO-SU-230",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual lado a lado + peso dentro da tolerância",
-      "data": "2026-07-09",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família comercial local: Nobile 2.5. Delta de peso 1.9% em relação à Alcoa — dentro da tolerância."
-    },
-    {
-      "perfil_id": "ALCOA-SU-009",
-      "geometria_padrao_id": "GEO-SU-009",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Alcoa: catálogo pág 159, PDF físico pág 172."
-    },
-    {
-      "perfil_id": "VITRALSUL-SU-009",
-      "geometria_padrao_id": "GEO-SU-009",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "VitralSul: catálogo pág 74, PDF físico pág 74. Família local: Nobile 2.5."
-    },
-    {
-      "perfil_id": "ALCOA-SU-024",
-      "geometria_padrao_id": "GEO-SU-024",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Alcoa: catálogo pág ~160, PDF físico pág ~173."
-    },
-    {
-      "perfil_id": "VITRALSUL-SU-024",
-      "geometria_padrao_id": "GEO-SU-024",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "VitralSul: catálogo pág ~75. Família local: Nobile 2.5."
-    },
-    {
-      "perfil_id": "ALCOA-SU-025",
-      "geometria_padrao_id": "GEO-SU-025",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Alcoa: catálogo ~pág 160, PDF físico ~pág 173."
-    },
-    {
-      "perfil_id": "VITRALSUL-SU-025",
-      "geometria_padrao_id": "GEO-SU-025",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "VitralSul: catálogo ~pág 75. Família local: Nobile 2.5."
-    },
-    {
-      "perfil_id": "ALCOA-SU-056",
-      "geometria_padrao_id": "GEO-SU-056",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Alcoa: catálogo ~pág 163, PDF físico ~pág 176."
-    },
-    {
-      "perfil_id": "VITRALSUL-SU-056",
-      "geometria_padrao_id": "GEO-SU-056",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "VitralSul: catálogo ~pág 78. Família local: Nobile 2.5."
-    },
-    {
-      "perfil_id": "ALCOA-SU-280",
-      "geometria_padrao_id": "GEO-SU-280",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Alcoa: catálogo ~pág 165, PDF físico ~pág 178."
-    },
-    {
-      "perfil_id": "VITRALSUL-SU-280",
-      "geometria_padrao_id": "GEO-SU-280",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "VitralSul: catálogo ~pág 80. Família local: Nobile 2.5."
-    },
-    {
-      "perfil_id": "TAMBORE-TMS-005",
-      "geometria_padrao_id": "GEO-SU-005",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Tamboré TMS-005. Mesma geometria Alcoa/VitralSul já homologada."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMS-005",
-      "geometria_padrao_id": "GEO-SU-005",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Centenário TMS-005. Peso difere ligeiramente do Tamboré apesar da mesma nomenclatura — observação de mercado registrada."
-    },
-    {
-      "perfil_id": "ASA-MG25-005",
-      "geometria_padrao_id": "GEO-SU-005",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "ASA MG25-005. Mesma geometria confirmada por Bruno."
-    },
-    {
-      "perfil_id": "TAMBORE-TMS-009",
-      "geometria_padrao_id": "GEO-SU-009",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Tamboré TMS-009."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMS-009",
-      "geometria_padrao_id": "GEO-SU-009",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Centenário TMS-009. Peso difere ligeiramente do Tamboré."
-    },
-    {
-      "perfil_id": "ASA-MG25-009",
-      "geometria_padrao_id": "GEO-SU-009",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "ASA MG25-009."
-    },
-    {
-      "perfil_id": "TAMBORE-TMS-056",
-      "geometria_padrao_id": "GEO-SU-056",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Tamboré TMS-056."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMS-056",
-      "geometria_padrao_id": "GEO-SU-056",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Centenário TMS-056. Peso difere ligeiramente do Tamboré."
-    },
-    {
-      "perfil_id": "ASA-MG25-056",
-      "geometria_padrao_id": "GEO-SU-056",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "ASA MG25-056."
-    },
-    {
-      "perfil_id": "TAMBORE-TMS-228",
-      "geometria_padrao_id": "GEO-SU-228",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Tamboré TMS-228."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMS-228",
-      "geometria_padrao_id": "GEO-SU-228",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Centenário TMS-228. Peso difere ligeiramente do Tamboré."
-    },
-    {
-      "perfil_id": "ASA-MG25-228",
-      "geometria_padrao_id": "GEO-SU-228",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "ASA MG25-228. Altura 1mm maior que SU-228 — não altera usabilidade. Decisão Bruno: mesma GeometriaPadrao."
-    },
-    {
-      "perfil_id": "TAMBORE-TMS-230",
-      "geometria_padrao_id": "GEO-SU-230",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Tamboré TMS-230."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMS-230",
-      "geometria_padrao_id": "GEO-SU-230",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Centenário TMS-230. Peso difere ligeiramente do Tamboré."
-    },
-    {
-      "perfil_id": "ASA-MG25-230",
-      "geometria_padrao_id": "GEO-SU-230",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "ASA MG25-230. Altura 1mm maior que SU-230 — não altera usabilidade. Decisão Bruno: mesma GeometriaPadrao."
-    },
-    {
-      "perfil_id": "TAMBORE-TMS-280",
-      "geometria_padrao_id": "GEO-SU-280",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Tamboré TMS-280."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMS-280",
-      "geometria_padrao_id": "GEO-SU-280",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Centenário TMS-280. Peso difere ligeiramente do Tamboré."
-    },
-    {
-      "perfil_id": "ALCOA-LG-002",
-      "geometria_padrao_id": "GEO-LG-002",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-002."
-    },
-    {
-      "perfil_id": "HYDRO-LG-002",
-      "geometria_padrao_id": "GEO-LG-002",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-002."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-002",
-      "geometria_padrao_id": "GEO-LG-002",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-002."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-002",
-      "geometria_padrao_id": "GEO-LG-002",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-002 (equivale a LG-002). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-002",
-      "geometria_padrao_id": "GEO-LG-002",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-002 (equivale a LG-002). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-016",
-      "geometria_padrao_id": "GEO-LG-002",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-016 (equivale a LG-002)."
-    },
-    {
-      "perfil_id": "ALCOA-LG-003",
-      "geometria_padrao_id": "GEO-LG-003",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-003."
-    },
-    {
-      "perfil_id": "HYDRO-LG-003",
-      "geometria_padrao_id": "GEO-LG-003",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-003."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-003",
-      "geometria_padrao_id": "GEO-LG-003",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-003."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-003",
-      "geometria_padrao_id": "GEO-LG-003",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-003 (equivale a LG-003). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-003",
-      "geometria_padrao_id": "GEO-LG-003",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-003 (equivale a LG-003). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-017",
-      "geometria_padrao_id": "GEO-LG-003",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-017 (equivale a LG-003)."
-    },
-    {
-      "perfil_id": "ALCOA-LG-004",
-      "geometria_padrao_id": "GEO-LG-004",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-004."
-    },
-    {
-      "perfil_id": "HYDRO-LG-004",
-      "geometria_padrao_id": "GEO-LG-004",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-004."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-004",
-      "geometria_padrao_id": "GEO-LG-004",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-004."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-004",
-      "geometria_padrao_id": "GEO-LG-004",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-004 (equivale a LG-004). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-004",
-      "geometria_padrao_id": "GEO-LG-004",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-004 (equivale a LG-004). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-018",
-      "geometria_padrao_id": "GEO-LG-004",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-018 (equivale a LG-004)."
-    },
-    {
-      "perfil_id": "ALCOA-LG-006",
-      "geometria_padrao_id": "GEO-LG-006",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-006."
-    },
-    {
-      "perfil_id": "HYDRO-LG-006",
-      "geometria_padrao_id": "GEO-LG-006",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-006."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-006",
-      "geometria_padrao_id": "GEO-LG-006",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-006."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-006",
-      "geometria_padrao_id": "GEO-LG-006",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-006 (equivale a LG-006). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-006",
-      "geometria_padrao_id": "GEO-LG-006",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-006 (equivale a LG-006). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-020",
-      "geometria_padrao_id": "GEO-LG-006",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-020 (equivale a LG-006)."
-    },
-    {
-      "perfil_id": "ALCOA-LG-007",
-      "geometria_padrao_id": "GEO-LG-007",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-007."
-    },
-    {
-      "perfil_id": "HYDRO-LG-007",
-      "geometria_padrao_id": "GEO-LG-007",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-007."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-007",
-      "geometria_padrao_id": "GEO-LG-007",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-007."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-007",
-      "geometria_padrao_id": "GEO-LG-007",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-007 (equivale a LG-007). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-007",
-      "geometria_padrao_id": "GEO-LG-007",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-007 (equivale a LG-007). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-032",
-      "geometria_padrao_id": "GEO-LG-007",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-032 (equivale a LG-007)."
-    },
-    {
-      "perfil_id": "ALCOA-LG-008",
-      "geometria_padrao_id": "GEO-LG-008",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-008."
-    },
-    {
-      "perfil_id": "HYDRO-LG-008",
-      "geometria_padrao_id": "GEO-LG-008",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-008."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-008",
-      "geometria_padrao_id": "GEO-LG-008",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-008."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-008",
-      "geometria_padrao_id": "GEO-LG-008",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-008 (equivale a LG-008). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-008",
-      "geometria_padrao_id": "GEO-LG-008",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-008 (equivale a LG-008). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ALCOA-LG-009",
-      "geometria_padrao_id": "GEO-LG-009",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-009."
-    },
-    {
-      "perfil_id": "HYDRO-LG-009",
-      "geometria_padrao_id": "GEO-LG-009",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-009."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-009",
-      "geometria_padrao_id": "GEO-LG-009",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-009."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-009",
-      "geometria_padrao_id": "GEO-LG-009",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-009 (equivale a LG-009). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-009",
-      "geometria_padrao_id": "GEO-LG-009",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-009 (equivale a LG-009). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ALCOA-LG-010",
-      "geometria_padrao_id": "GEO-LG-010",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-010."
-    },
-    {
-      "perfil_id": "HYDRO-LG-010",
-      "geometria_padrao_id": "GEO-LG-010",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-010."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-010",
-      "geometria_padrao_id": "GEO-LG-010",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-010."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-010",
-      "geometria_padrao_id": "GEO-LG-010",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-010 (equivale a LG-010). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-010",
-      "geometria_padrao_id": "GEO-LG-010",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-010 (equivale a LG-010). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ALCOA-LG-011",
-      "geometria_padrao_id": "GEO-LG-011",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-011."
-    },
-    {
-      "perfil_id": "HYDRO-LG-011",
-      "geometria_padrao_id": "GEO-LG-011",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-011."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-011",
-      "geometria_padrao_id": "GEO-LG-011",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-011."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-011",
-      "geometria_padrao_id": "GEO-LG-011",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-011 (equivale a LG-011). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-011",
-      "geometria_padrao_id": "GEO-LG-011",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-011 (equivale a LG-011). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ALCOA-LG-014",
-      "geometria_padrao_id": "GEO-LG-014",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-014."
-    },
-    {
-      "perfil_id": "HYDRO-LG-014",
-      "geometria_padrao_id": "GEO-LG-014",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-014."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-014",
-      "geometria_padrao_id": "GEO-LG-014",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-014."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-014",
-      "geometria_padrao_id": "GEO-LG-014",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-014 (equivale a LG-014). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-014",
-      "geometria_padrao_id": "GEO-LG-014",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-014 (equivale a LG-014). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ALCOA-LG-015",
-      "geometria_padrao_id": "GEO-LG-015",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-015."
-    },
-    {
-      "perfil_id": "HYDRO-LG-015",
-      "geometria_padrao_id": "GEO-LG-015",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-015."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-015",
-      "geometria_padrao_id": "GEO-LG-015",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-015."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-015",
-      "geometria_padrao_id": "GEO-LG-015",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-015 (equivale a LG-015). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-015",
-      "geometria_padrao_id": "GEO-LG-015",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-015 (equivale a LG-015). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-115",
-      "geometria_padrao_id": "GEO-LG-015",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-115 (equivale a LG-015)."
-    },
-    {
-      "perfil_id": "ALCOA-LG-016",
-      "geometria_padrao_id": "GEO-LG-016",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-016."
-    },
-    {
-      "perfil_id": "HYDRO-LG-016",
-      "geometria_padrao_id": "GEO-LG-016",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-016."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-016",
-      "geometria_padrao_id": "GEO-LG-016",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-016."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-016",
-      "geometria_padrao_id": "GEO-LG-016",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-016 (equivale a LG-016). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-016",
-      "geometria_padrao_id": "GEO-LG-016",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-016 (equivale a LG-016). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-029",
-      "geometria_padrao_id": "GEO-LG-016",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-029 (equivale a LG-016)."
-    },
-    {
-      "perfil_id": "ALCOA-LG-017",
-      "geometria_padrao_id": "GEO-LG-017",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-017."
-    },
-    {
-      "perfil_id": "HYDRO-LG-017",
-      "geometria_padrao_id": "GEO-LG-017",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-017."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-017",
-      "geometria_padrao_id": "GEO-LG-017",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-017."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-017",
-      "geometria_padrao_id": "GEO-LG-017",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-017 (equivale a LG-017). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-017",
-      "geometria_padrao_id": "GEO-LG-017",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-017 (equivale a LG-017). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ALCOA-LG-018",
-      "geometria_padrao_id": "GEO-LG-018",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-018."
-    },
-    {
-      "perfil_id": "HYDRO-LG-018",
-      "geometria_padrao_id": "GEO-LG-018",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-018."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-018",
-      "geometria_padrao_id": "GEO-LG-018",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-018."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-018",
-      "geometria_padrao_id": "GEO-LG-018",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-018 (equivale a LG-018). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-018",
-      "geometria_padrao_id": "GEO-LG-018",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-018 (equivale a LG-018). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-055",
-      "geometria_padrao_id": "GEO-LG-018",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-055 (equivale a LG-018)."
-    },
-    {
-      "perfil_id": "ALCOA-LG-019",
-      "geometria_padrao_id": "GEO-LG-019",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-019."
-    },
-    {
-      "perfil_id": "HYDRO-LG-019",
-      "geometria_padrao_id": "GEO-LG-019",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-019."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-019",
-      "geometria_padrao_id": "GEO-LG-019",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-019."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-019",
-      "geometria_padrao_id": "GEO-LG-019",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-019 (equivale a LG-019). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-019",
-      "geometria_padrao_id": "GEO-LG-019",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-019 (equivale a LG-019). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ALCOA-LG-020",
-      "geometria_padrao_id": "GEO-LG-020",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-020."
-    },
-    {
-      "perfil_id": "HYDRO-LG-020",
-      "geometria_padrao_id": "GEO-LG-020",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-020."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-020",
-      "geometria_padrao_id": "GEO-LG-020",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-020."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-020",
-      "geometria_padrao_id": "GEO-LG-020",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-020 (equivale a LG-020). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-020",
-      "geometria_padrao_id": "GEO-LG-020",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-020 (equivale a LG-020). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ALCOA-LG-021",
-      "geometria_padrao_id": "GEO-LG-021",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-021."
-    },
-    {
-      "perfil_id": "HYDRO-LG-021",
-      "geometria_padrao_id": "GEO-LG-021",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-021."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-021",
-      "geometria_padrao_id": "GEO-LG-021",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-021."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-021",
-      "geometria_padrao_id": "GEO-LG-021",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-021 (equivale a LG-021). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-021",
-      "geometria_padrao_id": "GEO-LG-021",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-021 (equivale a LG-021). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ALCOA-LG-022",
-      "geometria_padrao_id": "GEO-LG-022",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-022."
-    },
-    {
-      "perfil_id": "HYDRO-LG-022",
-      "geometria_padrao_id": "GEO-LG-022",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-022."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-022",
-      "geometria_padrao_id": "GEO-LG-022",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-022."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-022",
-      "geometria_padrao_id": "GEO-LG-022",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-022 (equivale a LG-022). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-022",
-      "geometria_padrao_id": "GEO-LG-022",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-022 (equivale a LG-022). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ALCOA-LG-023",
-      "geometria_padrao_id": "GEO-LG-023",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-023."
-    },
-    {
-      "perfil_id": "HYDRO-LG-023",
-      "geometria_padrao_id": "GEO-LG-023",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-023."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-023",
-      "geometria_padrao_id": "GEO-LG-023",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-023."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-023",
-      "geometria_padrao_id": "GEO-LG-023",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-023 (equivale a LG-023). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-023",
-      "geometria_padrao_id": "GEO-LG-023",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-023 (equivale a LG-023). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ALCOA-LG-025",
-      "geometria_padrao_id": "GEO-LG-025",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-025."
-    },
-    {
-      "perfil_id": "HYDRO-LG-025",
-      "geometria_padrao_id": "GEO-LG-025",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-025."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-025",
-      "geometria_padrao_id": "GEO-LG-025",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-025."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-025",
-      "geometria_padrao_id": "GEO-LG-025",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-025 (equivale a LG-025). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-025",
-      "geometria_padrao_id": "GEO-LG-025",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-025 (equivale a LG-025). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ALCOA-LG-026",
-      "geometria_padrao_id": "GEO-LG-026",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-026."
-    },
-    {
-      "perfil_id": "HYDRO-LG-026",
-      "geometria_padrao_id": "GEO-LG-026",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-026."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-026",
-      "geometria_padrao_id": "GEO-LG-026",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-026."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-026",
-      "geometria_padrao_id": "GEO-LG-026",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-026 (equivale a LG-026). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-026",
-      "geometria_padrao_id": "GEO-LG-026",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-026 (equivale a LG-026). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-057",
-      "geometria_padrao_id": "GEO-LG-026",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-057 (equivale a LG-026). MG32 3mm de diferença — não altera usabilidade."
-    },
-    {
-      "perfil_id": "ALCOA-LG-027",
-      "geometria_padrao_id": "GEO-LG-027",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-027."
-    },
-    {
-      "perfil_id": "HYDRO-LG-027",
-      "geometria_padrao_id": "GEO-LG-027",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-027."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-027",
-      "geometria_padrao_id": "GEO-LG-027",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-027."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-027",
-      "geometria_padrao_id": "GEO-LG-027",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-027 (equivale a LG-027). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-027",
-      "geometria_padrao_id": "GEO-LG-027",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-027 (equivale a LG-027). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-114",
-      "geometria_padrao_id": "GEO-LG-027",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-114 (equivale a LG-027)."
-    },
-    {
-      "perfil_id": "ALCOA-LG-028",
-      "geometria_padrao_id": "GEO-LG-028",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-028."
-    },
-    {
-      "perfil_id": "HYDRO-LG-028",
-      "geometria_padrao_id": "GEO-LG-028",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-028."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-028",
-      "geometria_padrao_id": "GEO-LG-028",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-028."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-028",
-      "geometria_padrao_id": "GEO-LG-028",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-028 (equivale a LG-028). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-028",
-      "geometria_padrao_id": "GEO-LG-028",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-028 (equivale a LG-028). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-024",
-      "geometria_padrao_id": "GEO-LG-028",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-024 (equivale a LG-028)."
-    },
-    {
-      "perfil_id": "ALCOA-LG-042",
-      "geometria_padrao_id": "GEO-LG-042",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-042."
-    },
-    {
-      "perfil_id": "HYDRO-LG-042",
-      "geometria_padrao_id": "GEO-LG-042",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-042."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-042",
-      "geometria_padrao_id": "GEO-LG-042",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-042."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-042",
-      "geometria_padrao_id": "GEO-LG-042",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-042 (equivale a LG-042). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-042",
-      "geometria_padrao_id": "GEO-LG-042",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-042 (equivale a LG-042). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ALCOA-LG-043",
-      "geometria_padrao_id": "GEO-LG-043",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-043."
-    },
-    {
-      "perfil_id": "HYDRO-LG-043",
-      "geometria_padrao_id": "GEO-LG-043",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-043."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-043",
-      "geometria_padrao_id": "GEO-LG-043",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-043."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-043",
-      "geometria_padrao_id": "GEO-LG-043",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-043 (equivale a LG-043). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-043",
-      "geometria_padrao_id": "GEO-LG-043",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-043 (equivale a LG-043). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-011",
-      "geometria_padrao_id": "GEO-LG-043",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-011 (equivale a LG-043)."
-    },
-    {
-      "perfil_id": "ALCOA-LG-044",
-      "geometria_padrao_id": "GEO-LG-044",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-044. Alias base Alcoa: SI-301."
-    },
-    {
-      "perfil_id": "HYDRO-LG-044",
-      "geometria_padrao_id": "GEO-LG-044",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-044."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-044",
-      "geometria_padrao_id": "GEO-LG-044",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-044."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-044",
-      "geometria_padrao_id": "GEO-LG-044",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-044 (equivale a LG-044). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-044",
-      "geometria_padrao_id": "GEO-LG-044",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-044 (equivale a LG-044). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-001",
-      "geometria_padrao_id": "GEO-LG-044",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-001 (equivale a LG-044)."
-    },
-    {
-      "perfil_id": "ALCOA-LG-048",
-      "geometria_padrao_id": "GEO-LG-048",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-048. Alias base Alcoa: SI-309."
-    },
-    {
-      "perfil_id": "HYDRO-LG-048",
-      "geometria_padrao_id": "GEO-LG-048",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-048."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-048",
-      "geometria_padrao_id": "GEO-LG-048",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-048."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-048",
-      "geometria_padrao_id": "GEO-LG-048",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-048 (equivale a LG-048). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-048",
-      "geometria_padrao_id": "GEO-LG-048",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-048 (equivale a LG-048). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-005",
-      "geometria_padrao_id": "GEO-LG-048",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-005 (equivale a LG-048)."
-    },
-    {
-      "perfil_id": "ALCOA-LG-049",
-      "geometria_padrao_id": "GEO-LG-049",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-049. Alias base Alcoa: SI-310."
-    },
-    {
-      "perfil_id": "HYDRO-LG-049",
-      "geometria_padrao_id": "GEO-LG-049",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-049."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-049",
-      "geometria_padrao_id": "GEO-LG-049",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-049."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-049",
-      "geometria_padrao_id": "GEO-LG-049",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-049 (equivale a LG-049). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-049",
-      "geometria_padrao_id": "GEO-LG-049",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-049 (equivale a LG-049). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-006",
-      "geometria_padrao_id": "GEO-LG-049",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-006 (equivale a LG-049)."
-    },
-    {
-      "perfil_id": "ALCOA-LG-050",
-      "geometria_padrao_id": "GEO-LG-050",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-050. Alias base Alcoa: SI-311."
-    },
-    {
-      "perfil_id": "HYDRO-LG-050",
-      "geometria_padrao_id": "GEO-LG-050",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-050."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-050",
-      "geometria_padrao_id": "GEO-LG-050",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-050."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-050",
-      "geometria_padrao_id": "GEO-LG-050",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-050 (equivale a LG-050). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-050",
-      "geometria_padrao_id": "GEO-LG-050",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-050 (equivale a LG-050). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ALCOA-LG-051",
-      "geometria_padrao_id": "GEO-LG-051",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-051. Alias base Alcoa: SI-312."
-    },
-    {
-      "perfil_id": "HYDRO-LG-051",
-      "geometria_padrao_id": "GEO-LG-051",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-051."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-051",
-      "geometria_padrao_id": "GEO-LG-051",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-051."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-051",
-      "geometria_padrao_id": "GEO-LG-051",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-051 (equivale a LG-051). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-051",
-      "geometria_padrao_id": "GEO-LG-051",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-051 (equivale a LG-051). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ALCOA-LG-052",
-      "geometria_padrao_id": "GEO-LG-052",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-052."
-    },
-    {
-      "perfil_id": "HYDRO-LG-052",
-      "geometria_padrao_id": "GEO-LG-052",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-052."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-052",
-      "geometria_padrao_id": "GEO-LG-052",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-052."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-052",
-      "geometria_padrao_id": "GEO-LG-052",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-052 (equivale a LG-052). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-052",
-      "geometria_padrao_id": "GEO-LG-052",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-052 (equivale a LG-052). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-054",
-      "geometria_padrao_id": "GEO-LG-052",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-054 (equivale a LG-052)."
-    },
-    {
-      "perfil_id": "ALCOA-LG-053",
-      "geometria_padrao_id": "GEO-LG-053",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-053. Alias base Alcoa: SI-314."
-    },
-    {
-      "perfil_id": "HYDRO-LG-053",
-      "geometria_padrao_id": "GEO-LG-053",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-053."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-053",
-      "geometria_padrao_id": "GEO-LG-053",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-053."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-053",
-      "geometria_padrao_id": "GEO-LG-053",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-053 (equivale a LG-053). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-053",
-      "geometria_padrao_id": "GEO-LG-053",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-053 (equivale a LG-053). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-053",
-      "geometria_padrao_id": "GEO-LG-053",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-053 (equivale a LG-053)."
-    },
-    {
-      "perfil_id": "ALCOA-LG-054",
-      "geometria_padrao_id": "GEO-LG-054",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-054. Alias base Alcoa: SI-315."
-    },
-    {
-      "perfil_id": "HYDRO-LG-054",
-      "geometria_padrao_id": "GEO-LG-054",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-054."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-054",
-      "geometria_padrao_id": "GEO-LG-054",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-054."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-054",
-      "geometria_padrao_id": "GEO-LG-054",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-054 (equivale a LG-054). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-054",
-      "geometria_padrao_id": "GEO-LG-054",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-054 (equivale a LG-054). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-056",
-      "geometria_padrao_id": "GEO-LG-054",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-056 (equivale a LG-054)."
-    },
-    {
-      "perfil_id": "ALCOA-LG-055",
-      "geometria_padrao_id": "GEO-LG-055",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-055. Alias base Alcoa: SI-317."
-    },
-    {
-      "perfil_id": "HYDRO-LG-055",
-      "geometria_padrao_id": "GEO-LG-055",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-055."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-055",
-      "geometria_padrao_id": "GEO-LG-055",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-055."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-055",
-      "geometria_padrao_id": "GEO-LG-055",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-055 (equivale a LG-055). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-055",
-      "geometria_padrao_id": "GEO-LG-055",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-055 (equivale a LG-055). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-009",
-      "geometria_padrao_id": "GEO-LG-055",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-009 (equivale a LG-055)."
-    },
-    {
-      "perfil_id": "ALCOA-LG-056",
-      "geometria_padrao_id": "GEO-LG-056",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-056. Alias base Alcoa: SI-319."
-    },
-    {
-      "perfil_id": "HYDRO-LG-056",
-      "geometria_padrao_id": "GEO-LG-056",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-056."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-056",
-      "geometria_padrao_id": "GEO-LG-056",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-056."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-056",
-      "geometria_padrao_id": "GEO-LG-056",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-056 (equivale a LG-056). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-056",
-      "geometria_padrao_id": "GEO-LG-056",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-056 (equivale a LG-056). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-010",
-      "geometria_padrao_id": "GEO-LG-056",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-010 (equivale a LG-056)."
-    },
-    {
-      "perfil_id": "ALCOA-LG-058",
-      "geometria_padrao_id": "GEO-LG-058",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-058. Alias base Alcoa: SI-324."
-    },
-    {
-      "perfil_id": "HYDRO-LG-058",
-      "geometria_padrao_id": "GEO-LG-058",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-058."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-058",
-      "geometria_padrao_id": "GEO-LG-058",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-058."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-058",
-      "geometria_padrao_id": "GEO-LG-058",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-058 (equivale a LG-058). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-058",
-      "geometria_padrao_id": "GEO-LG-058",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-058 (equivale a LG-058). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-026",
-      "geometria_padrao_id": "GEO-LG-058",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-026 (equivale a LG-058)."
-    },
-    {
-      "perfil_id": "ALCOA-LG-059",
-      "geometria_padrao_id": "GEO-LG-059",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-059. Alias base Alcoa: SI-328."
-    },
-    {
-      "perfil_id": "HYDRO-LG-059",
-      "geometria_padrao_id": "GEO-LG-059",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-059."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-059",
-      "geometria_padrao_id": "GEO-LG-059",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-059."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-059",
-      "geometria_padrao_id": "GEO-LG-059",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-059 (equivale a LG-059). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-059",
-      "geometria_padrao_id": "GEO-LG-059",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-059 (equivale a LG-059). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "ASA-MG32-012",
-      "geometria_padrao_id": "GEO-LG-059",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura ASA MG32-012 (equivale a LG-059). MG32 2mm de diferença — não altera usabilidade."
-    },
-    {
-      "perfil_id": "ALCOA-LG-062",
-      "geometria_padrao_id": "GEO-LG-062",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-062. Alias base Alcoa: SI-343."
-    },
-    {
-      "perfil_id": "HYDRO-LG-062",
-      "geometria_padrao_id": "GEO-LG-062",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-062."
-    },
-    {
-      "perfil_id": "VITRALSUL-LG-062",
-      "geometria_padrao_id": "GEO-LG-062",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura LG-062."
-    },
-    {
-      "perfil_id": "CENTENARIO-TMG-062",
-      "geometria_padrao_id": "GEO-LG-062",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-062 (equivale a LG-062). Pesos diferem do padrão Alcoa."
-    },
-    {
-      "perfil_id": "TAMBORE-TMG-062",
-      "geometria_padrao_id": "GEO-LG-062",
-      "responsavel_homologacao": "Bruno",
-      "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
-      "data": "2026-07-10",
-      "nivel_de_confianca": "alto",
-      "observacoes": "Família Gold. Nomenclatura local TMG-062 (equivale a LG-062). Pesos diferem do padrão Alcoa."
-    }
-  ]
+ "_comentario": "Associações auditáveis Perfil -> GeometriaPadrao (ADR-005). Cada associação é uma decisão humana de curadoria, nunca automática.",
+ "associacoes": [
+  {
+   "perfil_id": "ALCOA-SU-005",
+   "geometria_padrao_id": "GEO-SU-005",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual lado a lado + peso e cotas idênticos",
+   "data": "2026-07-09",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Função, cotas (69.6/46/35) e peso (1.108 kg/m) idênticos. Código legado Alcoa: P-634/E."
+  },
+  {
+   "perfil_id": "VITRALSUL-SU-005",
+   "geometria_padrao_id": "GEO-SU-005",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual lado a lado + peso e cotas idênticos",
+   "data": "2026-07-09",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família comercial local: Nobile 2.5. Mesma geometria da Alcoa Suprema."
+  },
+  {
+   "perfil_id": "ALCOA-SU-228",
+   "geometria_padrao_id": "GEO-SU-228",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual lado a lado + peso idêntico",
+   "data": "2026-07-09",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Peso idêntico: 0.688 kg/m (delta 0.0%). Alcoa índice (texto nativo) × Vitral Sul OCR."
+  },
+  {
+   "perfil_id": "VITRALSUL-SU-228",
+   "geometria_padrao_id": "GEO-SU-228",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual lado a lado + peso idêntico",
+   "data": "2026-07-09",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família comercial local: Nobile 2.5. Peso idêntico ao da Alcoa: 0.688 kg/m."
+  },
+  {
+   "perfil_id": "ALCOA-SU-230",
+   "geometria_padrao_id": "GEO-SU-230",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual lado a lado + peso dentro da tolerância",
+   "data": "2026-07-09",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Peso Alcoa: 0.954 kg/m (índice + OCR concordam). Peso VitralSul OCR: 0.936. Delta 1.9%."
+  },
+  {
+   "perfil_id": "VITRALSUL-SU-230",
+   "geometria_padrao_id": "GEO-SU-230",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual lado a lado + peso dentro da tolerância",
+   "data": "2026-07-09",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família comercial local: Nobile 2.5. Delta de peso 1.9% em relação à Alcoa — dentro da tolerância."
+  },
+  {
+   "perfil_id": "ALCOA-SU-009",
+   "geometria_padrao_id": "GEO-SU-009",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Alcoa: catálogo pág 159, PDF físico pág 172."
+  },
+  {
+   "perfil_id": "VITRALSUL-SU-009",
+   "geometria_padrao_id": "GEO-SU-009",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "VitralSul: catálogo pág 74, PDF físico pág 74. Família local: Nobile 2.5."
+  },
+  {
+   "perfil_id": "ALCOA-SU-024",
+   "geometria_padrao_id": "GEO-SU-024",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Alcoa: catálogo pág ~160, PDF físico pág ~173. CORRECAO 2026-07-12: card real na pág PDF 178 (verificado visualmente na geração da evidência lado a lado)."
+  },
+  {
+   "perfil_id": "VITRALSUL-SU-024",
+   "geometria_padrao_id": "GEO-SU-024",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "VitralSul: catálogo pág ~75. Família local: Nobile 2.5."
+  },
+  {
+   "perfil_id": "ALCOA-SU-025",
+   "geometria_padrao_id": "GEO-SU-025",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Alcoa: catálogo ~pág 160, PDF físico ~pág 173. CORRECAO 2026-07-12: card real na pág PDF 178 (verificado visualmente na geração da evidência lado a lado)."
+  },
+  {
+   "perfil_id": "VITRALSUL-SU-025",
+   "geometria_padrao_id": "GEO-SU-025",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "VitralSul: catálogo ~pág 75. Família local: Nobile 2.5."
+  },
+  {
+   "perfil_id": "ALCOA-SU-056",
+   "geometria_padrao_id": "GEO-SU-056",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Alcoa: catálogo ~pág 163, PDF físico ~pág 176. CORRECAO 2026-07-12: card real na pág PDF 188 (verificado visualmente na geração da evidência lado a lado)."
+  },
+  {
+   "perfil_id": "VITRALSUL-SU-056",
+   "geometria_padrao_id": "GEO-SU-056",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "VitralSul: catálogo ~pág 78. Família local: Nobile 2.5."
+  },
+  {
+   "perfil_id": "ALCOA-SU-280",
+   "geometria_padrao_id": "GEO-SU-280",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Alcoa: catálogo ~pág 165, PDF físico ~pág 178. CORRECAO 2026-07-12: card real na pág PDF 182 (verificado visualmente na geração da evidência lado a lado)."
+  },
+  {
+   "perfil_id": "VITRALSUL-SU-280",
+   "geometria_padrao_id": "GEO-SU-280",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "VitralSul: catálogo ~pág 80. Família local: Nobile 2.5."
+  },
+  {
+   "perfil_id": "TAMBORE-TMS-005",
+   "geometria_padrao_id": "GEO-SU-005",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Tamboré TMS-005. Mesma geometria Alcoa/VitralSul já homologada."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMS-005",
+   "geometria_padrao_id": "GEO-SU-005",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Centenário TMS-005. Peso difere ligeiramente do Tamboré apesar da mesma nomenclatura — observação de mercado registrada."
+  },
+  {
+   "perfil_id": "ASA-MG25-005",
+   "geometria_padrao_id": "GEO-SU-005",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "ASA MG25-005. Mesma geometria confirmada por Bruno."
+  },
+  {
+   "perfil_id": "TAMBORE-TMS-009",
+   "geometria_padrao_id": "GEO-SU-009",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Tamboré TMS-009."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMS-009",
+   "geometria_padrao_id": "GEO-SU-009",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Centenário TMS-009. Peso difere ligeiramente do Tamboré."
+  },
+  {
+   "perfil_id": "ASA-MG25-009",
+   "geometria_padrao_id": "GEO-SU-009",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "ASA MG25-009."
+  },
+  {
+   "perfil_id": "TAMBORE-TMS-056",
+   "geometria_padrao_id": "GEO-SU-056",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Tamboré TMS-056."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMS-056",
+   "geometria_padrao_id": "GEO-SU-056",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Centenário TMS-056. Peso difere ligeiramente do Tamboré."
+  },
+  {
+   "perfil_id": "ASA-MG25-056",
+   "geometria_padrao_id": "GEO-SU-056",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "ASA MG25-056."
+  },
+  {
+   "perfil_id": "TAMBORE-TMS-228",
+   "geometria_padrao_id": "GEO-SU-228",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Tamboré TMS-228."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMS-228",
+   "geometria_padrao_id": "GEO-SU-228",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Centenário TMS-228. Peso difere ligeiramente do Tamboré."
+  },
+  {
+   "perfil_id": "ASA-MG25-228",
+   "geometria_padrao_id": "GEO-SU-228",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "ASA MG25-228. Altura 1mm maior que SU-228 — não altera usabilidade. Decisão Bruno: mesma GeometriaPadrao."
+  },
+  {
+   "perfil_id": "TAMBORE-TMS-230",
+   "geometria_padrao_id": "GEO-SU-230",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Tamboré TMS-230."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMS-230",
+   "geometria_padrao_id": "GEO-SU-230",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Centenário TMS-230. Peso difere ligeiramente do Tamboré."
+  },
+  {
+   "perfil_id": "ASA-MG25-230",
+   "geometria_padrao_id": "GEO-SU-230",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "ASA MG25-230. Altura 1mm maior que SU-230 — não altera usabilidade. Decisão Bruno: mesma GeometriaPadrao."
+  },
+  {
+   "perfil_id": "TAMBORE-TMS-280",
+   "geometria_padrao_id": "GEO-SU-280",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Tamboré TMS-280."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMS-280",
+   "geometria_padrao_id": "GEO-SU-280",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — 5 fabricantes",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Centenário TMS-280. Peso difere ligeiramente do Tamboré."
+  },
+  {
+   "perfil_id": "ALCOA-LG-002",
+   "geometria_padrao_id": "GEO-LG-002",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-002."
+  },
+  {
+   "perfil_id": "HYDRO-LG-002",
+   "geometria_padrao_id": "GEO-LG-002",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-002."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-002",
+   "geometria_padrao_id": "GEO-LG-002",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-002."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-002",
+   "geometria_padrao_id": "GEO-LG-002",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-002 (equivale a LG-002). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-002",
+   "geometria_padrao_id": "GEO-LG-002",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-002 (equivale a LG-002). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-016",
+   "geometria_padrao_id": "GEO-LG-002",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-016 (equivale a LG-002)."
+  },
+  {
+   "perfil_id": "ALCOA-LG-003",
+   "geometria_padrao_id": "GEO-LG-003",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-003."
+  },
+  {
+   "perfil_id": "HYDRO-LG-003",
+   "geometria_padrao_id": "GEO-LG-003",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-003."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-003",
+   "geometria_padrao_id": "GEO-LG-003",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-003."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-003",
+   "geometria_padrao_id": "GEO-LG-003",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-003 (equivale a LG-003). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-003",
+   "geometria_padrao_id": "GEO-LG-003",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-003 (equivale a LG-003). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-017",
+   "geometria_padrao_id": "GEO-LG-003",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-017 (equivale a LG-003)."
+  },
+  {
+   "perfil_id": "ALCOA-LG-004",
+   "geometria_padrao_id": "GEO-LG-004",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-004."
+  },
+  {
+   "perfil_id": "HYDRO-LG-004",
+   "geometria_padrao_id": "GEO-LG-004",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-004."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-004",
+   "geometria_padrao_id": "GEO-LG-004",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-004."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-004",
+   "geometria_padrao_id": "GEO-LG-004",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-004 (equivale a LG-004). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-004",
+   "geometria_padrao_id": "GEO-LG-004",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-004 (equivale a LG-004). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-018",
+   "geometria_padrao_id": "GEO-LG-004",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-018 (equivale a LG-004)."
+  },
+  {
+   "perfil_id": "ALCOA-LG-006",
+   "geometria_padrao_id": "GEO-LG-006",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-006."
+  },
+  {
+   "perfil_id": "HYDRO-LG-006",
+   "geometria_padrao_id": "GEO-LG-006",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-006."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-006",
+   "geometria_padrao_id": "GEO-LG-006",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-006."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-006",
+   "geometria_padrao_id": "GEO-LG-006",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-006 (equivale a LG-006). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-006",
+   "geometria_padrao_id": "GEO-LG-006",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-006 (equivale a LG-006). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-020",
+   "geometria_padrao_id": "GEO-LG-006",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-020 (equivale a LG-006)."
+  },
+  {
+   "perfil_id": "ALCOA-LG-007",
+   "geometria_padrao_id": "GEO-LG-007",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-007."
+  },
+  {
+   "perfil_id": "HYDRO-LG-007",
+   "geometria_padrao_id": "GEO-LG-007",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-007."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-007",
+   "geometria_padrao_id": "GEO-LG-007",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-007."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-007",
+   "geometria_padrao_id": "GEO-LG-007",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-007 (equivale a LG-007). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-007",
+   "geometria_padrao_id": "GEO-LG-007",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-007 (equivale a LG-007). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-032",
+   "geometria_padrao_id": "GEO-LG-007",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-032 (equivale a LG-007)."
+  },
+  {
+   "perfil_id": "ALCOA-LG-008",
+   "geometria_padrao_id": "GEO-LG-008",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-008."
+  },
+  {
+   "perfil_id": "HYDRO-LG-008",
+   "geometria_padrao_id": "GEO-LG-008",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-008."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-008",
+   "geometria_padrao_id": "GEO-LG-008",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-008."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-008",
+   "geometria_padrao_id": "GEO-LG-008",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-008 (equivale a LG-008). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-008",
+   "geometria_padrao_id": "GEO-LG-008",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-008 (equivale a LG-008). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ALCOA-LG-009",
+   "geometria_padrao_id": "GEO-LG-009",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-009."
+  },
+  {
+   "perfil_id": "HYDRO-LG-009",
+   "geometria_padrao_id": "GEO-LG-009",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-009."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-009",
+   "geometria_padrao_id": "GEO-LG-009",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-009."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-009",
+   "geometria_padrao_id": "GEO-LG-009",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-009 (equivale a LG-009). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-009",
+   "geometria_padrao_id": "GEO-LG-009",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-009 (equivale a LG-009). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ALCOA-LG-010",
+   "geometria_padrao_id": "GEO-LG-010",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-010."
+  },
+  {
+   "perfil_id": "HYDRO-LG-010",
+   "geometria_padrao_id": "GEO-LG-010",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-010."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-010",
+   "geometria_padrao_id": "GEO-LG-010",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-010."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-010",
+   "geometria_padrao_id": "GEO-LG-010",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-010 (equivale a LG-010). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-010",
+   "geometria_padrao_id": "GEO-LG-010",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-010 (equivale a LG-010). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ALCOA-LG-011",
+   "geometria_padrao_id": "GEO-LG-011",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-011."
+  },
+  {
+   "perfil_id": "HYDRO-LG-011",
+   "geometria_padrao_id": "GEO-LG-011",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-011."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-011",
+   "geometria_padrao_id": "GEO-LG-011",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-011."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-011",
+   "geometria_padrao_id": "GEO-LG-011",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-011 (equivale a LG-011). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-011",
+   "geometria_padrao_id": "GEO-LG-011",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-011 (equivale a LG-011). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ALCOA-LG-014",
+   "geometria_padrao_id": "GEO-LG-014",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-014."
+  },
+  {
+   "perfil_id": "HYDRO-LG-014",
+   "geometria_padrao_id": "GEO-LG-014",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-014."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-014",
+   "geometria_padrao_id": "GEO-LG-014",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-014."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-014",
+   "geometria_padrao_id": "GEO-LG-014",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-014 (equivale a LG-014). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-014",
+   "geometria_padrao_id": "GEO-LG-014",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-014 (equivale a LG-014). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ALCOA-LG-015",
+   "geometria_padrao_id": "GEO-LG-015",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-015."
+  },
+  {
+   "perfil_id": "HYDRO-LG-015",
+   "geometria_padrao_id": "GEO-LG-015",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-015."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-015",
+   "geometria_padrao_id": "GEO-LG-015",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-015."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-015",
+   "geometria_padrao_id": "GEO-LG-015",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-015 (equivale a LG-015). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-015",
+   "geometria_padrao_id": "GEO-LG-015",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-015 (equivale a LG-015). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-115",
+   "geometria_padrao_id": "GEO-LG-015",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-115 (equivale a LG-015)."
+  },
+  {
+   "perfil_id": "ALCOA-LG-016",
+   "geometria_padrao_id": "GEO-LG-016",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-016."
+  },
+  {
+   "perfil_id": "HYDRO-LG-016",
+   "geometria_padrao_id": "GEO-LG-016",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-016."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-016",
+   "geometria_padrao_id": "GEO-LG-016",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-016."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-016",
+   "geometria_padrao_id": "GEO-LG-016",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-016 (equivale a LG-016). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-016",
+   "geometria_padrao_id": "GEO-LG-016",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-016 (equivale a LG-016). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-029",
+   "geometria_padrao_id": "GEO-LG-016",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-029 (equivale a LG-016)."
+  },
+  {
+   "perfil_id": "ALCOA-LG-017",
+   "geometria_padrao_id": "GEO-LG-017",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-017."
+  },
+  {
+   "perfil_id": "HYDRO-LG-017",
+   "geometria_padrao_id": "GEO-LG-017",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-017."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-017",
+   "geometria_padrao_id": "GEO-LG-017",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-017."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-017",
+   "geometria_padrao_id": "GEO-LG-017",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-017 (equivale a LG-017). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-017",
+   "geometria_padrao_id": "GEO-LG-017",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-017 (equivale a LG-017). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ALCOA-LG-018",
+   "geometria_padrao_id": "GEO-LG-018",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-018."
+  },
+  {
+   "perfil_id": "HYDRO-LG-018",
+   "geometria_padrao_id": "GEO-LG-018",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-018."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-018",
+   "geometria_padrao_id": "GEO-LG-018",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-018."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-018",
+   "geometria_padrao_id": "GEO-LG-018",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-018 (equivale a LG-018). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-018",
+   "geometria_padrao_id": "GEO-LG-018",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-018 (equivale a LG-018). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-055",
+   "geometria_padrao_id": "GEO-LG-018",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-055 (equivale a LG-018)."
+  },
+  {
+   "perfil_id": "ALCOA-LG-019",
+   "geometria_padrao_id": "GEO-LG-019",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-019."
+  },
+  {
+   "perfil_id": "HYDRO-LG-019",
+   "geometria_padrao_id": "GEO-LG-019",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-019."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-019",
+   "geometria_padrao_id": "GEO-LG-019",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-019."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-019",
+   "geometria_padrao_id": "GEO-LG-019",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-019 (equivale a LG-019). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-019",
+   "geometria_padrao_id": "GEO-LG-019",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-019 (equivale a LG-019). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ALCOA-LG-020",
+   "geometria_padrao_id": "GEO-LG-020",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-020."
+  },
+  {
+   "perfil_id": "HYDRO-LG-020",
+   "geometria_padrao_id": "GEO-LG-020",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-020."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-020",
+   "geometria_padrao_id": "GEO-LG-020",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-020."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-020",
+   "geometria_padrao_id": "GEO-LG-020",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-020 (equivale a LG-020). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-020",
+   "geometria_padrao_id": "GEO-LG-020",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-020 (equivale a LG-020). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ALCOA-LG-021",
+   "geometria_padrao_id": "GEO-LG-021",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-021."
+  },
+  {
+   "perfil_id": "HYDRO-LG-021",
+   "geometria_padrao_id": "GEO-LG-021",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-021."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-021",
+   "geometria_padrao_id": "GEO-LG-021",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-021."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-021",
+   "geometria_padrao_id": "GEO-LG-021",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-021 (equivale a LG-021). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-021",
+   "geometria_padrao_id": "GEO-LG-021",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-021 (equivale a LG-021). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ALCOA-LG-022",
+   "geometria_padrao_id": "GEO-LG-022",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-022."
+  },
+  {
+   "perfil_id": "HYDRO-LG-022",
+   "geometria_padrao_id": "GEO-LG-022",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-022."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-022",
+   "geometria_padrao_id": "GEO-LG-022",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-022."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-022",
+   "geometria_padrao_id": "GEO-LG-022",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-022 (equivale a LG-022). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-022",
+   "geometria_padrao_id": "GEO-LG-022",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-022 (equivale a LG-022). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ALCOA-LG-023",
+   "geometria_padrao_id": "GEO-LG-023",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-023."
+  },
+  {
+   "perfil_id": "HYDRO-LG-023",
+   "geometria_padrao_id": "GEO-LG-023",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-023."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-023",
+   "geometria_padrao_id": "GEO-LG-023",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-023."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-023",
+   "geometria_padrao_id": "GEO-LG-023",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-023 (equivale a LG-023). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-023",
+   "geometria_padrao_id": "GEO-LG-023",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-023 (equivale a LG-023). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ALCOA-LG-025",
+   "geometria_padrao_id": "GEO-LG-025",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-025."
+  },
+  {
+   "perfil_id": "HYDRO-LG-025",
+   "geometria_padrao_id": "GEO-LG-025",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-025."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-025",
+   "geometria_padrao_id": "GEO-LG-025",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-025."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-025",
+   "geometria_padrao_id": "GEO-LG-025",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-025 (equivale a LG-025). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-025",
+   "geometria_padrao_id": "GEO-LG-025",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-025 (equivale a LG-025). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ALCOA-LG-026",
+   "geometria_padrao_id": "GEO-LG-026",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-026."
+  },
+  {
+   "perfil_id": "HYDRO-LG-026",
+   "geometria_padrao_id": "GEO-LG-026",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-026."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-026",
+   "geometria_padrao_id": "GEO-LG-026",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-026."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-026",
+   "geometria_padrao_id": "GEO-LG-026",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-026 (equivale a LG-026). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-026",
+   "geometria_padrao_id": "GEO-LG-026",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-026 (equivale a LG-026). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-057",
+   "geometria_padrao_id": "GEO-LG-026",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-057 (equivale a LG-026). MG32 3mm de diferença — não altera usabilidade."
+  },
+  {
+   "perfil_id": "ALCOA-LG-027",
+   "geometria_padrao_id": "GEO-LG-027",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-027."
+  },
+  {
+   "perfil_id": "HYDRO-LG-027",
+   "geometria_padrao_id": "GEO-LG-027",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-027."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-027",
+   "geometria_padrao_id": "GEO-LG-027",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-027."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-027",
+   "geometria_padrao_id": "GEO-LG-027",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-027 (equivale a LG-027). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-027",
+   "geometria_padrao_id": "GEO-LG-027",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-027 (equivale a LG-027). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-114",
+   "geometria_padrao_id": "GEO-LG-027",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-114 (equivale a LG-027)."
+  },
+  {
+   "perfil_id": "ALCOA-LG-028",
+   "geometria_padrao_id": "GEO-LG-028",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-028."
+  },
+  {
+   "perfil_id": "HYDRO-LG-028",
+   "geometria_padrao_id": "GEO-LG-028",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-028."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-028",
+   "geometria_padrao_id": "GEO-LG-028",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-028."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-028",
+   "geometria_padrao_id": "GEO-LG-028",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-028 (equivale a LG-028). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-028",
+   "geometria_padrao_id": "GEO-LG-028",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-028 (equivale a LG-028). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-024",
+   "geometria_padrao_id": "GEO-LG-028",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-024 (equivale a LG-028)."
+  },
+  {
+   "perfil_id": "ALCOA-LG-042",
+   "geometria_padrao_id": "GEO-LG-042",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-042."
+  },
+  {
+   "perfil_id": "HYDRO-LG-042",
+   "geometria_padrao_id": "GEO-LG-042",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-042."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-042",
+   "geometria_padrao_id": "GEO-LG-042",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-042."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-042",
+   "geometria_padrao_id": "GEO-LG-042",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-042 (equivale a LG-042). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-042",
+   "geometria_padrao_id": "GEO-LG-042",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-042 (equivale a LG-042). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ALCOA-LG-043",
+   "geometria_padrao_id": "GEO-LG-043",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-043."
+  },
+  {
+   "perfil_id": "HYDRO-LG-043",
+   "geometria_padrao_id": "GEO-LG-043",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-043."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-043",
+   "geometria_padrao_id": "GEO-LG-043",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-043."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-043",
+   "geometria_padrao_id": "GEO-LG-043",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-043 (equivale a LG-043). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-043",
+   "geometria_padrao_id": "GEO-LG-043",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-043 (equivale a LG-043). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-011",
+   "geometria_padrao_id": "GEO-LG-043",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-011 (equivale a LG-043)."
+  },
+  {
+   "perfil_id": "ALCOA-LG-044",
+   "geometria_padrao_id": "GEO-LG-044",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-044. Alias base Alcoa: SI-301."
+  },
+  {
+   "perfil_id": "HYDRO-LG-044",
+   "geometria_padrao_id": "GEO-LG-044",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-044."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-044",
+   "geometria_padrao_id": "GEO-LG-044",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-044."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-044",
+   "geometria_padrao_id": "GEO-LG-044",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-044 (equivale a LG-044). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-044",
+   "geometria_padrao_id": "GEO-LG-044",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-044 (equivale a LG-044). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-001",
+   "geometria_padrao_id": "GEO-LG-044",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-001 (equivale a LG-044)."
+  },
+  {
+   "perfil_id": "ALCOA-LG-048",
+   "geometria_padrao_id": "GEO-LG-048",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-048. Alias base Alcoa: SI-309."
+  },
+  {
+   "perfil_id": "HYDRO-LG-048",
+   "geometria_padrao_id": "GEO-LG-048",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-048."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-048",
+   "geometria_padrao_id": "GEO-LG-048",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-048."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-048",
+   "geometria_padrao_id": "GEO-LG-048",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-048 (equivale a LG-048). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-048",
+   "geometria_padrao_id": "GEO-LG-048",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-048 (equivale a LG-048). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-005",
+   "geometria_padrao_id": "GEO-LG-048",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-005 (equivale a LG-048)."
+  },
+  {
+   "perfil_id": "ALCOA-LG-049",
+   "geometria_padrao_id": "GEO-LG-049",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-049. Alias base Alcoa: SI-310."
+  },
+  {
+   "perfil_id": "HYDRO-LG-049",
+   "geometria_padrao_id": "GEO-LG-049",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-049."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-049",
+   "geometria_padrao_id": "GEO-LG-049",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-049."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-049",
+   "geometria_padrao_id": "GEO-LG-049",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-049 (equivale a LG-049). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-049",
+   "geometria_padrao_id": "GEO-LG-049",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-049 (equivale a LG-049). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-006",
+   "geometria_padrao_id": "GEO-LG-049",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-006 (equivale a LG-049)."
+  },
+  {
+   "perfil_id": "ALCOA-LG-050",
+   "geometria_padrao_id": "GEO-LG-050",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-050. Alias base Alcoa: SI-311."
+  },
+  {
+   "perfil_id": "HYDRO-LG-050",
+   "geometria_padrao_id": "GEO-LG-050",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-050."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-050",
+   "geometria_padrao_id": "GEO-LG-050",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-050."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-050",
+   "geometria_padrao_id": "GEO-LG-050",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-050 (equivale a LG-050). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-050",
+   "geometria_padrao_id": "GEO-LG-050",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-050 (equivale a LG-050). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ALCOA-LG-051",
+   "geometria_padrao_id": "GEO-LG-051",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-051. Alias base Alcoa: SI-312."
+  },
+  {
+   "perfil_id": "HYDRO-LG-051",
+   "geometria_padrao_id": "GEO-LG-051",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-051."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-051",
+   "geometria_padrao_id": "GEO-LG-051",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-051."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-051",
+   "geometria_padrao_id": "GEO-LG-051",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-051 (equivale a LG-051). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-051",
+   "geometria_padrao_id": "GEO-LG-051",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-051 (equivale a LG-051). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ALCOA-LG-052",
+   "geometria_padrao_id": "GEO-LG-052",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-052."
+  },
+  {
+   "perfil_id": "HYDRO-LG-052",
+   "geometria_padrao_id": "GEO-LG-052",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-052."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-052",
+   "geometria_padrao_id": "GEO-LG-052",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-052."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-052",
+   "geometria_padrao_id": "GEO-LG-052",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-052 (equivale a LG-052). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-052",
+   "geometria_padrao_id": "GEO-LG-052",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-052 (equivale a LG-052). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-054",
+   "geometria_padrao_id": "GEO-LG-052",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-054 (equivale a LG-052)."
+  },
+  {
+   "perfil_id": "ALCOA-LG-053",
+   "geometria_padrao_id": "GEO-LG-053",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-053. Alias base Alcoa: SI-314."
+  },
+  {
+   "perfil_id": "HYDRO-LG-053",
+   "geometria_padrao_id": "GEO-LG-053",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-053."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-053",
+   "geometria_padrao_id": "GEO-LG-053",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-053."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-053",
+   "geometria_padrao_id": "GEO-LG-053",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-053 (equivale a LG-053). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-053",
+   "geometria_padrao_id": "GEO-LG-053",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-053 (equivale a LG-053). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-053",
+   "geometria_padrao_id": "GEO-LG-053",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-053 (equivale a LG-053)."
+  },
+  {
+   "perfil_id": "ALCOA-LG-054",
+   "geometria_padrao_id": "GEO-LG-054",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-054. Alias base Alcoa: SI-315."
+  },
+  {
+   "perfil_id": "HYDRO-LG-054",
+   "geometria_padrao_id": "GEO-LG-054",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-054."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-054",
+   "geometria_padrao_id": "GEO-LG-054",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-054."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-054",
+   "geometria_padrao_id": "GEO-LG-054",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-054 (equivale a LG-054). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-054",
+   "geometria_padrao_id": "GEO-LG-054",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-054 (equivale a LG-054). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-056",
+   "geometria_padrao_id": "GEO-LG-054",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-056 (equivale a LG-054)."
+  },
+  {
+   "perfil_id": "ALCOA-LG-055",
+   "geometria_padrao_id": "GEO-LG-055",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-055. Alias base Alcoa: SI-317."
+  },
+  {
+   "perfil_id": "HYDRO-LG-055",
+   "geometria_padrao_id": "GEO-LG-055",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-055."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-055",
+   "geometria_padrao_id": "GEO-LG-055",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-055."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-055",
+   "geometria_padrao_id": "GEO-LG-055",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-055 (equivale a LG-055). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-055",
+   "geometria_padrao_id": "GEO-LG-055",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-055 (equivale a LG-055). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-009",
+   "geometria_padrao_id": "GEO-LG-055",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-009 (equivale a LG-055)."
+  },
+  {
+   "perfil_id": "ALCOA-LG-056",
+   "geometria_padrao_id": "GEO-LG-056",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-056. Alias base Alcoa: SI-319."
+  },
+  {
+   "perfil_id": "HYDRO-LG-056",
+   "geometria_padrao_id": "GEO-LG-056",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-056."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-056",
+   "geometria_padrao_id": "GEO-LG-056",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-056."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-056",
+   "geometria_padrao_id": "GEO-LG-056",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-056 (equivale a LG-056). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-056",
+   "geometria_padrao_id": "GEO-LG-056",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-056 (equivale a LG-056). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-010",
+   "geometria_padrao_id": "GEO-LG-056",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-010 (equivale a LG-056)."
+  },
+  {
+   "perfil_id": "ALCOA-LG-058",
+   "geometria_padrao_id": "GEO-LG-058",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-058. Alias base Alcoa: SI-324."
+  },
+  {
+   "perfil_id": "HYDRO-LG-058",
+   "geometria_padrao_id": "GEO-LG-058",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-058."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-058",
+   "geometria_padrao_id": "GEO-LG-058",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-058."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-058",
+   "geometria_padrao_id": "GEO-LG-058",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-058 (equivale a LG-058). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-058",
+   "geometria_padrao_id": "GEO-LG-058",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-058 (equivale a LG-058). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-026",
+   "geometria_padrao_id": "GEO-LG-058",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-026 (equivale a LG-058)."
+  },
+  {
+   "perfil_id": "ALCOA-LG-059",
+   "geometria_padrao_id": "GEO-LG-059",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-059. Alias base Alcoa: SI-328."
+  },
+  {
+   "perfil_id": "HYDRO-LG-059",
+   "geometria_padrao_id": "GEO-LG-059",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-059."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-059",
+   "geometria_padrao_id": "GEO-LG-059",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-059."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-059",
+   "geometria_padrao_id": "GEO-LG-059",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-059 (equivale a LG-059). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-059",
+   "geometria_padrao_id": "GEO-LG-059",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-059 (equivale a LG-059). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ASA-MG32-012",
+   "geometria_padrao_id": "GEO-LG-059",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura ASA MG32-012 (equivale a LG-059). MG32 2mm de diferença — não altera usabilidade."
+  },
+  {
+   "perfil_id": "ALCOA-LG-062",
+   "geometria_padrao_id": "GEO-LG-062",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-062. Alias base Alcoa: SI-343."
+  },
+  {
+   "perfil_id": "HYDRO-LG-062",
+   "geometria_padrao_id": "GEO-LG-062",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-062."
+  },
+  {
+   "perfil_id": "VITRALSUL-LG-062",
+   "geometria_padrao_id": "GEO-LG-062",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura LG-062."
+  },
+  {
+   "perfil_id": "CENTENARIO-TMG-062",
+   "geometria_padrao_id": "GEO-LG-062",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-062 (equivale a LG-062). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "TAMBORE-TMG-062",
+   "geometria_padrao_id": "GEO-LG-062",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "comparação visual no catálogo impresso — família Gold, múltiplos fabricantes e gerações",
+   "data": "2026-07-10",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Família Gold. Nomenclatura local TMG-062 (equivale a LG-062). Pesos diferem do padrão Alcoa."
+  }
+ ]
 }
