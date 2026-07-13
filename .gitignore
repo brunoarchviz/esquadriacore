@@ -15,5 +15,6 @@ dados_exemplo/*.pdf
 !curadoria/contornos/*_lado_a_lado*.png
 !curadoria/contornos/GEO-*_secao_*.png
 !curadoria/contornos/amostra_painel_geral_it*.png
+!curadoria/contornos/painel_10_comerciais.png
 !curadoria/contornos/feedback/*.png
 !curadoria/contornos/*_render3d_*.png

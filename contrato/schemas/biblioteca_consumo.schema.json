@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "esquadriacore/contrato/schemas/biblioteca_consumo",
+  "title": "EsquadriaCore — Contrato Mínimo de Consumo v1.0",
+  "description": "Face de máquina do contrato de saída (ADR-009). Descreve os dicionários produzidos por GeometriaConsumivel.para_dict() e AssociacaoConsumivel.para_dict() — a SAÍDA serializada, não a estrutura bruta dos JSONs de origem.",
+  "type": "object",
+  "properties": {
+    "geometrias": { "type": "array", "items": { "$ref": "#/definitions/geometria" } },
+    "associacoes": { "type": "array", "items": { "$ref": "#/definitions/associacao" } }
+  },
+  "required": ["geometrias", "associacoes"],
+  "definitions": {
+    "anel": {
+      "description": "Anel poligonal: lista de pontos [x, y] em mm, fechamento implícito (o último ponto não repete o primeiro).",
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "items": { "type": "number" }
+      }
+    },
+    "bounding_box": {
+      "type": "array",
+      "description": "[min_x, min_y, max_x, max_y] em mm.",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": { "type": "number" }
+    },
+    "geometria": {
+      "type": "object",
+      "properties": {
+        "codigo": { "type": "string", "minLength": 1 },
+        "familia_mercado": { "type": ["string", "null"] },
+        "descricao": { "type": ["string", "null"] },
+        "unidade": { "type": "string", "enum": ["mm"] },
+        "referencial": { "type": "string", "enum": ["local_do_perfil"] },
+        "eixo_x": { "type": "string", "enum": ["positivo_para_direita"] },
+        "eixo_y": { "type": "string", "enum": ["positivo_para_cima"] },
+        "nivel_contorno": {
+          "type": "string",
+          "enum": [
+            "0_bruto_aproximado",
+            "1_envelope_funcional",
+            "2_renderizavel_comercial",
+            "3_vetorial_validado",
+            "4_alta_fidelidade"
+          ]
+        },
+        "renderizavel": { "type": "boolean" },
+        "contorno_externo": { "anyOf": [ { "$ref": "#/definitions/anel" }, { "type": "null" } ] },
+        "vazios_internos": { "type": "array", "items": { "$ref": "#/definitions/anel" } },
+        "fonte_contorno": {
+          "type": ["string", "null"],
+          "enum": ["contorno_externo_vazios_internos", "contorno_mm_legado", null]
+        },
+        "bounding_box": { "anyOf": [ { "$ref": "#/definitions/bounding_box" }, { "type": "null" } ] },
+        "status_contorno": { "type": ["string", "null"] },
+        "metodo_contorno": { "type": ["string", "null"] },
+        "evidencia_contorno": { "type": ["string", "null"] },
+        "versao_schema": { "type": "string", "enum": ["1.0"] }
+      },
+      "required": [
+        "codigo", "familia_mercado", "descricao", "unidade", "referencial",
+        "eixo_x", "eixo_y", "nivel_contorno", "renderizavel", "contorno_externo",
+        "vazios_internos", "fonte_contorno", "bounding_box", "status_contorno",
+        "metodo_contorno", "evidencia_contorno", "versao_schema"
+      ]
+    },
+    "associacao": {
+      "description": "Espelho imutável de PerfilGeometria (ADR-005). Referencia geometria por id; nunca embute pontos. 'fabricante_derivado' é inferido do prefixo de perfil_id, não é dado armazenado.",
+      "type": "object",
+      "properties": {
+        "perfil_id": { "type": "string", "minLength": 1 },
+        "geometria_padrao_id": { "type": "string", "minLength": 1 },
+        "responsavel_homologacao": { "type": "string" },
+        "metodo_validacao": { "type": "string" },
+        "data": { "type": "string" },
+        "nivel_de_confianca": { "type": "string" },
+        "observacoes": { "type": ["string", "null"] },
+        "fabricante_derivado": { "type": ["string", "null"] },
+        "versao_schema": { "type": "string", "enum": ["1.0"] }
+      },
+      "required": [
+        "perfil_id", "geometria_padrao_id", "responsavel_homologacao",
+        "metodo_validacao", "data", "nivel_de_confianca", "observacoes",
+        "fabricante_derivado", "versao_schema"
+      ]
+    }
+  }
+}
