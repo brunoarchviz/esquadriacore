@@ -2,6 +2,35 @@
 
 Formato baseado em Keep a Changelog. Versionamento semântico.
 
+## [0.4.0-alpha] — 2026-07-13 — "Sample Contours Release"
+
+### Adicionado
+- 9 novas geometrias em `2_renderizavel_comercial` (amostra Sprint E.2):
+  GEO-SU-024, SU-025, SU-009, SU-056, SU-280, SU-228, SU-230, LG-003 e LG-006.
+  Contorno `contorno_externo` + `vazios_internos` (ADR-008), curadoria fina
+  por marcação colorida do Bruno, aprovados visualmente em 2026-07-12.
+- Terminais em "J" transplantados do GEO-SU-005 (mesmo template validado),
+  substituindo a interpretação errada em "U invertido".
+- Evidências de catálogo lado a lado das 9 geometrias em
+  `curadoria/comparacao/` (Alcoa Suprema, Vitral Sul e Alcoa Gold 3/4).
+- Scripts de curadoria da amostra em `curadoria/`:
+  `secoes_amostra_e2.py`, `render_secoes_e2.py`,
+  `gerar_evidencias_lado_a_lado.py`.
+
+### Corrigido
+- Funções de GEO-SU-228 (Marco Inferior Porta de Correr) e GEO-SU-230
+  (Marco Inferior Portas) gravadas na descrição, confirmadas pelo Bruno.
+- Página real do card Alcoa de 4 perfis (SU-024/025/056/280) corrigida nas
+  notas de auditoria em `dados/perfil_geometria.json`.
+
+### Validado
+- 25/25 testes passando; os 9 contornos passam em `validar_contornos()`.
+- GEO-SU-005 preservado sem alteração.
+- Sinal de peso (área × 2,71): 8 das 9 dentro de ±13% do catálogo; GEO-SU-056
+  fica +31% com parede padrão 1,6mm — registrado como alerta de curadoria
+  (suspeita de parede mais fina no perfil real), não bloqueia a homologação
+  de contorno (equivalência já validada no Sprint E).
+
 ## [0.3.0-alpha] — 2026-07-12 — "Hollow Profile Release"
 
 ### Adicionado
