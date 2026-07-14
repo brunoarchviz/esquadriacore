@@ -2,6 +2,52 @@
 
 Formato baseado em Keep a Changelog. Versionamento semântico.
 
+## [0.5.0-alpha] — 2026-07-13 — "Consumption Contract Release"
+
+### Adicionado
+- **ADR-009 aceito** — Contrato Mínimo de Consumo da Biblioteca (contrato v1.0):
+  fronteira de leitura estável para os dados já homologados, sem entidade de
+  domínio nova e sem alterar a fonte de verdade.
+- `contrato/consumo.py`: carregador/adaptador puro (sem dependências externas,
+  sem frontend). DTOs imutáveis `BoundingBoxDTO`, `GeometriaConsumivel`,
+  `AssociacaoConsumivel`, `BibliotecaConsumivel` — `frozen`, coordenadas em
+  tuplas e índice interno `MappingProxyType` (somente leitura). Normaliza só na
+  saída: orientação (externo CCW, vazios CW), fechamento implícito, nível por
+  enumeração fechada; `contorno_mm` como fallback de entrada, forma única de
+  saída indicada por `fonte_contorno`; bounding-box como objeto nomeado.
+  Validação geométrica delegada a `domain.validar_contornos` (ADR-008).
+- `contrato/schemas/biblioteca_consumo.schema.json`: face de máquina do
+  contrato (saída serializada — geometrias + associações).
+- `docs/adendos/adendo_contrato_consumo.md`: especificação operacional do
+  contrato (a v1.0 permanece congelada).
+- `tests/test_contrato_consumo.py`: testes do contrato (carregamento das 46
+  geometrias e 245 associações, 10 renderizáveis / 36 brutas, orientação,
+  coordenadas intactas, legado, imutabilidade, integridade referencial e
+  compatibilidade estrutural limitada com o schema).
+- `curadoria/painel_comercial.py` → `curadoria/contornos/painel_10_comerciais.png`:
+  evidência das 10 geometrias renderizáveis, carregadas pelo próprio contrato
+  (fluxo `JSON oficial → contrato.consumo → DTO → painel`).
+
+### Convenção de consumo (ADR-009)
+- `unidade = "mm"`; `referencial = "local_do_perfil"`;
+  `eixo_x = "positivo_para_direita"`; `eixo_y = "positivo_para_cima"`.
+- referencial local por geometria (sem origem canônica compartilhada);
+  bounding-box calculado sem transladar coordenadas.
+- `versao_schema = "1.0"` vive no contrato, não é gravado nos JSONs.
+- `fabricante_derivado` inferido do prefixo de `perfil_id` (None se
+  desconhecido); não é dado armazenado e não implica intercambiabilidade.
+- schema publicado ainda não validado por implementação oficial de JSON Schema
+  (`jsonschema` não adotado); testes usam validação estrutural limitada.
+
+### Validado
+- 46 geometrias e 245 associações carregadas pelo contrato; 10 renderizáveis,
+  36 brutas.
+- Fonte de verdade preservada: `dados/geometrias.json` e
+  `dados/perfil_geometria.json` byte a byte inalterados (SHA-256 antes = depois).
+- Nenhuma geometria homologada, entidade de domínio ou volume congelado alterado.
+- Evidência de fechamento do sprint: suíte completa verde (62 testes, dos quais
+  37 do contrato).
+
 ## [0.4.0-alpha] — 2026-07-13 — "Sample Contours Release"
 
 ### Adicionado
