@@ -5,7 +5,7 @@ Comprova que os dados já existentes nos JSONs oficiais são consumidos
 corretamente pela fronteira `contrato/consumo.py`: 46 geometrias (10
 renderizáveis + 36 brutas), 245 associações, orientação normalizada,
 coordenadas armazenadas intactas, legado sintético, imutabilidade real e
-conformidade com o schema de máquina.
+compatibilidade estrutural limitada com o schema de máquina.
 
 Rodar:  pytest tests/test_contrato_consumo.py -v
 """

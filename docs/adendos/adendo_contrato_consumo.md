@@ -51,8 +51,9 @@ Propriedades derivadas: `largura_mm` e `altura_mm` (do bounding-box).
 
 ## Formato de saída — AssociacaoConsumivel
 
-Espelha 1:1 `dados/perfil_geometria.json`. Referencia a geometria por id; nunca
-embute pontos.
+Preserva os sete campos armazenados em `dados/perfil_geometria.json` e
+acrescenta os campos de contrato `versao_schema` e `fabricante_derivado`.
+Referencia a geometria por id; nunca embute pontos.
 
 | campo | tipo | observação |
 |---|---|---|

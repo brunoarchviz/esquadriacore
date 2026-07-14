@@ -5,8 +5,8 @@ Prova viva do Contrato Mínimo de Consumo (ADR-009): carrega as geometrias
 renderizáveis DIRETAMENTE do JSON oficial pela fronteira `contrato.consumo`
 (zero hardcode de coordenadas) e desenha um painel único.
 
-Cada célula mostra: código, nº de vazios e largura×altura do bounding-box.
-Os vazios aparecem como furos (regra par-ímpar), comprovando visualmente sua
+Cada célula mostra: código, descrição, nº de vazios e largura×altura do
+bounding-box. Os vazios aparecem como furos, comprovando visualmente sua
 preservação. A orientação (externo CCW / vazios CW) é comprovada pelos testes
 automatizados, não pela imagem.
 

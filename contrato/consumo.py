@@ -217,11 +217,12 @@ class GeometriaConsumivel:
 class AssociacaoConsumivel:
     """Representação imutável de PerfilGeometria (ADR-005) na fronteira.
 
-    Espelha 1:1 os campos reais de dados/perfil_geometria.json — nenhum campo
-    inventado. NÃO carrega pontos de geometria (só referencia por id).
-    `fabricante_derivado` é INFERIDO do prefixo de perfil_id (não é dado
-    armazenado; ver ADR-009): não substitui um eventual fabricante do domínio
-    nem estabelece intercambiabilidade (ADR-004)."""
+    Preserva os sete campos armazenados em perfil_geometria.json e acrescenta
+    os campos de contrato `versao_schema` e `fabricante_derivado`. NÃO carrega
+    pontos de geometria (só referencia por id). `fabricante_derivado` é
+    INFERIDO do prefixo de perfil_id (não é dado armazenado; ver ADR-009): não
+    substitui um eventual fabricante do domínio nem estabelece
+    intercambiabilidade (ADR-004)."""
     perfil_id: str
     geometria_padrao_id: str
     responsavel_homologacao: str

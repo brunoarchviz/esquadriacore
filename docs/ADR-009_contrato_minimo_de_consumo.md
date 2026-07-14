@@ -111,10 +111,11 @@ novas convenções) acontece sem alterar a fonte de verdade.
 ### 8. Associações (PerfilGeometria)
 
 O contrato também estabiliza a leitura das associações (ADR-005), sem criar
-entidade nova. `AssociacaoConsumivel` espelha 1:1 os campos reais de
+entidade nova. `AssociacaoConsumivel` preserva os sete campos armazenados em
 `dados/perfil_geometria.json` (`perfil_id`, `geometria_padrao_id`,
 `responsavel_homologacao`, `metodo_validacao`, `data`, `nivel_de_confianca`,
-`observacoes`) — nenhum campo inventado. A associação **referencia** a geometria
+`observacoes`) e acrescenta os campos de contrato `versao_schema` e
+`fabricante_derivado`. A associação **referencia** a geometria
 por id e **nunca embute os pontos**. `carregar_biblioteca` verifica a
 integridade referencial: toda associação aponta para uma geometria carregada.
 
