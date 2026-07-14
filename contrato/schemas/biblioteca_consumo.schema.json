@@ -22,11 +22,17 @@
       }
     },
     "bounding_box": {
-      "type": "array",
-      "description": "[min_x, min_y, max_x, max_y] em mm.",
-      "minItems": 4,
-      "maxItems": 4,
-      "items": { "type": "number" }
+      "type": "object",
+      "description": "Caixa envolvente calculada, em mm. Campos nomeados (não posicionais).",
+      "properties": {
+        "min_x": { "type": "number" },
+        "min_y": { "type": "number" },
+        "max_x": { "type": "number" },
+        "max_y": { "type": "number" },
+        "largura": { "type": "number" },
+        "altura": { "type": "number" }
+      },
+      "required": ["min_x", "min_y", "max_x", "max_y", "largura", "altura"]
     },
     "geometria": {
       "type": "object",

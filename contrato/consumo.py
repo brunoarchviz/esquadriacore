@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Optional
 
 from domain.entidades import GeometriaPadrao, validar_contornos
@@ -141,8 +142,15 @@ class BoundingBoxDTO:
     def altura(self) -> float:
         return round(self.max_y - self.min_y, 4)
 
-    def para_lista(self) -> list:
-        return [self.min_x, self.min_y, self.max_x, self.max_y]
+    def para_dict(self) -> dict:
+        return {
+            "min_x": self.min_x,
+            "min_y": self.min_y,
+            "max_x": self.max_x,
+            "max_y": self.max_y,
+            "largura": self.largura,
+            "altura": self.altura,
+        }
 
 
 @dataclass(frozen=True)
@@ -196,7 +204,7 @@ class GeometriaConsumivel:
             "contorno_externo": anel(self.contorno_externo),
             "vazios_internos": [anel(v) for v in self.vazios_internos],
             "fonte_contorno": self.fonte_contorno,
-            "bounding_box": (self.bounding_box.para_lista()
+            "bounding_box": (self.bounding_box.para_dict()
                              if self.bounding_box is not None else None),
             "status_contorno": self.status_contorno,
             "metodo_contorno": self.metodo_contorno,
@@ -240,15 +248,19 @@ class AssociacaoConsumivel:
 
 @dataclass(frozen=True)
 class BibliotecaConsumivel:
-    """Recorte imutável de toda a biblioteca na fronteira de consumo."""
+    """Recorte imutável de toda a biblioteca na fronteira de consumo. As
+    coleções são tuplas e o índice interno é um MappingProxyType (somente
+    leitura) — a imutabilidade do ADR-009 vale também para a biblioteca."""
     geometrias: tuple
     associacoes: tuple
 
-    _por_codigo: dict = field(default_factory=dict, compare=False, repr=False)
+    _por_codigo: MappingProxyType = field(compare=False, repr=False, default=None)
 
     def __post_init__(self):
-        object.__setattr__(
-            self, "_por_codigo", {g.codigo: g for g in self.geometrias})
+        indice = {g.codigo: g for g in self.geometrias}
+        if len(indice) != len(self.geometrias):
+            raise ContratoInvalido("códigos de geometria duplicados")
+        object.__setattr__(self, "_por_codigo", MappingProxyType(indice))
 
     def geometria(self, codigo: str) -> GeometriaConsumivel:
         try:
@@ -350,21 +362,40 @@ def _adaptar_geometria(registro: dict) -> GeometriaConsumivel:
     )
 
 
+# Campos obrigatórios da associação (inspeção: presentes nas 245). Não são
+# mascarados: ausência/valor vazio falha explicitamente, distinguindo dos casos
+# de string vazia silenciosa. `observacoes` é obrigatório como CHAVE, mas seu
+# valor pode ser None.
+_ASSOC_OBRIGATORIOS = (
+    "perfil_id", "geometria_padrao_id", "responsavel_homologacao",
+    "metodo_validacao", "data", "nivel_de_confianca",
+)
+
+
 def _adaptar_associacao(registro: dict) -> AssociacaoConsumivel:
-    perfil_id = registro.get("perfil_id") or ""
-    geometria_id = registro.get("geometria_padrao_id") or ""
-    if not perfil_id or not geometria_id:
+    ident = registro.get("perfil_id") or registro.get("geometria_padrao_id") or "?"
+    for campo in _ASSOC_OBRIGATORIOS:
+        if campo not in registro:
+            raise ContratoInvalido(
+                f"associação {ident}: campo obrigatório ausente '{campo}'")
+        valor = registro[campo]
+        if not isinstance(valor, str) or not valor.strip():
+            raise ContratoInvalido(
+                f"associação {ident}: campo obrigatório '{campo}' vazio ou "
+                f"inválido ({valor!r})")
+    if "observacoes" not in registro:
         raise ContratoInvalido(
-            f"associação com identificador obrigatório vazio: {registro!r}")
-    prefixo = perfil_id.split("-", 1)[0].upper()
+            f"associação {ident}: chave obrigatória 'observacoes' ausente "
+            f"(valor pode ser None, mas a chave deve existir)")
+    prefixo = registro["perfil_id"].split("-", 1)[0].upper()
     return AssociacaoConsumivel(
-        perfil_id=perfil_id,
-        geometria_padrao_id=geometria_id,
-        responsavel_homologacao=registro.get("responsavel_homologacao") or "",
-        metodo_validacao=registro.get("metodo_validacao") or "",
-        data=registro.get("data") or "",
-        nivel_de_confianca=registro.get("nivel_de_confianca") or "",
-        observacoes=registro.get("observacoes"),
+        perfil_id=registro["perfil_id"],
+        geometria_padrao_id=registro["geometria_padrao_id"],
+        responsavel_homologacao=registro["responsavel_homologacao"],
+        metodo_validacao=registro["metodo_validacao"],
+        data=registro["data"],
+        nivel_de_confianca=registro["nivel_de_confianca"],
+        observacoes=registro["observacoes"],
         fabricante_derivado=_FABRICANTE_POR_PREFIXO.get(prefixo),  # None se desconhecido
     )
 

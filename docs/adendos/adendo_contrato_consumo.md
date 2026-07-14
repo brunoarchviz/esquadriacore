@@ -2,7 +2,7 @@
 
 Este adendo complementa a documentação v1.0 (congelada) sem alterá-la.
 Origem: ADR-009. É a especificação legível (face humana) do contrato cuja face
-de máquina é `contrato/biblioteca_consumo.schema.json`.
+de máquina é `contrato/schemas/biblioteca_consumo.schema.json`.
 
 ## Objetivo
 
@@ -38,10 +38,10 @@ Também há `carregar_geometrias()` e `carregar_associacoes()` avulsos.
 | `eixo_y` | str | `"positivo_para_cima"` |
 | `nivel_contorno` | str | enumeração fechada (ver abaixo) |
 | `renderizavel` | bool | `True` só para níveis `2_`/`3_`/`4_` |
-| `contorno_externo` | lista de `[x,y]` / null | **CCW**; `null` quando ainda não há contorno |
+| `contorno_externo` | lista de `[x,y]` / null | **CCW**; `null` quando ainda não há contorno. É a forma geométrica única de saída (inclusive quando a origem é o legado) |
 | `vazios_internos` | lista de anéis | cada anel **CW**; **sempre lista** (vazia é válida, nunca `null`) |
-| `contorno_mm` | lista de `[x,y]` / null | legado; `null` quando não existe |
-| `bounding_box` | `[min_x,min_y,max_x,max_y]` / null | referência calculada; não translada o dado |
+| `fonte_contorno` | str/null | `"contorno_externo_vazios_internos"` / `"contorno_mm_legado"` / `null` |
+| `bounding_box` | objeto `{min_x,min_y,max_x,max_y,largura,altura}` / null | campos nomeados, em mm; `null` sem contorno; não translada o dado |
 | `status_contorno` | str/null | ex.: `validado_visualmente` |
 | `metodo_contorno` | str/null | ex.: `contorno_externo_vazios_internos` |
 | `evidencia_contorno` | str/null | caminho da imagem de evidência |
@@ -79,8 +79,16 @@ embute pontos.
    armazenado não é reordenado. Inverter a ordem de um anel não muda forma,
    coordenadas, escala ou posição — só o sentido de percurso.
 5. **Fechamento implícito**: o último ponto não repete o primeiro.
-6. **Preferência de contorno**: `contorno_externo` quando existir; `contorno_mm`
-   é fallback legado.
+6. **Forma geométrica única e legado**: a saída pública v1.0 tem uma só forma —
+   `contorno_externo` + `vazios_internos` — indicada por `fonte_contorno`.
+   `contorno_mm` é **apenas fallback de ENTRADA** e **não** pertence ao DTO de
+   saída. Regras:
+   - se existir `contorno_externo`, ele prevalece (`fonte_contorno =
+     "contorno_externo_vazios_internos"`);
+   - se só existir `contorno_mm`, seu conteúdo é apresentado em
+     `contorno_externo`, com `vazios_internos = ()` e `fonte_contorno =
+     "contorno_mm_legado"`;
+   - se nenhum existir, `contorno_externo = null` e `fonte_contorno = null`.
 7. **Níveis reconhecidos** (enumeração fechada, definida em
    `docs/plano_de_curadoria.md` / `domain/entidades.py` / ADR-008, reutilizada
    aqui): `0_bruto_aproximado`, `1_envelope_funcional`,

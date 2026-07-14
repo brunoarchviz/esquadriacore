@@ -188,9 +188,23 @@ def test_bounding_box_coerente(bib):
     for g in bib.renderizaveis():
         xs = [p[0] for p in g.contorno_externo]
         ys = [p[1] for p in g.contorno_externo]
-        assert isinstance(g.bounding_box, BoundingBoxDTO)
-        assert g.bounding_box.para_lista() == [min(xs), min(ys), max(xs), max(ys)]
+        bb = g.bounding_box
+        assert isinstance(bb, BoundingBoxDTO)
+        assert (bb.min_x, bb.min_y, bb.max_x, bb.max_y) == \
+            (min(xs), min(ys), max(xs), max(ys))
         assert g.largura_mm > 0 and g.altura_mm > 0
+
+
+def test_bounding_box_serializa_como_objeto_nomeado(bib):
+    g = bib.renderizaveis()[0]
+    d = g.para_dict()["bounding_box"]
+    assert isinstance(d, dict)
+    assert set(d) == {"min_x", "min_y", "max_x", "max_y", "largura", "altura"}
+    assert d["largura"] == round(d["max_x"] - d["min_x"], 4)
+    assert d["altura"] == round(d["max_y"] - d["min_y"], 4)
+    # bruta -> null
+    b = next(x for x in bib.geometrias if not x.renderizavel)
+    assert b.para_dict()["bounding_box"] is None
 
 
 def test_contornos_passam_validacao_de_dominio(bib):
@@ -255,7 +269,8 @@ def test_fechamento_explicito_removido_sem_alterar_geometria():
     # mesma coleção de vértices geométricos, mesmo bounding-box
     assert set(g.contorno_externo) == {(0.0, 0.0), (10.0, 0.0),
                                        (10.0, 10.0), (0.0, 10.0)}
-    assert g.bounding_box.para_lista() == [0.0, 0.0, 10.0, 10.0]
+    bb = g.bounding_box
+    assert (bb.min_x, bb.min_y, bb.max_x, bb.max_y) == (0.0, 0.0, 10.0, 10.0)
 
 
 # ---------------------------------------------------------------------------
@@ -279,6 +294,32 @@ def test_dto_associacao_imutavel(bib):
         a.perfil_id = "x"
 
 
+def test_biblioteca_imutavel(bib):
+    # coleções são tuplas
+    assert isinstance(bib.geometrias, tuple)
+    assert isinstance(bib.associacoes, tuple)
+    # não é possível reatribuir campos
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        bib.geometrias = ()
+    # índice interno é somente-leitura (MappingProxyType)
+    with pytest.raises(TypeError):
+        bib._por_codigo["X"] = None
+
+
+def test_codigos_duplicados_falham(tmp_path):
+    geo = tmp_path / "g.json"
+    ass = tmp_path / "a.json"
+    dois_iguais = {"geometrias": [
+        {"id": "GEO-DUP", "contorno_externo": [[0, 0], [10, 0], [5, 8]],
+         "nivel_contorno": "2_renderizavel_comercial"},
+        {"id": "GEO-DUP", "contorno_externo": [[0, 0], [10, 0], [5, 8]],
+         "nivel_contorno": "2_renderizavel_comercial"}]}
+    geo.write_text(json.dumps(dois_iguais))
+    ass.write_text(json.dumps({"associacoes": []}))
+    with pytest.raises(ContratoInvalido):
+        carregar_biblioteca(str(geo), str(ass))
+
+
 # ---------------------------------------------------------------------------
 # Associações (PerfilGeometria) — ADR-005
 # ---------------------------------------------------------------------------
@@ -297,6 +338,47 @@ def test_toda_associacao_referencia_geometria_existente(bib):
 def test_identificadores_obrigatorios_nao_vazios(bib):
     for a in bib.associacoes:
         assert a.perfil_id and a.geometria_padrao_id
+
+
+def _assoc_base():
+    return {
+        "perfil_id": "ALCOA-SU-005", "geometria_padrao_id": "GEO-SU-005",
+        "responsavel_homologacao": "Bruno", "metodo_validacao": "visual",
+        "data": "2026-07-09", "nivel_de_confianca": "alto",
+        "observacoes": None}
+
+
+def test_associacao_campo_obrigatorio_ausente_falha():
+    from contrato.consumo import _adaptar_associacao
+    reg = _assoc_base()
+    del reg["metodo_validacao"]
+    with pytest.raises(ContratoInvalido) as e:
+        _adaptar_associacao(reg)
+    assert "metodo_validacao" in str(e.value)
+
+
+def test_associacao_campo_obrigatorio_vazio_falha():
+    from contrato.consumo import _adaptar_associacao
+    reg = _assoc_base()
+    reg["responsavel_homologacao"] = "   "     # só espaços
+    with pytest.raises(ContratoInvalido) as e:
+        _adaptar_associacao(reg)
+    assert "responsavel_homologacao" in str(e.value)
+
+
+def test_associacao_observacoes_none_aceito():
+    from contrato.consumo import _adaptar_associacao
+    a = _adaptar_associacao(_assoc_base())     # observacoes=None
+    assert a.observacoes is None
+
+
+def test_associacao_observacoes_chave_ausente_falha():
+    from contrato.consumo import _adaptar_associacao
+    reg = _assoc_base()
+    del reg["observacoes"]
+    with pytest.raises(ContratoInvalido) as e:
+        _adaptar_associacao(reg)
+    assert "observacoes" in str(e.value)
 
 
 def test_campos_de_auditoria_preservados(bib):

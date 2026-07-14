@@ -53,22 +53,32 @@ Campos do DTO (nomes estáveis, deliberados):
 - `eixo_x = "positivo_para_direita"`;
 - `eixo_y = "positivo_para_cima"` (convenção matemática, não SVG);
 - as geometrias **não são transladadas**. O contrato expõe o **bounding-box**
-  calculado (`min_x, min_y, max_x, max_y`) como referência, sem modificar as
-  coordenadas originais.
+  calculado como objeto de campos nomeados
+  (`{min_x, min_y, max_x, max_y, largura, altura}`, em mm; `null` quando não há
+  contorno), sem modificar as coordenadas originais.
 
 ### 4. Fechamento dos anéis
 
 Fechamento **implícito**: o último ponto não repete o primeiro. Coerente com
 `domain.validar_contornos` (ADR-008).
 
-### 5. Formato legado (`contorno_mm`)
+### 5. Formato legado (`contorno_mm`) — apenas fallback de entrada
 
-O formato preferencial é `contorno_externo` + `vazios_internos` (ADR-008).
-Quando um registro só tiver `contorno_mm` (polígono cheio, sem vazios), o
-contrato o expõe **também** em `contorno_externo` (unificado) e mantém
-`contorno_mm` preenchido; `vazios_internos` fica vazio. Quando ambos existirem,
-o formato novo é preferencial. Nenhuma geometria atual usa o legado — o caso é
-coberto por teste sintético para garantir compatibilidade futura.
+A saída pública v1.0 tem **uma única forma geométrica**: `contorno_externo` +
+`vazios_internos`, com a procedência indicada por `fonte_contorno`.
+`contorno_mm` é **exclusivamente fallback de ENTRADA** e **não** é um campo do
+DTO de saída. Regras:
+
+1. se existir `contorno_externo`, ele é utilizado
+   (`fonte_contorno = "contorno_externo_vazios_internos"`);
+2. se não existir `contorno_externo` mas existir `contorno_mm`, seu conteúdo é
+   apresentado em `contorno_externo`, com `vazios_internos = ()` e
+   `fonte_contorno = "contorno_mm_legado"`;
+3. se nenhum existir, `contorno_externo = None` e `fonte_contorno = None`;
+4. quando o formato novo existe, ele prevalece.
+
+Nenhuma geometria atual usa o legado — o caso é coberto por teste sintético
+para garantir compatibilidade futura.
 
 ### 6. Versionamento do contrato
 

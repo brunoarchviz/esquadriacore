@@ -68,10 +68,14 @@ def gerar(saida: str = SAIDA):
         ax.set_axisbelow(True)
         ax.tick_params(labelsize=6)
         nv = len(g.vazios_internos)
-        ax.set_title(
-            f"{g.codigo}   ({nv} {'vazio' if nv == 1 else 'vazios'})\n"
-            f"{g.largura_mm:.1f} × {g.altura_mm:.1f} mm",
-            fontsize=8)
+        descricao = (g.descricao or "").strip()
+        if len(descricao) > 42:
+            descricao = descricao[:39] + "..."
+        titulo = (f"{g.codigo}   ({nv} {'vazio' if nv == 1 else 'vazios'})\n"
+                  f"{g.largura_mm:.1f} × {g.altura_mm:.1f} mm")
+        if descricao:
+            titulo += f"\n{descricao}"
+        ax.set_title(titulo, fontsize=7.5)
 
     for ax in axs[n:]:
         ax.axis("off")
