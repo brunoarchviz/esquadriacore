@@ -1,0 +1,34 @@
+{
+  "codigo": "SU-009",
+  "dimensoes_mm": {
+    "largura": 69.6,
+    "altura": 42.69
+  },
+  "bbox_pixels": {
+    "largura": 1650,
+    "altura": 1012
+  },
+  "erro_relativo_aspecto": 4.6851574212896635e-05,
+  "escala_px_mm": {
+    "x": 23.692528735632187,
+    "y": 23.682361208713985,
+    "anisotropia": 1.000429329103994
+  },
+  "pontos_externo": 24,
+  "pontos_vazios": [
+    115
+  ],
+  "vazios_esperados": 1,
+  "vazios_detectados": 1,
+  "iou_exato_informativo": 0.9748945911263825,
+  "diferenca_area_relativa": 0.021925508825288015,
+  "tolerancia_mm": 0.15,
+  "f1_tolerante": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  },
+  "hash_mascara": "faa62fa2e9c3169f",
+  "hash_contorno": "bf0297681b34959f",
+  "estado": "AQUISICAO_BRUTA_OK"
+}

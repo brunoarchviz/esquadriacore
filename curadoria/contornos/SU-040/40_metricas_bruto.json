@@ -1,0 +1,34 @@
+{
+  "codigo": "SU-040",
+  "dimensoes_mm": {
+    "largura": 42.4,
+    "altura": 30.7
+  },
+  "bbox_pixels": {
+    "largura": 1002,
+    "altura": 724
+  },
+  "erro_relativo_aspecto": 0.0020783383717293976,
+  "escala_px_mm": {
+    "x": 23.608490566037737,
+    "y": 23.550488599348533,
+    "anisotropia": 1.0024628774237325
+  },
+  "pontos_externo": 110,
+  "pontos_vazios": [
+    28
+  ],
+  "vazios_esperados": 1,
+  "vazios_detectados": 1,
+  "iou_exato_informativo": 0.9676862745098039,
+  "diferenca_area_relativa": 0.020569561504474067,
+  "tolerancia_mm": 0.15,
+  "f1_tolerante": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  },
+  "hash_mascara": "0fe19bafb8285b9c",
+  "hash_contorno": "3f551d7616d8f380",
+  "estado": "AQUISICAO_BRUTA_OK"
+}

@@ -1,0 +1,77 @@
+{
+ "codigo": "SU-009",
+ "correcao": "aba externa direita truncada pela ROI de aquisição",
+ "causa_raiz": "ROI do P4 [0.30,0.42,0.655,0.57] cortava o topo do componente (tocava a borda superior do recorte)",
+ "roi_corrigida": [
+  0.2,
+  0.3,
+  0.78,
+  0.7
+ ],
+ "antes": {
+  "altura_mm": 42.69,
+  "pontos_externo": 18,
+  "f1_vs_fonte": 0.9877,
+  "diferenca_area_vs_fonte": 0.04211
+ },
+ "depois": {
+  "altura_mm": 49.27,
+  "pontos_externo": 22,
+  "f1_vs_fonte": 0.9997,
+  "diferenca_area_vs_fonte": 0.01744,
+  "bbox_mm": {
+   "largura": 69.6,
+   "altura": 49.23
+  }
+ },
+ "localidade": {
+  "pontos_preservados": 16,
+  "pontos_removidos": [
+   [
+    69.6,
+    42.69
+   ],
+   [
+    68.2072,
+    42.69
+   ]
+  ],
+  "pontos_novos": [
+   [
+    69.6,
+    48.9322
+   ],
+   [
+    69.5156,
+    49.1011
+   ],
+   [
+    69.2623,
+    49.27
+   ],
+   [
+    68.5448,
+    49.27
+   ],
+   [
+    68.2494,
+    49.0589
+   ],
+   [
+    68.1649,
+    48.8478
+   ]
+  ],
+  "vazios_identicos": true,
+  "iou_abaixo_do_corte": 0.999906,
+  "diferenca_area_abaixo_do_corte_mm2": 0.034982
+ },
+ "topologia": {
+  "vazios": 1,
+  "violacoes_assinatura": []
+ },
+ "determinismo": {
+  "hash_repetido": true,
+  "hash": "3f6e750502fa37f7"
+ }
+}

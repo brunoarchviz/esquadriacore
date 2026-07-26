@@ -1,0 +1,20 @@
+{
+ "f1_tolerante": {
+  "precision": 1.0,
+  "recall": 0.9996266799402688,
+  "f1": 0.9998133051216629
+ },
+ "diferenca_area_relativa": 0.0219346275095404,
+ "iou_exato_informativo": 0.974919656760428,
+ "dimensoes_obtidas_mm": {
+  "largura": 38.9,
+  "altura": 31.8
+ },
+ "pontos_externo": 106,
+ "pontos_vazios": [
+  20
+ ],
+ "vazios_detectados": 1,
+ "falhas": [],
+ "estado": "LIMPEZA_COMERCIAL_OK"
+}

@@ -1,0 +1,32 @@
+{
+  "codigo": "LG-006",
+  "dimensoes_mm": {
+    "largura": 28.5,
+    "altura": 56.16
+  },
+  "bbox_pixels": {
+    "largura": 679,
+    "altura": 1338
+  },
+  "erro_relativo_aspecto": 9.44064196392328e-06,
+  "escala_px_mm": {
+    "x": 23.789473684210527,
+    "y": 23.80698005698006,
+    "anisotropia": 0.9992646537810495
+  },
+  "pontos_externo": 174,
+  "pontos_vazios": [],
+  "vazios_esperados": 0,
+  "vazios_detectados": 0,
+  "iou_exato_informativo": 0.9947746960184376,
+  "diferenca_area_relativa": 0.0016680400861266913,
+  "tolerancia_mm": 0.15,
+  "f1_tolerante": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0
+  },
+  "hash_mascara": "d0e42c13df788e06",
+  "hash_contorno": "9eec87168b20da46",
+  "estado": "AQUISICAO_BRUTA_OK"
+}
