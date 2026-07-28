@@ -1,0 +1,120 @@
+{
+ "codigo": "SU-053",
+ "estrategia_contaminacao": "LIMPO",
+ "dimensoes_mm": {
+  "largura": 22.2,
+  "altura": 51.0
+ },
+ "pontos_externo": 163,
+ "vazios_detectados": 0,
+ "f1_tolerante": {
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0
+ },
+ "gates_aprovados": true,
+ "falhas": [],
+ "violacoes_assinatura": [],
+ "procedencia": {
+  "fonte_reproducao": {
+   "fonte_pdf": "dados_exemplo/Centenário.pdf",
+   "pagina_pdf": 222,
+   "roi_norm": [
+    0.55,
+    0.64,
+    0.95,
+    0.9
+   ]
+  },
+  "estrategia_aceita": "LIMPO",
+  "fonte_geometrica_primaria": {
+   "fabricante": "Centenario",
+   "codigo": "TMS-053",
+   "pagina_pdf": 222,
+   "roi_norm": [
+    0.55,
+    0.64,
+    0.95,
+    0.9
+   ],
+   "motivo": "Card cotado diretamente em 22,2 x 51 mm e aprovado no gate de aspecto (0,67%). O card Alcoa limpo continua evidencia valida, mas erra 1,47% no aspecto.",
+   "separacao_por_espessura": false
+  },
+  "fonte_dimensional_primaria": {
+   "fabricante": "Centenario",
+   "codigo": "TMS-053",
+   "pagina_pdf": 222,
+   "largura_mm": 22.2,
+   "altura_mm": 51.0,
+   "status": "confirmado_visual_card"
+  },
+  "fonte_semantica_motivos": {
+   "fabricante": "Alcoa",
+   "codigo": "SU-053",
+   "pagina_pdf": 187,
+   "motivo": "Cinco ocorrencias funcionais classificadas e confirmadas pelo Bruno. A troca da fonte geometrica NAO elimina esse ground truth."
+  },
+  "fonte_evidencia_contaminacao": {
+   "fabricante": "Alcoa",
+   "codigo": "SU-053",
+   "pagina_pdf": 187,
+   "contaminacao": "cota grafica 5.5 removida"
+  },
+  "transferencia_de_zonas": {
+   "transformacao": {
+    "tipo": "similaridade_isotropica",
+    "escala": 1.006841,
+    "rotacao_graus": 0.009,
+    "erro_medio_px": 1.5,
+    "iou_global": 0.9379,
+    "deformacao_anisotropica": false,
+    "reflexao": false,
+    "mascaras_recortadas_ao_bbox_antes_do_registro": true
+   },
+   "mapeamento": {
+    "M1": "C4",
+    "M2": "C6",
+    "M3": "C2",
+    "M4": "C8",
+    "M5": "C5"
+   },
+   "validacao_local": {
+    "M1": {
+     "iou": 0.9378,
+     "dif_area_pct": 4.42,
+     "area_alcoa_mm2": 15.73,
+     "area_tms_mm2": 16.45,
+     "decisao": "EQUIVALENTE"
+    },
+    "M2": {
+     "iou": 0.9213,
+     "dif_area_pct": 7.77,
+     "area_alcoa_mm2": 7.59,
+     "area_tms_mm2": 8.23,
+     "decisao": "EQUIVALENTE"
+    },
+    "M3": {
+     "iou": 0.9134,
+     "dif_area_pct": 8.46,
+     "area_alcoa_mm2": 23.41,
+     "area_tms_mm2": 25.58,
+     "decisao": "EQUIVALENTE"
+    },
+    "M4": {
+     "iou": 0.9784,
+     "dif_area_pct": 2.77,
+     "area_alcoa_mm2": 10.83,
+     "area_tms_mm2": 11.14,
+     "decisao": "EQUIVALENTE"
+    },
+    "M5": {
+     "iou": 0.9648,
+     "dif_area_pct": 3.58,
+     "area_alcoa_mm2": 15.57,
+     "area_tms_mm2": 16.14,
+     "decisao": "EQUIVALENTE"
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,17 @@
+{
+ "gate_recorte_fonte": "APROVADO",
+ "padding_reextracao": {
+  "aplicado": true,
+  "margem_mm": 0.85,
+  "margem_px": 20,
+  "dpi": 600,
+  "altera_geometria": false,
+  "fase": "reextracao"
+ },
+ "tentativas": [
+  {
+   "etapa": "deteccao",
+   "suspeitas": 0
+  }
+ ]
+}

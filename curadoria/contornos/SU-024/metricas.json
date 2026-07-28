@@ -1,0 +1,31 @@
+{
+ "codigo": "SU-024",
+ "estrategia_contaminacao": "QUEBRA_CONTROLADA_DE_PONTE",
+ "dimensoes_mm": {
+  "largura": 106.0,
+  "altura": 39.0
+ },
+ "pontos_externo": 250,
+ "vazios_detectados": 0,
+ "f1_tolerante": {
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0
+ },
+ "gates_aprovados": true,
+ "falhas": [],
+ "violacoes_assinatura": [],
+ "procedencia": {
+  "fonte_reproducao": {
+   "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
+   "pagina_pdf": 178,
+   "roi_norm": [
+    0.08,
+    0.12,
+    0.82,
+    0.4
+   ]
+  },
+  "estrategia_aceita": "QUEBRA_CONTROLADA_DE_PONTE"
+ }
+}

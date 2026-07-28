@@ -98,6 +98,741 @@
     }
   },
   "perfis": {
+    "SU-039": {
+      "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
+      "pagina_pdf": 184,
+      "roi_norm": [
+        0.485,
+        0.12,
+        0.96,
+        0.3
+      ],
+      "largura_mm": 52.6,
+      "altura_mm": 25.0,
+      "vazios_esperados": 1,
+      "assinatura": {
+        "vazios": 1,
+        "probes_material": [
+          [
+            25.71,
+            0.47
+          ]
+        ],
+        "probes_vazio": [
+          [
+            25.71,
+            12.27
+          ]
+        ],
+        "probes_exterior_conectado": [],
+        "_derivacao": "derivada da geometria reconstruida (RECONSTRUCAO_LOCAL_DA_PAREDE) em 2026-07-26"
+      },
+      "contaminacao": {
+        "esperada": true,
+        "estrategia_esperada": "RECONSTRUCAO_LOCAL_DA_PAREDE",
+        "_nota": "linha de cota 8.2 aderida a face do montante. A quebra de ponte zera a procedencia mas deixa 6 px alem da face com continuidade falsa: rejeitada no gate da face. Microgate congelado: contaminado 1443 px / quebra 6 px / reconstrucao 0 px."
+      },
+      "nota": "Montante lateral externo da folha. ROI e cota migradas de tests/test_aquisicao_contornos.py para o config canonico em 2026-07-26.",
+      "motivos": [],
+      "contagem_motivos": {},
+      "_motivos_pendentes": {
+        "levantamento": "nao_realizado",
+        "justificativa": "o trabalho no SU-039 foi a contaminacao grafica (linha de cota aderida a face), nao o reconhecimento de motivos. Nenhuma ocorrencia foi confirmada pelo Bruno ate 2026-07-26 e nenhuma foi inferida: lista vazia significa NAO LEVANTADO, nunca ausencia comprovada.",
+        "_acao": "levantar as ocorrencias do SU-039 e submeter a arbitragem antes de tratar a lista vazia como definitiva"
+      }
+    },
+    "SU-053": {
+      "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
+      "pagina_pdf": 187,
+      "roi_norm": [
+        0.655,
+        0.635,
+        0.835,
+        0.955
+      ],
+      "largura_mm": 22.2,
+      "altura_mm": 51.0,
+      "vazios_esperados": 0,
+      "estado": "CANDIDATO_GEOMETRICO_APROVADO",
+      "fonte_geometrica_primaria": {
+        "fabricante": "Centenario",
+        "codigo": "TMS-053",
+        "pagina_pdf": 222,
+        "roi_norm": [
+          0.55,
+          0.64,
+          0.95,
+          0.9
+        ],
+        "motivo": "Card cotado diretamente em 22,2 x 51 mm e aprovado no gate de aspecto (0,67%). O card Alcoa limpo continua evidencia valida, mas erra 1,47% no aspecto.",
+        "separacao_por_espessura": false,
+        "_nota_separacao": "o card Centenario NAO tem perfil de referencia sobreposto; a abertura morfologica mataria o perfil e deixaria so a pilula do rotulo (639x331 px com 14 falsos vazios, que sao as letras). Aquisicao usa binarizacao simples e maior componente."
+      },
+      "fonte_dimensional_primaria": {
+        "fabricante": "Centenario",
+        "codigo": "TMS-053",
+        "pagina_pdf": 222,
+        "largura_mm": 22.2,
+        "altura_mm": 51.0,
+        "status": "confirmado_visual_card",
+        "_nota": "a largura 22,2 coincide exatamente com a ja confirmada do SU-053, o que sustenta a associacao dimensional entre os dois codigos."
+      },
+      "fonte_semantica_motivos": {
+        "fabricante": "Alcoa",
+        "codigo": "SU-053",
+        "pagina_pdf": 187,
+        "motivo": "Cinco ocorrencias funcionais classificadas e confirmadas pelo Bruno. A troca da fonte geometrica NAO elimina esse ground truth."
+      },
+      "fonte_evidencia_contaminacao": {
+        "fabricante": "Alcoa",
+        "codigo": "SU-053",
+        "pagina_pdf": 187,
+        "contaminacao": "cota grafica 5.5 removida"
+      },
+      "_nota_fontes": "nao ha conflito de fontes: ha separacao explicita entre fonte geometrica, dimensional, semantica e de evidencia de contaminacao.",
+      "medicao_geometria_limpa": {
+        "largura_mm": 22.2,
+        "altura_mm": 50.26,
+        "erro_altura_relativo": 0.0145,
+        "_nota": "extracao Alcoa apos remover a cota 5.5. A dimensao NOMINAL esta confirmada; o que falta e a aquisicao geometrica reproduzir 51,00 dentro do gate de 0,75%."
+      },
+      "status_vazios": "confirmado_por_topologia_raster",
+      "observacao_topologica": "A cavidade funcional visivel no perfil e ABERTA para o exterior e nao constitui vazio topologico fechado. Camara funcional nao e sinonimo de ciclo fechado no contorno 2D: 0 vazios em multiplas ROIs, thresholds 110-210, 1200 DPI, antes e depois da remocao da cota, e fechamento morfologico ate 0,50 mm.",
+      "dimensao_altura": {
+        "status": "pendente_confirmacao_catalogo",
+        "valor_bbox_contaminado_mm": 53.57,
+        "valor_medido_sem_cota_mm": 50.26,
+        "usar_como_cota_oficial": false,
+        "motivo": "O valor 53,57 mm coincide com o bbox contaminado pela seta inferior da cota 5.5. Precedente comprovado no SU-024: bbox contaminado 51,13 mm contra cota oficial 39 mm. O valor 50,26 e medicao limpa, NAO cota nominal — nao promover automaticamente."
+      },
+      "contaminacao": {
+        "esperada": true,
+        "cota_grafica": "5.5",
+        "cadeia_removida_px": 3082,
+        "_nota": "cadeia completa: 3 tracos finos (1.105 px) + 2 pontas de seta solidas que se soltam apos a remocao (1.977 px). A seta inferior fica ABAIXO dos pes do perfil e inflava o bbox em 3,31 mm."
+      },
+      "nota": "Travessa da folha (sup. e inf.), pagina impressa 174.",
+      "ground_truth_motivos": [
+        {
+          "ordem": 1,
+          "motivo": "escovinha"
+        },
+        {
+          "ordem": 2,
+          "motivo": "encaixe interno do baguete"
+        },
+        {
+          "ordem": 3,
+          "motivo": "olhal"
+        },
+        {
+          "ordem": 4,
+          "motivo": "encaixe externo do baguete"
+        },
+        {
+          "ordem": 5,
+          "motivo": "escovinha"
+        }
+      ],
+      "_nota_ground_truth": "classificacao do Bruno; prevalece sobre inferencia automatica. Suspeita proxima a qualquer uma das cinco: nao remover, gerar painel numerado, parar para arbitragem.",
+      "motivos": [
+        {
+          "id": "GAB-ESCOVINHA-SU-01",
+          "ocorrencia": 1,
+          "orientacao": [],
+          "zona_protegida": [
+            0.0,
+            4.44,
+            5.2,
+            10.04
+          ],
+          "atribuicao_geometrica": "zona_curada",
+          "classe_status": "confirmado_bruno",
+          "roi_status": "CONFIRMADO_BRUNO",
+          "_nota": "M1 mapeado ao candidato C4 por arbitragem do Bruno em 2026-07-28. zona_protegida no referencial Alcoa (22,20 x 50,26 mm); zona_protegida_tms053 transferida por similaridade.",
+          "motivo": "M1",
+          "candidato_automatico": "C4",
+          "tms053": {
+            "roi_status": "VALIDADO_POR_TRANSFERENCIA_E_EQUIVALENCIA_LOCAL",
+            "roi_transformada_bruta": [
+              -0.03,
+              4.64,
+              5.19,
+              10.25
+            ],
+            "roi_efetiva_recortada_ao_envelope": [
+              0.0,
+              4.64,
+              5.19,
+              10.25
+            ],
+            "recorte_aplicado": [
+              0.03,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "validacao_local": {
+              "iou": 0.9378,
+              "dif_area_pct": 4.42,
+              "area_alcoa_mm2": 15.73,
+              "area_tms_mm2": 16.45,
+              "decisao": "EQUIVALENTE"
+            },
+            "_nota": "coordenadas CALCULADAS pela transferencia e validadas pela comparacao local — nao foram desenhadas manualmente pelo Bruno. O recorte serve so para indexar a matriz raster; a coordenada bruta fica na procedencia e a geometria nao muda."
+          }
+        },
+        {
+          "id": "MOTIVO-ENCAIXE-BAGUETE-INTERNO",
+          "ocorrencia": 1,
+          "orientacao": [],
+          "zona_protegida": [
+            3.41,
+            36.56,
+            8.81,
+            41.96
+          ],
+          "atribuicao_geometrica": "zona_curada",
+          "classe_status": "confirmado_bruno",
+          "roi_status": "CONFIRMADO_BRUNO",
+          "_nota": "M2 mapeado ao candidato C6 por arbitragem do Bruno em 2026-07-28. zona_protegida no referencial Alcoa (22,20 x 50,26 mm); zona_protegida_tms053 transferida por similaridade.",
+          "motivo": "M2",
+          "candidato_automatico": "C6",
+          "tms053": {
+            "roi_status": "VALIDADO_POR_TRANSFERENCIA_E_EQUIVALENCIA_LOCAL",
+            "roi_transformada_bruta": [
+              3.4,
+              36.85,
+              8.81,
+              42.27
+            ],
+            "roi_efetiva_recortada_ao_envelope": [
+              3.4,
+              36.85,
+              8.81,
+              42.27
+            ],
+            "recorte_aplicado": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "validacao_local": {
+              "iou": 0.9213,
+              "dif_area_pct": 7.77,
+              "area_alcoa_mm2": 7.59,
+              "area_tms_mm2": 8.23,
+              "decisao": "EQUIVALENTE"
+            },
+            "_nota": "coordenadas CALCULADAS pela transferencia e validadas pela comparacao local — nao foram desenhadas manualmente pelo Bruno. O recorte serve so para indexar a matriz raster; a coordenada bruta fica na procedencia e a geometria nao muda."
+          }
+        },
+        {
+          "id": "GAB-OLHAL-01",
+          "ocorrencia": 1,
+          "orientacao": [],
+          "zona_protegida": [
+            7.99,
+            31.36,
+            14.22,
+            37.59
+          ],
+          "atribuicao_geometrica": "zona_curada",
+          "classe_status": "confirmado_bruno",
+          "roi_status": "CONFIRMADO_BRUNO",
+          "_nota": "M3 mapeado ao candidato C2 por arbitragem do Bruno em 2026-07-28. zona_protegida no referencial Alcoa (22,20 x 50,26 mm); zona_protegida_tms053 transferida por similaridade.",
+          "motivo": "M3",
+          "candidato_automatico": "C2",
+          "tms053": {
+            "roi_status": "VALIDADO_POR_TRANSFERENCIA_E_EQUIVALENCIA_LOCAL",
+            "roi_transformada_bruta": [
+              7.99,
+              31.64,
+              14.24,
+              37.89
+            ],
+            "roi_efetiva_recortada_ao_envelope": [
+              7.99,
+              31.64,
+              14.24,
+              37.89
+            ],
+            "recorte_aplicado": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "validacao_local": {
+              "iou": 0.9134,
+              "dif_area_pct": 8.46,
+              "area_alcoa_mm2": 23.41,
+              "area_tms_mm2": 25.58,
+              "decisao": "EQUIVALENTE"
+            },
+            "_nota": "coordenadas CALCULADAS pela transferencia e validadas pela comparacao local — nao foram desenhadas manualmente pelo Bruno. O recorte serve so para indexar a matriz raster; a coordenada bruta fica na procedencia e a geometria nao muda."
+          }
+        },
+        {
+          "id": "MOTIVO-ENCAIXE-BAGUETE-EXTERNO",
+          "ocorrencia": 1,
+          "orientacao": [],
+          "zona_protegida": [
+            0.0,
+            39.69,
+            4.88,
+            45.09
+          ],
+          "atribuicao_geometrica": "zona_curada",
+          "classe_status": "confirmado_bruno",
+          "roi_status": "CONFIRMADO_BRUNO",
+          "_nota": "M4 mapeado ao candidato C8 por arbitragem do Bruno em 2026-07-28. zona_protegida no referencial Alcoa (22,20 x 50,26 mm); zona_protegida_tms053 transferida por similaridade.",
+          "motivo": "M4",
+          "candidato_automatico": "C8",
+          "tms053": {
+            "roi_status": "VALIDADO_POR_TRANSFERENCIA_E_EQUIVALENCIA_LOCAL",
+            "roi_transformada_bruta": [
+              -0.02,
+              39.99,
+              4.87,
+              45.41
+            ],
+            "roi_efetiva_recortada_ao_envelope": [
+              0.0,
+              39.99,
+              4.87,
+              45.41
+            ],
+            "recorte_aplicado": [
+              0.02,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "validacao_local": {
+              "iou": 0.9784,
+              "dif_area_pct": 2.77,
+              "area_alcoa_mm2": 10.83,
+              "area_tms_mm2": 11.14,
+              "decisao": "EQUIVALENTE"
+            },
+            "_nota": "coordenadas CALCULADAS pela transferencia e validadas pela comparacao local — nao foram desenhadas manualmente pelo Bruno. O recorte serve so para indexar a matriz raster; a coordenada bruta fica na procedencia e a geometria nao muda."
+          }
+        },
+        {
+          "id": "GAB-ESCOVINHA-SU-01",
+          "ocorrencia": 2,
+          "orientacao": [],
+          "zona_protegida": [
+            17.05,
+            4.48,
+            22.2,
+            10.0
+          ],
+          "atribuicao_geometrica": "zona_curada",
+          "classe_status": "confirmado_bruno",
+          "roi_status": "CONFIRMADO_BRUNO",
+          "_nota": "M5 mapeado ao candidato C5 por arbitragem do Bruno em 2026-07-28. zona_protegida no referencial Alcoa (22,20 x 50,26 mm); zona_protegida_tms053 transferida por similaridade.",
+          "motivo": "M5",
+          "candidato_automatico": "C5",
+          "tms053": {
+            "roi_status": "VALIDADO_POR_TRANSFERENCIA_E_EQUIVALENCIA_LOCAL",
+            "roi_transformada_bruta": [
+              17.07,
+              4.67,
+              22.24,
+              10.21
+            ],
+            "roi_efetiva_recortada_ao_envelope": [
+              17.07,
+              4.67,
+              22.2,
+              10.21
+            ],
+            "recorte_aplicado": [
+              0.0,
+              0.0,
+              -0.04,
+              0.0
+            ],
+            "validacao_local": {
+              "iou": 0.9648,
+              "dif_area_pct": 3.58,
+              "area_alcoa_mm2": 15.57,
+              "area_tms_mm2": 16.14,
+              "decisao": "EQUIVALENTE"
+            },
+            "_nota": "coordenadas CALCULADAS pela transferencia e validadas pela comparacao local — nao foram desenhadas manualmente pelo Bruno. O recorte serve so para indexar a matriz raster; a coordenada bruta fica na procedencia e a geometria nao muda."
+          }
+        }
+      ],
+      "contagem_motivos": {
+        "GAB-ESCOVINHA-SU-01": 2,
+        "MOTIVO-ENCAIXE-BAGUETE-INTERNO": 1,
+        "GAB-OLHAL-01": 1,
+        "MOTIVO-ENCAIXE-BAGUETE-EXTERNO": 1
+      },
+      "transferencia_de_zonas": {
+        "metodo": "similaridade (escala unica, rotacao, translacao)",
+        "origem": "SU-053 Alcoa p.187 (contorno limpo)",
+        "destino": "TMS-053 Centenario p.222",
+        "registro": {
+          "escala": 1.006841,
+          "rotacao_graus": 0.009,
+          "translacao": [
+            -0.51,
+            1.39
+          ],
+          "erro_medio_px": 1.498,
+          "erro_p95_px": 3.824,
+          "erro_max_px": 7.233,
+          "iou": 0.9379
+        },
+        "candidatos_descartados": {
+          "C1": "engloba detalhe demais — nao serve como ROI final",
+          "C3": "engloba detalhe demais — nao serve como ROI final",
+          "C7": "parede/apoio de contexto, nao motivo principal",
+          "C9": "regiao auxiliar, nao motivo final",
+          "C10": "regiao auxiliar, nao motivo final"
+        },
+        "_nota": "descartes conforme observacao do Bruno na arbitragem de 2026-07-28."
+      },
+      "transformacao_alcoa_para_tms053": {
+        "tipo": "similaridade_isotropica",
+        "escala": 1.006841,
+        "rotacao_graus": 0.009,
+        "erro_medio_px": 1.5,
+        "iou_global": 0.9379,
+        "deformacao_anisotropica": false,
+        "reflexao": false,
+        "mascaras_recortadas_ao_bbox_antes_do_registro": true,
+        "_nota_recorte": "as duas mascaras sao recortadas ao proprio bounding box antes do registro. Sem isso a posicao da mascara DENTRO do card e tomada como origem geometrica e a transferencia devolve coordenadas fora do envelope (erro cometido e corrigido em 2026-07-28)."
+      },
+      "envelope_fisico_mm": {
+        "x": [
+          0.0,
+          22.2
+        ],
+        "y": [
+          0.0,
+          51.0
+        ]
+      },
+      "politica_recorte_roi": {
+        "permitido": "ultrapassagem sub-milimetrica por arredondamento da similaridade",
+        "aplicado_em": "M1 (-0,03), M4 (-0,02), M5 (+0,04) mm",
+        "nao_e_regra_universal": true,
+        "_nota": "ultrapassagem MAIOR ou estruturalmente relevante deve BLOQUEAR, nao ser recortada. Este recorte e especifico do SU-053 e da ordem de grandeza do arredondamento."
+      },
+      "baseline_validacao_local": {
+        "M1": {
+          "iou": 0.9378,
+          "diferenca_area_percentual": 4.42
+        },
+        "M2": {
+          "iou": 0.9213,
+          "diferenca_area_percentual": 7.77
+        },
+        "M3": {
+          "iou": 0.9134,
+          "diferenca_area_percentual": 8.46
+        },
+        "M4": {
+          "iou": 0.9784,
+          "diferenca_area_percentual": 2.77
+        },
+        "M5": {
+          "iou": 0.9648,
+          "diferenca_area_percentual": 3.58
+        }
+      },
+      "_nota_baseline": "evidencia ESPECIFICA do SU-053. NAO declara IoU minimo universal nem diferenca de area maxima universal: nao ha amostra para regra geral. Serve para a proxima execucao reproduzir deterministicamente.",
+      "_nota_estado": "APROVADO SO NA CURADORIA. Nao existe GEO-SU-053 nos dados oficiais e nao ha associacao oficial entre fabricantes: a gravacao oficial aguarda o fechamento das oito geometrias do microlote.",
+      "reprodutibilidade": {
+        "seis_hashes_identicos": true,
+        "jsons_semanticamente_equivalentes": true,
+        "transformacao_reproduzida": true,
+        "cinco_rois_reproduzidas": true,
+        "metricas_locais_reproduzidas": true,
+        "dimensoes_mm": [
+          22.2,
+          51.0
+        ],
+        "componentes": 1,
+        "vazios": 0,
+        "pontos_externo": 163,
+        "f1_tolerante": 1.0
+      }
+    },
+    "SU-102": {
+      "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
+      "pagina_pdf": 198,
+      "codigo_catalogo": "SU-102 (U-1230/E)",
+      "roi_norm": [
+        0.17,
+        0.11,
+        0.44,
+        0.37
+      ],
+      "largura_mm": null,
+      "altura_mm": null,
+      "vazios_esperados": null,
+      "cotas_catalogo_secundario": {
+        "fonte": "Centenario",
+        "codigo": "TMS-102",
+        "pagina_pdf": 235,
+        "valores_mm": [
+          11.0,
+          12.0
+        ],
+        "_leitura": "verificado VISUALMENTE no card: a cota 11 e horizontal (topo) e a 12 e vertical (direita). O TMS-102 e desenhado com perfil de referencia em cinza claro, mesma convencao do card Alcoa."
+      },
+      "dimensao_bounding_box": {
+        "status": "pendente_confirmacao",
+        "aspecto_medido": 1.1366,
+        "bbox_camada_grossa_px": [
+          416,
+          366
+        ],
+        "_conflito": "as cotas 11 e 12 nao descrevem o bounding box em NENHUMA das duas fontes: o TMS-102, que e o card onde elas estao desenhadas, erra 24,08% contra 11x12. Sao segmentos internos."
+      },
+      "equivalencia_tms102": {
+        "equivalencia_global": "PASSA",
+        "equivalencia_topologica": "PASSA",
+        "equivalencia_dimensional": "PENDENTE",
+        "equivalencia_funcional_local": "PENDENTE",
+        "decisao": "CONGRUENCIA_GLOBAL_SEM_EQUIVALENCIA_GEOMETRICA_COMPLETA",
+        "evidencia": {
+          "aspecto_su102": 1.1366,
+          "aspecto_tms102": 1.1374,
+          "divergencia_aspecto_pct": 0.07,
+          "registro_isotropico": {
+            "escala": 1.000054,
+            "rotacao_graus": -0.03,
+            "erro_medio_px": 0.915,
+            "erro_p95_px": 1.26,
+            "erro_max_px": 2.484,
+            "iou": 0.9224
+          },
+          "vazios_su102": 0,
+          "vazios_tms102": 0
+        },
+        "_nota": "escala 1,00005 e rotacao -0,03 graus significam que os dois catalogos publicam o MESMO desenho na mesma escala. Isso comprova congruencia global e topologica, mas NAO comprova a dimensao externa: nenhuma das fontes cota o bounding box. IoU isolado nao autoriza compartilhar geometria — falta o gate funcional local por regiao (ganchos, pe, encaixes, terminacoes)."
+      },
+      "calibracao_isotropica_pela_referencia_fina": {
+        "metodo": "ICP com escala unica (Procrustes isotropico)",
+        "escala_px_mm": 23.7978,
+        "rotacao_graus": 0.006,
+        "erro_medio_px": 2.614,
+        "erro_medio_mm": 0.109,
+        "reproduz_largura_mm": 22.229,
+        "erro_largura_pct": 0.13,
+        "reproduz_altura_mm": 50.383,
+        "erro_altura_pct": 1.21,
+        "gate": "REPROVA",
+        "_nota": "o registro isotropico confirmou que existe UMA escala e rotacao zero — o bbox nao era o problema. Mas a escala unica nao reproduz as duas cotas: a largura fecha em 0,13% e a altura erra 1,21%. A referencia fina do card Alcoa e proporcionalmente mais baixa que 22,2 x 51. Nao ampliar a tolerancia, nao calibrar X e Y separadamente."
+      },
+      "_arbitragem_dimensional": "REVOGADO 21 x 12 (nunca foi bounding box: 10 e 11 sao segmentos internos, nao somam a largura). REVOGADO 13,8 x 12: o valor 13,8 pertence ao TMS-058 e ao TMS-103, NAO ao TMS-102 — erro meu de leitura da camada de texto embaralhada do PDF, corrigido pelo Bruno e confirmado visualmente no card em 2026-07-27.",
+      "contorno_referencia": {
+        "perfil": "SU-053",
+        "estado": "CONTORNO_REFERENCIA_OUTRO_PERFIL_DETECTADO",
+        "tratamento": "separacao_por_espessura",
+        "espessura_min_mm": 0.42,
+        "largura_referencia_mm": 22.2,
+        "raio_calibracao_px": 5,
+        "_nota_escala": "o card e calibrado pela largura homologada do SU-053 (22,2 mm), nao pelo SU-102 — e a cota do SU-102 que esta em questao. 1a passagem com raio_calibracao_px isola a camada fina e da a escala; a 2a deriva o raio real de espessura_min_mm. Espessura medida no card: mediana 4 px, p90 19 px.",
+        "_nota": "o card desenha o SU-053 em linha fina como referencia de aplicacao. NAO e cota e NAO e contaminacao grafica: as duas camadas sao preservadas como evidencia, a grossa e o SU-102."
+      },
+      "nota": "Baguete (perimetro do vidro), pagina impressa 185.",
+      "motivos": [],
+      "contagem_motivos": {},
+      "_motivos_pendentes": {
+        "levantamento": "nao_realizado",
+        "justificativa": "o trabalho no SU-102 e a separacao por espessura entre o traco cheio (SU-102) e a linha fina de referencia (SU-053). Nenhuma ocorrencia de motivo foi levantada nem confirmada ate 2026-07-26.",
+        "_acao": "levantar as ocorrencias do SU-102 apos a separacao das camadas"
+      },
+      "fontes_dimensionais_investigadas": [
+        {
+          "fabricante": "Alcoa",
+          "codigo": "SU-102",
+          "arquivo": "dados_exemplo/catalago-alcoa (1).pdf",
+          "pagina_pdf": 198,
+          "pagina_impressa": 185,
+          "cotas_visiveis": [
+            10,
+            11,
+            12
+          ],
+          "cota_envelope_total": false,
+          "perfil_complementar": "SU-053",
+          "aspecto_traco_cheio": 1.1366,
+          "peso_kg_m": 0.111
+        },
+        {
+          "fabricante": "Centenario",
+          "codigo": "TMS-102",
+          "arquivo": "dados_exemplo/Centenário.pdf",
+          "pagina_pdf": 235,
+          "cotas_visiveis": [
+            11,
+            12
+          ],
+          "cota_envelope_total": false,
+          "perfil_complementar": "referencia em cinza claro",
+          "aspecto_traco_cheio": 1.1374,
+          "peso_kg_m": 0.11
+        },
+        {
+          "fabricante": "Vitral Sul",
+          "codigo": "SU-102",
+          "arquivo": "dados_exemplo/PERFIS-DE-ALUMINIO-02-07-2026.pdf",
+          "pagina_pdf": 91,
+          "cotas_visiveis": [
+            10,
+            11,
+            12
+          ],
+          "cota_envelope_total": false,
+          "perfil_complementar": "PSU-053",
+          "aspecto_traco_cheio": 1.1375,
+          "peso_kg_m": 0.111
+        },
+        {
+          "fabricante": "nao identificado (cebf22)",
+          "codigo": "TMS-102",
+          "arquivo": "dados_exemplo/cebf22_d839ce1e6a6b43c8ad951a7737f1a517.pdf",
+          "pagina_pdf": 108,
+          "cotas_visiveis": [
+            12
+          ],
+          "cota_envelope_total": false,
+          "perfil_complementar": "referencia fina",
+          "aspecto_traco_cheio": null,
+          "_nota": "ROI usada capturou a pilula do rotulo (640x232 px com 7 falsos vazios). Card existe e usa a mesma convencao; medicao pendente de ROI adequada."
+        }
+      ],
+      "interpretacao_das_cotas": {
+        "metodo": "posicao medida das linhas de chamada verticais contra os extremos do traco cheio, no card Alcoa a 600 DPI",
+        "traco_cheio_px": {
+          "x": [
+            373,
+            788
+          ],
+          "y": [
+            685,
+            1050
+          ]
+        },
+        "linhas_de_chamada_px": [
+          293,
+          527,
+          788
+        ],
+        "cota_10": {
+          "vao_px": 234,
+          "ancora_esquerda": "x=293, 80 px A ESQUERDA do inicio do traco cheio — cai sobre o SU-053 de referencia",
+          "ancora_direita": "x=527, ponto INTERNO do traco cheio",
+          "mede_o_envelope": false
+        },
+        "cota_11": {
+          "vao_px": 261,
+          "ancora_esquerda": "x=527, ponto INTERNO do traco cheio",
+          "ancora_direita": "x=788, borda direita do traco cheio",
+          "mede_o_envelope": false
+        },
+        "cota_12": {
+          "orientacao": "vertical",
+          "mede_o_envelope": "indeterminado — as setas abrangem a extensao vertical do traco cheio, mas isso nao foi confirmado com a mesma medicao das linhas verticais"
+        },
+        "conclusao": "NENHUMA das cotas mede a largura total. A soma 10+11 cobre 495 px, MAIS que os 416 px do traco cheio, porque a cota 10 comeca no perfil de referencia e nao no SU-102. Foi por isso que 21 mm superestimou."
+      },
+      "dimensao_externa": {
+        "status": "REQUER_MEDICAO_FISICA_OU_DESENHO_TECNICO_COTADO",
+        "_nota": "quatro catalogos investigados, nenhum cota o envelope externo. Nao inferir, nao somar cotas internas, nao arredondar medida raster."
+      },
+      "candidato_compartilhamento": {
+        "congruencia_global": "APROVADA",
+        "congruencia_topologica": "APROVADA",
+        "congruencia_funcional_local": "APROVADA",
+        "equivalencia_dimensional": "PENDENTE",
+        "decisao": "AGUARDANDO_DIMENSAO_EXTERNA",
+        "evidencia_local": {
+          "terminacao sup-esq": "SEM_MATERIAL",
+          "gancho superior": {
+            "pontos": 436,
+            "medio": 0.99,
+            "p95": 1.22,
+            "max": 1.54,
+            "decisao": "EQUIVALENTE"
+          },
+          "terminacao sup-dir": {
+            "pontos": 462,
+            "medio": 1.0,
+            "p95": 1.16,
+            "max": 1.5,
+            "decisao": "EQUIVALENTE"
+          },
+          "labio esquerdo": "SEM_MATERIAL",
+          "encaixe do baguete": {
+            "pontos": 230,
+            "medio": 0.91,
+            "p95": 1.23,
+            "max": 1.28,
+            "decisao": "EQUIVALENTE"
+          },
+          "labio direito": {
+            "pontos": 244,
+            "medio": 1.02,
+            "p95": 1.07,
+            "max": 1.38,
+            "decisao": "EQUIVALENTE"
+          },
+          "pe / term. inf-esq": {
+            "pontos": 415,
+            "medio": 0.82,
+            "p95": 1.72,
+            "max": 2.48,
+            "decisao": "EQUIVALENTE"
+          },
+          "gancho inferior": {
+            "pontos": 33,
+            "medio": 0.81,
+            "p95": 1.09,
+            "max": 1.1,
+            "decisao": "EQUIVALENTE"
+          },
+          "term. inf-dir": {
+            "pontos": 290,
+            "medio": 0.7,
+            "p95": 1.26,
+            "max": 1.4,
+            "decisao": "EQUIVALENTE"
+          }
+        },
+        "registro": {
+          "escala": 1.000057,
+          "rotacao_graus": -0.03,
+          "translacao": [
+            -1.08,
+            -0.69
+          ],
+          "erro_medio_px": 0.913,
+          "erro_p95_px": 1.261,
+          "erro_max_px": 2.484,
+          "iou": 0.9319
+        },
+        "_nota": "tres fontes independentes dao aspecto 1,1366 / 1,1374 / 1,1375 — dispersao 0,08%. As nove regioes do gate local passam com residuo p95 abaixo de 1,8 px. Falta so o envelope externo."
+      },
+      "estado_geometrico": "CANDIDATO_ADIMENSIONAL_APROVADO",
+      "estado_dimensional": {
+        "status": "AGUARDANDO_MEDICAO_FISICA_OU_DESENHO_TECNICO_COTADO",
+        "protocolo": "curadoria/insumos/protocolo_medicao_fisica_su102.md",
+        "aspecto_catalogos": 1.137,
+        "dispersao_entre_fontes_pct": 0.08,
+        "_nota": "uma unica medida seria matematicamente suficiente para derivar a outra pelo aspecto, mas NAO basta para homologacao: exigir largura e altura externas, tres medicoes de cada. O aspecto dos catalogos e validacao cruzada, nunca substituto da segunda medida."
+      }
+    },
     "SU-040": {
       "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
       "pagina_pdf": 184,
@@ -480,6 +1215,16 @@
         0.4
       ],
       "largura_cota_mm": 106.0,
+      "largura_mm": 106.0,
+      "altura_mm": 39.0,
+      "altura_bruta_mm": 51.13,
+      "vazios_esperados": 0,
+      "_nota_vazios": "perfil ABERTO (tipo_probe: aberto): 0 camaras fechadas. A mascara BRUTA acusa 1 vazio porque a linha de cota pendurada fecha um laco com a seta — o vazio desaparece junto com o apendice, o que e evidencia adicional de que o descarte foi correto.",
+      "_arbitragem_dimensional": "cotas do card p.178: largura 106 mm; altura 19 + 20 = 39 mm. A dimensao bruta 106 x 51,13 e PROIBIDA como resultado — mas e a altura REAL do bbox contaminado na fonte, necessaria so para a aquisicao passar no gate de aspecto antes do descarte do apendice. O gate comercial valida contra 39,0.",
+      "contexto_face": {
+        "nao_aplicavel_justificativa": "apendice grafico EXTERNO preso por tirante fino: a suspeita ocupa y 0,0-12,0 mm e o corpo do perfil comeca em y 12,13 mm — ela nao encosta em parede nenhuma. Nao ha face local a reconstruir nem a validar, ao contrario do SU-039 (linha de cota ADERIDA a face do montante). O validador acusa faces divergentes porque procura parede onde so existe fundo. Protecao mantida por: procedencia = 0, 1 componente, ganchos J byte-identicos e dimensao contra a cota do catalogo (106 x 39).",
+        "_condicao": "so vale enquanto a estrategia aceita for QUEBRA_CONTROLADA_DE_PONTE com descarte de apendice externo. Se a aceita passar a ser RECONSTRUCAO_LOCAL_DA_PAREDE, existe face e esta justificativa deixa de ser coerente."
+      },
       "tipo_probe": "aberto",
       "zona_frac": [
         0.3,

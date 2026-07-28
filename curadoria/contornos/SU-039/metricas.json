@@ -1,0 +1,39 @@
+{
+ "codigo": "SU-039",
+ "estrategia_contaminacao": "RECONSTRUCAO_LOCAL_DA_PAREDE",
+ "dimensoes_mm": {
+  "largura": 52.6,
+  "altura": 25.0
+ },
+ "pontos_externo": 126,
+ "vazios_detectados": 1,
+ "f1_tolerante": {
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0
+ },
+ "gates_aprovados": true,
+ "falhas": [],
+ "violacoes_assinatura": [],
+ "procedencia": {
+  "fonte_reproducao": {
+   "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
+   "pagina_pdf": 184,
+   "roi_norm": [
+    0.485,
+    0.12,
+    0.96,
+    0.3
+   ]
+  },
+  "estrategia_aceita": "RECONSTRUCAO_LOCAL_DA_PAREDE",
+  "substituiu_artefatos_obsoletos": true,
+  "artefatos_obsoletos_preservados": false,
+  "motivo_obsolescencia": "pre_pipeline_contaminacao",
+  "oraculos": {
+   "original_pixels_alem_face": 1443,
+   "quebra_pixels_alem_face": 6,
+   "reconstrucao_pixels_alem_face": 0
+  }
+ }
+}

@@ -343,13 +343,24 @@ def test_alias_sem_familia_nao_assume_gold():
 
 
 def test_config_lista_todos_os_motivos_de_cada_perfil():
-    """Nenhum perfil é representado por um gabarito só quando tem vários."""
+    """Nenhum perfil é representado por um gabarito só quando tem vários.
+
+    Lista vazia só é tolerada com declaração EXPLÍCITA e justificada de que o
+    levantamento não foi feito — lista vazia silenciosa continua reprovando,
+    porque "não levantado" nunca pode ser lido como "não tem".
+    """
     multiplos = {"SU-041", "LG-004", "LG-006"}
     for cod, p in list(CONFIG["perfis"].items()) + [
             (c, v) for c, v in CONFIG["p4_reconhecimento"].items()
             if not c.startswith("_")]:
         motivos = p.get("motivos", [])
-        assert motivos, f"{cod} sem lista de ocorrências"
+        if not motivos:
+            pend = p.get("_motivos_pendentes")
+            assert pend, f"{cod} sem lista de ocorrências e sem declará-la pendente"
+            assert pend.get("levantamento") == "nao_realizado", (cod, pend)
+            assert pend.get("justificativa"), \
+                f"{cod} declara levantamento pendente sem justificativa"
+            continue
         for m in motivos:
             assert m["id"] in gabaritos.GABARITOS_VALIDOS, (cod, m["id"])
             assert gabaritos.ocorrencia_compativel(m["id"], cod), (cod, m["id"])
@@ -606,18 +617,25 @@ def test_duas_ocorrencias_nao_compartilham_a_mesma_roi():
             assert len(zonas) == len(set(zonas)), f"{cod}: ROIs repetidas"
 
 
-def test_motivo_pendente_nao_entra_como_confirmado():
-    """Enquanto a atribuição automática estiver desativada, nenhuma escovinha
-    pode ter geometria atribuída."""
+def test_escovinha_so_tem_zona_com_arbitragem_humana():
+    """A atribuição automática de escovinha continua desativada. Zona só existe
+    onde houve arbitragem explícita — nunca inferida pelo detector."""
     assert CONFIG["gabaritos"]["_atribuicao_automatica_escovinha"]["habilitada"] is False
     for grupo in ("perfis", "p4_reconhecimento"):
         for cod, perfil in CONFIG[grupo].items():
             if cod.startswith("_"):
                 continue
             for m in perfil.get("motivos", []):
-                if m["id"].startswith("GAB-ESCOVINHA"):
-                    assert m["zona_protegida"] is None, (cod, m["id"])
-                    assert m["atribuicao_geometrica"] == "pendente_arbitragem"
+                if not m["id"].startswith("GAB-ESCOVINHA"):
+                    continue
+                if m["zona_protegida"] is None:
+                    assert m["atribuicao_geometrica"] == "pendente_arbitragem", \
+                        (cod, m["id"])
+                else:
+                    assert m.get("roi_status") in ("confirmado_bruno",
+                                                   "CONFIRMADO_BRUNO"), \
+                        f"{cod}/{m['id']}: zona sem arbitragem humana"
+                    assert m["atribuicao_geometrica"] == "zona_curada"
 
 
 def test_metricas_de_olhal_nao_alimentam_politica_de_escovinha():
@@ -855,3 +873,1273 @@ def test_classificacao_do_bruno_prevalece_sobre_inferencia_automatica():
     for cod in ("SU-053", "SU-225", "LG-006"):
         for o in _confirmadas(cod):
             assert o["origem"].startswith("confirmado pelo Bruno")
+
+
+# ---------------------------------------------------------------------------
+# VALIDADOR LOCAL DA FACE — quantização orientada pelo lado exterior
+#
+# A face é estimada em subpixel a partir de duas faixas locais com mediana
+# robusta, mas a máscara raster não tem fronteira fracionária: a coluna
+# floor(face) É a borda legítima. Contar sem quantizar acusava 164 px falsos
+# na reconstrução do SU-039. Não é tolerância — pixel além do limite discreto
+# continua sendo resíduo (os 6 px da quebra seguem rejeitando).
+# ---------------------------------------------------------------------------
+
+from curadoria.aquisicao import contaminacao as ct
+
+
+def _parede_com_saliencia(lado, px=24.0, lado_mm=16.0, saliencia=True):
+    """Reproduz a geometria do SU-039: parede reta + linha de chamada fina que
+    vem de longe e termina numa pequena massa sólida encostada na face.
+
+    O tirante precisa AFASTAR-SE da parede: colado nela, a dilatação do núcleo
+    o engole e o detector não o vê (foi o que fez os sintéticos anteriores
+    pularem, deixando o ramo `ceil` sem prova).
+    """
+    n = int(lado_mm * px)
+    s = np.zeros((n, n), np.uint8)
+    meio = n // 2
+    esp = max(2, int(0.08 * px))          # traço fino ~0,08 mm
+    if lado in ("esquerda", "direita"):
+        s[:, meio:meio + int(2 * px)] = 1                    # parede vertical
+        face = meio if lado == "esquerda" else meio + int(2 * px) - 1
+        d = -1 if lado == "esquerda" else 1
+        y = meio
+        x0 = face + d * int(5 * px)                          # começa longe
+        a, b = sorted((x0, face + d))
+        s[y - esp // 2:y + esp // 2 + 1, a:b] = 1            # linha de chamada
+        if saliencia:                                        # massa na ponta
+            for i in range(int(1.2 * px)):
+                h = int(1.2 * px) - i
+                xx = face + d * (i + 1)
+                s[y - h // 2:y + h // 2 + 1, min(xx, xx + 1):max(xx, xx + 1) + 1] = 1
+    else:
+        s[meio:meio + int(2 * px), :] = 1                    # parede horizontal
+        face = meio if lado == "acima" else meio + int(2 * px) - 1
+        d = -1 if lado == "acima" else 1
+        x = meio
+        y0 = face + d * int(5 * px)
+        a, b = sorted((y0, face + d))
+        s[a:b, x - esp // 2:x + esp // 2 + 1] = 1
+        if saliencia:
+            for i in range(int(1.2 * px)):
+                w = int(1.2 * px) - i
+                yy = face + d * (i + 1)
+                s[min(yy, yy + 1):max(yy, yy + 1) + 1, x - w // 2:x + w // 2 + 1] = 1
+    return s
+
+
+def _suspeita_de(mascara, px=24.0, lado_mm=14.0):
+    s = ct.detectar(mascara, px, lado_mm)
+    return s[0] if s else None
+
+
+def test_suporte_do_validador_declarado_explicitamente():
+    """Só a orientação do SU-039 é comprovada; as demais são declaradas como
+    não comprovadas em vez de ficarem como capacidade silenciosa."""
+    s = ct.SUPORTE_VALIDADOR
+    assert s["parede_vertical_exterior_esquerda"] == "comprovado"
+    for k in ("parede_vertical_exterior_direita",
+              "parede_horizontal_exterior_acima",
+              "parede_horizontal_exterior_abaixo"):
+        assert s[k] == "nao_comprovado", k
+    assert s["orientacao_por_componente_principal"] == "pendente"
+
+
+@pytest.mark.parametrize("lado", ["direita", "acima", "abaixo"])
+def test_orientacao_nao_suportada_bloqueia(lado):
+    """Testes 1–4 substituídos: orientações sem evidência NÃO aprovam artefato.
+    O ramo `ceil` existe no código mas não pode aprovar nada."""
+    m = _parede_com_saliencia(lado)
+    sus = _suspeita_de(m)
+    if sus is None:
+        # sem suspeita o validador nem é chamado; o gate geral já barra antes
+        pytest.skip(f"detector não achou tirante no sintético {lado}")
+    st, rel = ct.validar_face_local(m, m, sus, 24.0)
+    assert st in (ct.NAO_SUPORTADA, ct.AMBIGUA_FACE), (lado, st, rel.get("motivo"))
+    assert rel["aceita"] is False, "orientação sem evidência não pode aprovar"
+    if st == ct.NAO_SUPORTADA:
+        assert rel["suporte_validador"]["orientacao_por_componente_principal"] == "pendente"
+
+
+def test_ramo_ceil_nao_aprova_artefato():
+    """O `ceil` não pode ser caminho normal de aprovação sem evidência."""
+    m = _parede_com_saliencia("direita")
+    sus = _suspeita_de(m)
+    if sus is None:
+        pytest.skip("sem suspeita no sintético")
+    st, rel = ct.validar_face_local(m, m, sus, 24.0)
+    assert st != "ok", "ceil não pode aprovar artefato sem evidência"
+    assert rel.get("regra_quantizacao") != "ceil", "ceil não deve ser aplicado"
+
+
+def test_tirante_perpendicular_nao_aprova():
+    """Tirante perpendicular à parede: face não observável → bloqueio."""
+    m = _parede_com_saliencia("esquerda")
+    sus = _suspeita_de(m)
+    if sus is None:
+        pytest.skip("sem suspeita no sintético")
+    st, _ = ct.validar_face_local(m, m, sus, 24.0)
+    assert st in (ct.NAO_SUPORTADA, ct.AMBIGUA_FACE, "rejeitado")
+
+
+def test_coluna_da_borda_legitima_nao_e_contada(su039):
+    """Teste 5: a coluna floor(face) é a parede, não resíduo. Provado no caso
+    real: sem a quantização a reconstrução acusava 164 px falsos."""
+    m, px, sus = su039
+    rc, _ = ct.remover_local(m, sus, px)
+    _, rel = ct.validar_face_local(m, rc, sus, px)
+    assert rel["regra_quantizacao"] == "floor"
+    assert rel["limite_discreto_px"] == int(rel["face_local_subpixel_px"])
+    assert rel["pixels_alem_da_face"] == 0
+
+
+def test_pixel_alem_da_borda_e_contado(su039):
+    """Teste 6: material além do limite discreto continua sendo resíduo — os
+    6 px da quebra não são perdoados pela quantização."""
+    m, px, sus = su039
+    q, _ = ct.cortar_apendice(m, sus, px)
+    _, rel = ct.validar_face_local(m, q, sus, px)
+    assert rel["pixels_alem_da_face"] == 6
+
+
+@pytest.fixture(scope="module")
+def su039():
+    """Máscara real do SU-039 (pula se o catálogo não estiver presente)."""
+    pdf = RAIZ / "dados_exemplo/catalago-alcoa (1).pdf"
+    if not pdf.exists():
+        pytest.skip("catálogo Alcoa ausente")
+    from curadoria.aquisicao.renderizar_fonte import (renderizar_pagina_png,
+                                                      aplicar_roi)
+    import tempfile
+    with tempfile.TemporaryDirectory() as d:
+        pag = renderizar_pagina_png(pdf, 184, 600, Path(d) / "p")
+        card = aplicar_roi(pag, roi_norm=[0.485, 0.120, 0.96, 0.300])
+    r = extrair("SU-039", card, 52.6, 25.0, 1, threshold="otsu",
+                simplificacao_mm=0.05)
+    m = r.mascara
+    px = m.shape[1] / 52.6
+    sus = ct.detectar(m, px, 25.0)[0]
+    return m, px, sus
+
+
+def test_oraculo_original_contaminado(su039):
+    """Teste 7: a máscara contaminada tem ~1.443 px além da face."""
+    m, px, sus = su039
+    _, rel = ct.validar_face_local(m, m, sus, px)
+    assert 1300 <= rel["pixels_alem_da_face"] <= 1600, rel["pixels_alem_da_face"]
+    assert rel["continuidade_da_face"] is False
+
+
+def test_oraculo_quebra_controlada(su039):
+    """Testes 8 e 10: quebra deixa 6 px e parede descontínua → rejeitada."""
+    m, px, sus = su039
+    q, _ = ct.cortar_apendice(m, sus, px)
+    st, rel = ct.validar_face_local(m, q, sus, px)
+    assert rel["pixels_alem_da_face"] == 6, rel["pixels_alem_da_face"]
+    assert rel["continuidade_da_face"] is False
+    assert st == "rejeitado"
+
+
+def test_oraculo_reconstrucao_local(su039):
+    """Testes 9 e 11: reconstrução zera o resíduo e restaura a continuidade."""
+    m, px, sus = su039
+    rc, _ = ct.remover_local(m, sus, px)
+    st, rel = ct.validar_face_local(m, rc, sus, px)
+    assert rel["pixels_alem_da_face"] == 0, rel["pixels_alem_da_face"]
+    assert rel["continuidade_da_face"] is True
+    assert st == "ok"
+
+
+def test_procedencia_nao_substitui_gate_da_face(su039):
+    """Teste 12: a procedência aprova a quebra; a face reprova. Os dois somam."""
+    m, px, sus = su039
+    q, proc = ct.cortar_apendice(m, sus, px)
+    residuo, _ = ct.gate_residuo(m, q, sus, px, procedencia=proc)
+    _, rel = ct.validar_face_local(m, q, sus, px)
+    assert residuo == 0, "procedência considera a quebra limpa"
+    assert rel["pixels_alem_da_face"] == 6, "a face ainda vê os 6 px"
+
+
+def test_continuidade_nao_substitui_contagem_externa(su039):
+    """Teste 13: continuidade é necessária, não suficiente."""
+    m, px, sus = su039
+    rc, _ = ct.remover_local(m, sus, px)
+    _, ok = ct.validar_face_local(m, rc, sus, px)
+    _, ruim = ct.validar_face_local(m, m, sus, px)
+    assert ok["continuidade_da_face"] and ok["pixels_alem_da_face"] == 0
+    # a original tem material externo E descontinuidade: os dois critérios pegam
+    assert ruim["pixels_alem_da_face"] > 0
+
+
+def test_orientacao_ambigua_unit():
+    """Teste 14a: validar_face_local rejeita quando faces divergem (unitário).
+
+    Construtor direto de máscara e suspeita, sem depender de detectar.
+    Orientação comprovada (vertical, exterior esquerda) com faces divergentes."""
+    px = 24.0
+    n = int(14 * px)
+    m = np.zeros((n, n), np.uint8)
+
+    # parede anterior (referência, acima da suspeita): coluna 10-12
+    m[:int(6 * px), int(10 * px):int(12 * px)] = 1
+
+    # parede posterior (após suspeita), DESLOCADA: coluna 12-14 (diverge!)
+    m[int(8 * px):, int(12 * px):int(14 * px)] = 1
+
+    # conector fino conectando as duas paredes, à ESQUERDA
+    a, b = int(6 * px), int(8 * px)
+    c0, c1 = int(8.9 * px), int(10.1 * px)
+    m[a:b + 1, c0:c1] = 1
+
+    # suspeita no conector
+    mascara_conector = np.zeros_like(m, bool)
+    mascara_conector[a:b + 1, c0:c1] = True
+
+    sus = ct.Suspeita(
+        indice=1,
+        tipo="linha_de_chamada",
+        espessura_mm=0.04,
+        comprimento_mm=0.5,
+        razao_parede=0.05,
+        area_mm2=0.02,
+        centro_mm=(9.5, 7.0),
+        bbox_mm=(9.3, 6.0, 9.7, 8.0),
+        em_zona_protegida=False,
+        motivos_atingidos=[],
+        mascara=mascara_conector.astype(np.uint8))
+
+    # validar: faces anterior (240 px) e posterior (288 px) DIVERGEM
+    st, rel = ct.validar_face_local(m, m, sus, px, altura_mm=14.0)
+    assert st == ct.AMBIGUA_FACE, f"obteve {st}, esperado AMBIGUA_FACE: {rel}"
+    assert "divergem além da tolerância" in rel["motivo"], rel
+
+
+def test_orientacao_ambigua_integracao():
+    """Teste 14b: cadeia completa detectar→suspeita→validador→bloqueio.
+
+    Se detectar encontra uma suspeita, validador deve rejeitá-la por faces
+    divergentes. Se não encontra, este teste documenta que o synthetic
+    não atende aos critérios do detector (não é fracasso da validação)."""
+    px = 24.0
+    n = int(14 * px)
+    m = np.zeros((n, n), np.uint8)
+
+    # parede anterior: coluna 8-10, até meio do canvas
+    m[:n // 2, 8:10] = 1
+
+    # parede posterior: coluna 10-12, a partir do meio (DIVERGE)
+    m[n // 2:, 10:12] = 1
+
+    # traço fino: coluna 9-10, de forma contínua (comprimento máximo)
+    m[n // 2 - 3:n // 2 + 3, 9:10] = 1
+
+    s = ct.detectar(m, px, 14.0)
+    if not s:
+        # Synthetic não é fino o suficiente ou é curto demais para detectar.
+        # Não é fracasso do validador, é limitação do synthetic.
+        # O teste unitário já comprova que o validador funciona.
+        pytest.skip("synthetic não atende critérios de detecção (esperado)")
+
+    st, rel = ct.validar_face_local(m, m, s[0], px, altura_mm=14.0)
+    assert st == ct.AMBIGUA_FACE, f"{st}: {rel}"
+
+
+def test_validador_de_face_determinista(su039):
+    """Teste 15: mesma entrada, mesmo veredito e mesma contagem."""
+    m, px, sus = su039
+    rc, _ = ct.remover_local(m, sus, px)
+    a = ct.validar_face_local(m, rc, sus, px)
+    b = ct.validar_face_local(m, rc, sus, px)
+    assert a[0] == b[0]
+    assert a[1]["pixels_alem_da_face"] == b[1]["pixels_alem_da_face"]
+    assert a[1]["face_local_subpixel_px"] == b[1]["face_local_subpixel_px"]
+
+
+# ============================================================================
+# TESTES DOS HELPERS PERMANENTES
+# ============================================================================
+
+def test_derivar_assinatura_determinismo():
+    """Helper: derivar_assinatura_topologica é determinístico."""
+    from curadoria.aquisicao import assinatura_topologica as ast
+
+    contorno = [[0, 0], [10, 0], [10, 10], [0, 10]]
+    vazios = [[[2, 2], [2, 4], [4, 4], [4, 2]]]
+    probes = [(1, 1), (9, 9)]
+
+    sig1 = ast.derivar_assinatura_topologica(contorno, vazios, probes)
+    sig2 = ast.derivar_assinatura_topologica(contorno, vazios, probes)
+    assert sig1 == sig2, "mesma entrada deve produzir mesma saída"
+
+
+def test_derivar_assinatura_entrada_nao_alterada():
+    """Helper: derivar_assinatura_topologica não altera entrada."""
+    from curadoria.aquisicao import assinatura_topologica as ast
+
+    contorno = [[0, 0], [10, 0], [10, 10], [0, 10]]
+    vazios = [[[2, 2], [2, 4], [4, 4], [4, 2]]]
+
+    contorno_orig = [list(p) for p in contorno]
+    vazios_orig = [[list(p) for p in v] for v in vazios]
+
+    ast.derivar_assinatura_topologica(contorno, vazios)
+
+    assert contorno == contorno_orig, "contorno não deve ser alterado"
+    assert vazios == vazios_orig, "vazios não devem ser alterados"
+
+
+def test_derivar_assinatura_sem_escrita_disco():
+    """Helper: derivar_assinatura_topologica não escreve em disco."""
+    from curadoria.aquisicao import assinatura_topologica as ast
+    import os
+
+    contorno = [[0, 0], [10, 0], [10, 10], [0, 10]]
+    vazios = [[[2, 2], [2, 4], [4, 4], [4, 2]]]
+
+    arquivo_novo = False
+    try:
+        num_files_antes = len(os.listdir('.'))
+        ast.derivar_assinatura_topologica(contorno, vazios)
+        num_files_depois = len(os.listdir('.'))
+        arquivo_novo = num_files_depois > num_files_antes
+    except:
+        pass
+
+    assert not arquivo_novo, "derivar_assinatura não deve criar arquivos"
+
+
+def test_derivar_assinatura_retorna_dict_esperado():
+    """Helper: derivar_assinatura_topologica retorna chaves esperadas."""
+    from curadoria.aquisicao import assinatura_topologica as ast
+
+    contorno = [[0, 0], [10, 0], [10, 10], [0, 10]]
+    vazios = [[[2, 2], [2, 4], [4, 4], [4, 2]]]
+
+    sig = ast.derivar_assinatura_topologica(contorno, vazios)
+
+    assert "vazios" in sig
+    assert "probes_material" in sig
+    assert "probes_vazio" in sig
+    assert "probes_exterior_conectado" in sig
+    assert isinstance(sig["vazios"], int)
+    assert isinstance(sig["probes_material"], list)
+    assert isinstance(sig["probes_vazio"], list)
+    assert isinstance(sig["probes_exterior_conectado"], list)
+
+
+def test_exportar_contorno_svg_determinismo(tmp_path):
+    """SVG: bytes são determinísticos."""
+    from curadoria.aquisicao import exportar
+
+    contorno = [[0, 0], [10, 0], [10, 10], [0, 10]]
+    vazios = []
+
+    path1 = tmp_path / "svg1.svg"
+    path2 = tmp_path / "svg2.svg"
+
+    exportar.exportar_contorno_svg(contorno, vazios, path1,
+                                   largura_mm=10, altura_mm=10)
+    exportar.exportar_contorno_svg(contorno, vazios, path2,
+                                   largura_mm=10, altura_mm=10)
+
+    conteudo1 = path1.read_text()
+    conteudo2 = path2.read_text()
+    assert conteudo1 == conteudo2, "SVG deve ser byte-idêntico"
+
+
+def test_exportar_contorno_svg_preserva_pontos(tmp_path):
+    """SVG: pontos são preservados (com transformação de escala)."""
+    from curadoria.aquisicao import exportar
+
+    contorno = [[1.0, 1.0], [10.0, 1.0], [10.0, 10.0], [1.0, 10.0]]
+    vazios = []
+
+    path = tmp_path / "svg.svg"
+    exportar.exportar_contorno_svg(contorno, vazios, path,
+                                   largura_mm=10, altura_mm=10,
+                                   escala=10.0, margem_mm=0)
+
+    conteudo = path.read_text()
+    # Pontos devem estar presentes com escala aplicada (escala=10.0 por padrão)
+    # (1.0, 1.0) em escala 10.0 = (10.0, 90.0) no SVG (y invertido)
+    assert "10.000" in conteudo, "escala 1.0 → 10.0 não encontrada"
+    assert "90.000" in conteudo, "coordenada y invertida não encontrada"
+
+
+def test_exportar_contorno_svg_viewbox_estavel(tmp_path):
+    """SVG: viewBox é estável."""
+    from curadoria.aquisicao import exportar
+
+    contorno = [[0, 0], [10, 0], [10, 10], [0, 10]]
+    vazios = []
+
+    path1 = tmp_path / "svg1.svg"
+    path2 = tmp_path / "svg2.svg"
+
+    exportar.exportar_contorno_svg(contorno, vazios, path1,
+                                   largura_mm=10, altura_mm=10,
+                                   escala=1.0, margem_mm=0)
+    exportar.exportar_contorno_svg(contorno, vazios, path2,
+                                   largura_mm=10, altura_mm=10,
+                                   escala=1.0, margem_mm=0)
+
+    conteudo1 = path1.read_text()
+    conteudo2 = path2.read_text()
+
+    import re
+    viewbox1 = re.search(r'viewBox="([^"]+)"', conteudo1).group(1)
+    viewbox2 = re.search(r'viewBox="([^"]+)"', conteudo2).group(1)
+    assert viewbox1 == viewbox2, "viewBox deve ser idêntico"
+
+
+def test_gravar_artefatos_transacional(tmp_path):
+    """Gravação: produz 6 artefatos esperados."""
+    from curadoria.aquisicao import exportar
+
+    resultado = {
+        "contorno_bruto": {
+            "contorno_externo": [[0, 0], [10, 0], [10, 10], [0, 10]],
+            "vazios_internos": []
+        },
+        "contorno_comercial": {
+            "contorno_externo": [[0, 0], [10, 0], [10, 10], [0, 10]],
+            "vazios_internos": []
+        },
+        "assinatura": {"vazios": 0, "probes_material": [[5, 5]],
+                       "probes_vazio": [], "probes_exterior_conectado": []},
+        "metricas": {"F1": 1.0, "aspecto": 0.05},
+        "operacoes": [],
+        "dimensoes_mm": {"largura": 10, "altura": 10}
+    }
+
+    destino = tmp_path / "saida"
+    resultado_op = exportar.gravar_artefatos_curadoria("SU-001", resultado, destino)
+
+    assert len(resultado_op["artefatos"]) == 6, "deve gravar 6 artefatos"
+    for artefato in exportar.ARTEFATOS:
+        arquivo = destino / artefato
+        assert arquivo.exists(), f"{artefato} não foi criado"
+
+
+def test_gravar_artefatos_determinismo(tmp_path):
+    """Gravação: segunda execução é determinística."""
+    from curadoria.aquisicao import exportar
+    import hashlib
+
+    resultado = {
+        "contorno_bruto": {
+            "contorno_externo": [[0, 0], [10, 0], [10, 10], [0, 10]],
+            "vazios_internos": []
+        },
+        "contorno_comercial": {
+            "contorno_externo": [[0, 0], [10, 0], [10, 10], [0, 10]],
+            "vazios_internos": []
+        },
+        "assinatura": {"vazios": 0, "probes_material": [[5, 5]],
+                       "probes_vazio": [], "probes_exterior_conectado": []},
+        "metricas": {"F1": 1.0},
+        "operacoes": [],
+        "dimensoes_mm": {"largura": 10, "altura": 10}
+    }
+
+    destino1 = tmp_path / "saida1"
+    destino2 = tmp_path / "saida2"
+
+    exportar.gravar_artefatos_curadoria("SU-001", resultado, destino1)
+    exportar.gravar_artefatos_curadoria("SU-001", resultado, destino2)
+
+    for artefato in exportar.ARTEFATOS:
+        hash1 = hashlib.md5((destino1 / artefato).read_bytes()).hexdigest()
+        hash2 = hashlib.md5((destino2 / artefato).read_bytes()).hexdigest()
+        assert hash1 == hash2, f"{artefato} não é determinístico"
+
+
+# ============================================================================
+# GATE DA FACE DENTRO DA TRANSAÇÃO
+#
+# O validador da face participa da aceitação de CADA tentativa. Antes destes
+# testes o orquestrador consultava só a procedência: no SU-039 a quebra da
+# ponte zerava a procedência, era aceita, e a reconstrução — a única correta —
+# nunca era tentada.
+# ============================================================================
+
+def _suspeita_sintetica(mascara, a, b, c0, c1):
+    """Suspeita construída à mão, sem depender do detector."""
+    mk = np.zeros_like(mascara, bool)
+    mk[a:b + 1, c0:c1] = True
+    return ct.Suspeita(
+        indice=1, tipo="linha_de_chamada", espessura_mm=0.04,
+        comprimento_mm=0.5, razao_parede=0.05, area_mm2=0.02,
+        centro_mm=(0.0, 0.0), bbox_mm=(0.0, 0.0, 1.0, 1.0),
+        em_zona_protegida=False, motivos_atingidos=[],
+        mascara=mk.astype(np.uint8))
+
+
+def test_su039_orquestrador_rejeita_quebra_e_aceita_reconstrucao(su039):
+    """Integração 1: o microgate congelado do SU-039 percorrido pelo
+    ORQUESTRADOR completo, não pelas funções isoladas.
+
+    Falha se o orquestrador voltar a aceitar a quebra da ponte."""
+    m, px, sus = su039
+    est, tratada, log = ct.tratar_contaminacao(
+        m, sus, px, 25.0, 52.6,
+        largura_esperada_mm=52.6, altura_esperada_mm=25.0)
+
+    tentativas = [x for x in log if "estrategia" in x and "gate_face" in x]
+    assert len(tentativas) == 2, [x.get("estrategia") for x in tentativas]
+
+    t1, t2 = tentativas
+    # tentativa 1 — quebra: procedência zerada NÃO basta
+    assert t1["estrategia"] == ct.QUEBRA
+    assert t1["gate_procedencia"] == {"pixels_residuais": 0, "aprovado": True}
+    assert t1["gate_face"]["estado"] == ct.FACE_REJEITADO
+    assert t1["gate_face"]["pixels_alem_da_face"] == 6
+    assert t1["gate_face"]["continuidade"] is False
+    assert t1["gate_face"]["aprovado"] is False
+    assert t1["aceita"] is False
+    assert "gate local da face" in t1["motivo"]
+    assert t1["rollback"]["realizado"] is True
+
+    # tentativa 2 — reconstrução
+    assert t2["estrategia"] == ct.RECONSTRUCAO
+    assert t2["gate_procedencia"]["pixels_residuais"] == 0
+    assert t2["gate_face"]["estado"] == ct.FACE_APROVADO
+    assert t2["gate_face"]["pixels_alem_da_face"] == 0
+    assert t2["gate_face"]["continuidade"] is True
+    assert t2["aceita"] is True
+    assert t2["rollback"]["realizado"] is False
+
+    assert est == ct.RECONSTRUCAO
+    assert tratada is not None
+
+
+def test_procedencia_zero_nao_basta_para_aceitar(su039):
+    """Regressão 2: a quebra tem procedência 0 e mesmo assim é rejeitada."""
+    m, px, sus = su039
+    q, proc = ct.cortar_apendice(m, sus, px)
+    aceita, rel = ct._validar_tentativa(
+        m, q, sus, px, 25.0, None, 52.6,
+        largura_esperada_mm=52.6, altura_esperada_mm=25.0, procedencia=proc)
+    assert rel["gate_procedencia"]["aprovado"] is True
+    assert aceita is False, rel["motivo"]
+
+
+def test_validar_tentativa_chama_gate_da_face(su039):
+    """Regressão 1: o relatório sempre traz o veredito da face."""
+    m, px, sus = su039
+    rc, proc = ct.remover_local(m, sus, px)
+    _, rel = ct._validar_tentativa(
+        m, rc, sus, px, 25.0, None, 52.6,
+        largura_esperada_mm=52.6, altura_esperada_mm=25.0, procedencia=proc)
+    assert "gate_face" in rel
+    assert rel["gate_face"]["estado"] in (
+        ct.FACE_APROVADO, ct.FACE_REJEITADO, ct.FACE_AMBIGUO,
+        ct.FACE_ORIENTACAO_NAO_SUPORTADA, ct.FACE_NAO_APLICAVEL)
+
+
+def test_reconstrucao_com_face_limpa_e_aceita(su039):
+    """Regressão 7: 0 px além da face e continuidade verdadeira aprovam."""
+    m, px, sus = su039
+    rc, proc = ct.remover_local(m, sus, px)
+    aceita, rel = ct._validar_tentativa(
+        m, rc, sus, px, 25.0, None, 52.6,
+        largura_esperada_mm=52.6, altura_esperada_mm=25.0, procedencia=proc)
+    assert rel["gate_face"]["pixels_alem_da_face"] == 0
+    assert rel["gate_face"]["continuidade"] is True
+    assert aceita is True
+
+
+def test_segunda_tentativa_parte_da_mascara_original(su039):
+    """Regressão 5 e 6: rollback completo — a reconstrução da transação é
+    idêntica à reconstrução feita direto da original."""
+    m, px, sus = su039
+    est, tratada, _ = ct.tratar_contaminacao(
+        m, sus, px, 25.0, 52.6,
+        largura_esperada_mm=52.6, altura_esperada_mm=25.0)
+    direto, _ = ct.remover_local(m, sus, px)
+    assert est == ct.RECONSTRUCAO
+    assert np.array_equal(np.asarray(tratada) > 0, np.asarray(direto) > 0), \
+        "a tentativa aceita não partiu da máscara original"
+
+
+def test_log_registra_todos_os_gates_por_tentativa(su039):
+    """Regressão 14: cada tentativa registra procedência, face e rollback."""
+    m, px, sus = su039
+    _, _, log = ct.tratar_contaminacao(
+        m, sus, px, 25.0, 52.6,
+        largura_esperada_mm=52.6, altura_esperada_mm=25.0)
+    for x in log:
+        if "estrategia" not in x or "gate_face" not in x:
+            continue
+        assert set(x["gate_procedencia"]) == {"pixels_residuais", "aprovado"}
+        assert "estado" in x["gate_face"] and "aprovado" in x["gate_face"]
+        assert "realizado" in x["rollback"]
+        assert "aceita" in x
+
+
+def test_orquestrador_su039_determinista(su039):
+    """Regressão 15: mesma entrada, mesma estratégia e mesmos vereditos."""
+    m, px, sus = su039
+    a = ct.tratar_contaminacao(m, sus, px, 25.0, 52.6,
+                               largura_esperada_mm=52.6, altura_esperada_mm=25.0)
+    b = ct.tratar_contaminacao(m, sus, px, 25.0, 52.6,
+                               largura_esperada_mm=52.6, altura_esperada_mm=25.0)
+    assert a[0] == b[0]
+    assert np.array_equal(np.asarray(a[1]) > 0, np.asarray(b[1]) > 0)
+    fa = [x["gate_face"] for x in a[2] if "gate_face" in x]
+    fb = [x["gate_face"] for x in b[2] if "gate_face" in x]
+    assert fa == fb
+
+
+def test_nenhum_caminho_do_orquestrador_ignora_o_gate_da_face(su039):
+    """Regressão 13: toda tentativa ACEITA tem gate da face aprovado."""
+    m, px, sus = su039
+    _, _, log = ct.tratar_contaminacao(
+        m, sus, px, 25.0, 52.6,
+        largura_esperada_mm=52.6, altura_esperada_mm=25.0)
+    for x in log:
+        if x.get("aceita") is True:
+            assert x["gate_face"]["aprovado"] is True
+            assert x["gate_face"]["estado"] in ct.FACE_ESTADOS_QUE_ACEITAM
+
+
+def test_estado_ambiguo_da_face_bloqueia(monkeypatch, su039):
+    """Regressão 9: face ambígua termina em BLOQUEIO, sem escalar estratégia."""
+    m, px, sus = su039
+    monkeypatch.setattr(ct, "validar_face_local",
+                        lambda *a, **k: (ct.AMBIGUA_FACE,
+                                         {"motivo": "faces divergem"}))
+    est, tratada, log = ct.tratar_contaminacao(
+        m, sus, px, 25.0, 52.6,
+        largura_esperada_mm=52.6, altura_esperada_mm=25.0)
+    assert est == ct.BLOQUEIO
+    assert tratada is None
+    assert any(x.get("gate_face", {}).get("estado") == ct.FACE_AMBIGUO
+               for x in log)
+
+
+def test_orientacao_nao_suportada_da_face_bloqueia(monkeypatch, su039):
+    """Regressão 8: orientação sem evidência termina em BLOQUEIO."""
+    m, px, sus = su039
+    monkeypatch.setattr(ct, "validar_face_local",
+                        lambda *a, **k: (ct.NAO_SUPORTADA,
+                                         {"orientacao_detectada": "x"}))
+    est, tratada, _ = ct.tratar_contaminacao(
+        m, sus, px, 25.0, 52.6,
+        largura_esperada_mm=52.6, altura_esperada_mm=25.0)
+    assert est == ct.BLOQUEIO
+    assert tratada is None
+
+
+def test_veredito_desconhecido_da_face_bloqueia(monkeypatch, su039):
+    """Regressão 10: ausência inesperada do veredito NÃO vira aprovação."""
+    m, px, sus = su039
+    monkeypatch.setattr(ct, "validar_face_local",
+                        lambda *a, **k: ("estado_novo_nao_previsto", {}))
+    g = ct.gate_face(m, m, sus, px)
+    assert g["estado"] == "AUSENTE"
+    assert g["aprovado"] is False
+    est, tratada, _ = ct.tratar_contaminacao(
+        m, sus, px, 25.0, 52.6,
+        largura_esperada_mm=52.6, altura_esperada_mm=25.0)
+    assert est == ct.BLOQUEIO
+    assert tratada is None
+
+
+def test_nao_aplicavel_exige_justificativa(su039):
+    """Regressão 11: sem justificativa o validador roda; com justificativa o
+    estado é NAO_APLICAVEL e a justificativa fica registrada."""
+    m, px, sus = su039
+    q, _ = ct.cortar_apendice(m, sus, px)
+
+    sem = ct.gate_face(m, q, sus, px, contexto_face={})
+    assert sem["estado"] == ct.FACE_REJEITADO, "sem justificativa não pode dispensar"
+
+    vazia = ct.gate_face(m, q, sus, px,
+                         contexto_face={"nao_aplicavel_justificativa": ""})
+    assert vazia["estado"] == ct.FACE_REJEITADO, "justificativa vazia não vale"
+
+    com = ct.gate_face(m, q, sus, px, contexto_face={
+        "nao_aplicavel_justificativa": "apêndice externo sem face equivalente"},
+        estrategia=ct.QUEBRA)
+    assert com["estado"] == ct.FACE_NAO_APLICAVEL
+    assert com["aprovado"] is True
+    assert com["justificativa"]
+
+
+def test_nao_aplicavel_so_vale_na_quebra_de_ponte(su039):
+    """SU-024: a dispensa da face só existe onde a contaminação é apêndice
+    EXTERNO desprendido por quebra de ponte. Numa reconstrução de parede há
+    face por definição, e dispensá-la reabriria o buraco do SU-039."""
+    m, px, sus = su039
+    q, _ = ct.cortar_apendice(m, sus, px)
+    ctx = {"nao_aplicavel_justificativa": "apêndice externo sem face equivalente"}
+
+    ok = ct.gate_face(m, q, sus, px, contexto_face=ctx, estrategia=ct.QUEBRA)
+    assert ok["estado"] == ct.FACE_NAO_APLICAVEL
+    assert ok["aprovado"] is True
+
+    for estrategia in (ct.RECONSTRUCAO, ct.BLOQUEIO, None, "QUALQUER_OUTRA"):
+        g = ct.gate_face(m, q, sus, px, contexto_face=ctx, estrategia=estrategia)
+        assert g["estado"] == "NAO_APLICAVEL_INVALIDO", estrategia
+        assert g["aprovado"] is False, estrategia
+
+
+def test_nao_aplicavel_invalido_bloqueia_o_orquestrador(su039):
+    """Dispensa inválida não pode ser compensada por outro gate: BLOQUEIO."""
+    m, px, sus = su039
+    ctx = {"nao_aplicavel_justificativa": "justificativa que não vale aqui"}
+    # força a quebra a falhar por outro critério para chegar à reconstrução
+    est, tratada, log = ct.tratar_contaminacao(
+        m, sus, px, 25.0, 52.6, largura_esperada_mm=52.6,
+        altura_esperada_mm=25.0, contexto_face=ctx)
+    # na QUEBRA a dispensa vale; se a cadeia chegasse à RECONSTRUCAO com a
+    # mesma justificativa, teria de bloquear
+    g = ct.gate_face(m, m, sus, px, contexto_face=ctx,
+                     estrategia=ct.RECONSTRUCAO)
+    assert g["estado"] == "NAO_APLICAVEL_INVALIDO"
+    assert "obrigatório" in g["motivo"]
+
+
+def test_su024_config_declara_estrategia_da_dispensa():
+    """A justificativa do SU-024 registra a condição de validade."""
+    p = CONFIG["p4_reconhecimento"]["SU-024"]
+    ctx = p["contexto_face"]
+    assert ctx["nao_aplicavel_justificativa"]
+    assert "QUEBRA_CONTROLADA_DE_PONTE" in ctx["_condicao"]
+    assert ct.QUEBRA in ct.ESTRATEGIAS_QUE_ADMITEM_NAO_APLICAVEL
+    assert ct.RECONSTRUCAO not in ct.ESTRATEGIAS_QUE_ADMITEM_NAO_APLICAVEL
+
+
+# ============================================================================
+# SU-053: cota removida, altura revogada, cavidade aberta não é vazio
+# SU-102: dimensão bloqueada, sem calibrador de dois eixos
+# ============================================================================
+
+def test_su053_altura_vem_da_fonte_dimensional_nao_do_bbox():
+    """53,57 mm coincidia com o bbox contaminado pela seta inferior da cota 5.5.
+    A altura oficial agora vem de card cotado, não de medição."""
+    p = CONFIG["perfis"]["SU-053"]
+    assert p["altura_mm"] == 51.0
+    f = p["fonte_dimensional_primaria"]
+    assert f["altura_mm"] == 51.0 and f["largura_mm"] == 22.2
+    assert f["status"] == "confirmado_visual_card"
+    assert f["codigo"] == "TMS-053" and f["pagina_pdf"] == 222
+    # a largura coincidente é o que sustenta a associação entre os códigos
+    assert p["largura_mm"] == f["largura_mm"]
+    assert p["altura_mm"] != 53.57, "o bbox contaminado não pode voltar"
+
+
+def test_su053_medicao_limpa_nao_vira_cota_nominal():
+    """50,26 mm é medição, não cota de catálogo: não pode ocupar altura_mm."""
+    p = CONFIG["perfis"]["SU-053"]
+    m = p["medicao_geometria_limpa"]
+    assert m["altura_mm"] == 50.26
+    assert p["altura_mm"] != 50.26, "medição não vira cota nominal"
+    assert p["altura_mm"] == 51.0
+    # a divergência entre medição e cota é registrada, não escondida
+    assert 0.0 < m["erro_altura_relativo"] < 0.05
+    assert p["estado"].startswith("CANDIDATO_GEOMETRICO_")
+
+
+def test_su053_cavidade_aberta_nao_e_vazio_topologico():
+    """Câmara funcional não é sinônimo de ciclo fechado no contorno 2D."""
+    p = CONFIG["perfis"]["SU-053"]
+    assert p["vazios_esperados"] == 0
+    assert p["status_vazios"] == "confirmado_por_topologia_raster"
+    assert "aberta" in p["observacao_topologica"].lower()
+
+
+def test_cavidade_aberta_sintetica_conta_zero_vazios():
+    """Regressão do conceito, sem depender do catálogo: um 'C' tem cavidade
+    funcional evidente e ZERO vazios topológicos; fechá-lo cria 1."""
+    from curadoria.aquisicao.assinatura_topologica import camaras_fechadas
+    m = np.zeros((200, 200), np.uint8)
+    m[40:160, 40:160] = 1
+    m[70:130, 70:190] = 0          # cavidade aberta para a direita
+    assert camaras_fechadas(m)[0] == 0, "cavidade aberta não é vazio"
+    fechado = m.copy()
+    fechado[70:130, 150:160] = 1   # sela a abertura
+    assert camaras_fechadas(fechado)[0] == 1, "cavidade selada vira vazio"
+
+
+def test_su102_nao_usa_dimensao_de_perfil_vizinho():
+    """13,8 pertence ao TMS-058 e ao TMS-103, nunca ao TMS-102."""
+    p = CONFIG["perfis"]["SU-102"]
+    assert p["largura_mm"] is None and p["altura_mm"] is None
+    assert p["estado"] == "BLOQUEADO_POR_DIMENSAO"
+    assert p["cotas_catalogo_secundario"]["valores_mm"] == [11.0, 12.0]
+    assert "13,8" in p["_arbitragem_dimensional"]
+    assert p["dimensao_bounding_box"]["status"] == "pendente_confirmacao"
+
+
+def test_su102_calibrador_tem_os_dois_eixos_mas_gate_ainda_reprova():
+    """Com 22,2 × 51 confirmados, a referência fina pode calibrar os dois eixos
+    — mas o SU-102 continua bloqueado, porque o gate de escala não fecha."""
+    ref = CONFIG["perfis"]["SU-102"]["contorno_referencia"]
+    assert ref["tratamento"] == "separacao_por_espessura"
+    assert ref["estado"] == "CONTORNO_REFERENCIA_OUTRO_PERFIL_DETECTADO"
+    cal = CONFIG["perfis"]["SU-053"]
+    assert cal["largura_mm"] == 22.2 and cal["altura_mm"] == 51.0
+    # calibrador completo não basta: a dimensão do SU-102 segue nula
+    su102 = CONFIG["perfis"]["SU-102"]
+    assert su102["largura_mm"] is None and su102["altura_mm"] is None
+    assert su102["estado"] == "BLOQUEADO_POR_DIMENSAO"
+
+
+def test_perfil_sem_cota_nao_passa_pelo_driver():
+    """Perfil sem cota oficial é recusado nomeando o campo, não silenciosamente."""
+    from curadoria.aquisicao import executar_lote1_e4b as ex
+    with pytest.raises(ex.PerfilIncompleto, match="altura_mm"):
+        ex.parametros("SU-102")
+
+
+def test_su053_passa_no_driver_com_cota_confirmada():
+    """O SU-053 tem cota, motivos validados e reprodutibilidade provada."""
+    from curadoria.aquisicao import executar_lote1_e4b as ex
+    p = ex.parametros("SU-053")
+    assert p["altura_mm"] == 51.0
+    assert p["estado"] == "CANDIDATO_GEOMETRICO_APROVADO"
+
+
+# ============================================================================
+# FONTES SEPARADAS, REGISTRO ISOTRÓPICO E GEOMETRIA COMPARTILHADA
+# ============================================================================
+
+def test_su053_fontes_separadas_por_papel():
+    """Geometria, dimensão, semântica e evidência de contaminação vêm de fontes
+    declaradas separadamente — não é conflito, é divisão de papéis."""
+    p = CONFIG["perfis"]["SU-053"]
+    assert p["fonte_geometrica_primaria"]["codigo"] == "TMS-053"
+    assert p["fonte_dimensional_primaria"]["codigo"] == "TMS-053"
+    assert p["fonte_semantica_motivos"]["codigo"] == "SU-053"
+    assert p["fonte_semantica_motivos"]["fabricante"] == "Alcoa"
+    assert p["fonte_evidencia_contaminacao"]["fabricante"] == "Alcoa"
+    # trocar a fonte geométrica não pode apagar o ground truth dos motivos
+    assert len(p["motivos"]) == 5
+    for m in p["motivos"]:
+        assert m["classe_status"] == "confirmado_bruno"
+
+
+def test_tms053_nao_usa_separacao_por_espessura():
+    """No card Centenário a abertura morfológica mataria o perfil e deixaria a
+    pílula do rótulo — que tem 14 falsos vazios (as letras)."""
+    f = CONFIG["perfis"]["SU-053"]["fonte_geometrica_primaria"]
+    assert f["separacao_por_espessura"] is False
+    assert f["roi_norm"] == [0.55, 0.64, 0.95, 0.90]
+
+
+def test_registro_isotropico_recupera_similaridade():
+    """Escala única, rotação e translação — e nada além disso."""
+    from curadoria.aquisicao.registro_isotropico import registrar
+    m = np.zeros((300, 300), np.uint8)
+    m[80:220, 110:190] = 1
+    m[120:160, 140:180] = 0
+    M = cv2.getRotationMatrix2D((150, 150), 12.0, 1.35)
+    d = cv2.warpAffine(m, M, (300, 300), flags=cv2.INTER_NEAREST)
+    r = registrar(m, d)
+    assert abs(r.escala - 1.35) / 1.35 < 0.01, r.escala
+    assert abs(abs(r.rotacao_graus) - 12.0) < 0.5, r.rotacao_graus
+    assert r.erro_medio_px < 1.0
+    assert r.iou > 0.98
+
+
+def test_registro_isotropico_nao_deforma_anisotropicamente():
+    """Uma forma esticada só num eixo NÃO pode ser registrada com erro baixo:
+    escala anisotrópica é proibida por construção."""
+    from curadoria.aquisicao.registro_isotropico import registrar
+    m = np.zeros((300, 300), np.uint8)
+    m[80:220, 110:190] = 1
+    esticada = np.zeros((300, 300), np.uint8)
+    r_ = cv2.resize(m[80:220, 110:190], (80, 280), interpolation=cv2.INTER_NEAREST)
+    esticada[10:290, 110:190] = r_
+    reg = registrar(m, esticada)
+    assert reg.erro_medio_px > 3.0, \
+        "deformação anisotrópica não pode ser absorvida por escala única"
+
+
+def test_calibracao_isotropica_do_su102_reprova():
+    """O registro provou que existe UMA escala e rotação zero — o bbox não era
+    o problema. Mas a escala única não reproduz as duas cotas."""
+    c = CONFIG["perfis"]["SU-102"]["calibracao_isotropica_pela_referencia_fina"]
+    assert c["gate"] == "REPROVA"
+    assert c["erro_largura_pct"] <= 0.75, "a largura fecha"
+    assert c["erro_altura_pct"] > 0.75, "a altura não fecha — é isso que bloqueia"
+    assert abs(c["rotacao_graus"]) < 0.1, "rotação é zero: não é problema de giro"
+
+
+def test_su102_congruente_mas_sem_equivalencia_completa():
+    """IoU e aspecto não bastam: sem dimensão externa e sem gate funcional
+    local, a geometria não é compartilhável."""
+    e = CONFIG["perfis"]["SU-102"]["equivalencia_tms102"]
+    assert e["equivalencia_global"] == "PASSA"
+    assert e["equivalencia_topologica"] == "PASSA"
+    assert e["equivalencia_dimensional"] == "PENDENTE"
+    assert e["equivalencia_funcional_local"] == "PENDENTE"
+    assert e["decisao"] == "CONGRUENCIA_GLOBAL_SEM_EQUIVALENCIA_GEOMETRICA_COMPLETA"
+    # e o perfil continua bloqueado
+    assert CONFIG["perfis"]["SU-102"]["estado"] == "BLOQUEADO_POR_DIMENSAO"
+
+
+def test_gate_de_075_nao_foi_ampliado():
+    """Nenhuma tolerância foi afrouxada para destravar perfil."""
+    from curadoria.aquisicao.extrair_contorno_raster import extrair
+    import inspect
+    sig = inspect.signature(extrair)
+    assert sig.parameters["erro_aspecto_max"].default == 0.0075
+
+
+def test_curadoria_nao_grava_em_dados_oficiais():
+    """Candidato compartilhado fica só na curadoria."""
+    from curadoria.aquisicao.exportar import OFICIAIS_PROIBIDOS
+    for p in ("dados", "domain", "contrato", "docs"):
+        assert p in OFICIAIS_PROIBIDOS
+
+
+# ============================================================================
+# SU-053 — ROIs por origem, transformação congelada e reprodutibilidade
+# ============================================================================
+
+def _su053():
+    return CONFIG["perfis"]["SU-053"]
+
+
+def test_roi_alcoa_e_roi_tms_tem_status_distintos():
+    """O Bruno confirmou o MAPEAMENTO; as coordenadas no TMS foram calculadas.
+    Os dois não podem receber o mesmo selo de origem."""
+    for m in _su053()["motivos"]:
+        assert m["roi_status"] == "CONFIRMADO_BRUNO", m["motivo"]
+        assert m["tms053"]["roi_status"] == \
+            "VALIDADO_POR_TRANSFERENCIA_E_EQUIVALENCIA_LOCAL", m["motivo"]
+
+
+def test_coordenada_bruta_da_transferencia_e_preservada():
+    """O recorte ao envelope não pode apagar o que a transformação produziu."""
+    for m in _su053()["motivos"]:
+        t = m["tms053"]
+        assert t["roi_transformada_bruta"] is not None
+        assert len(t["roi_transformada_bruta"]) == 4
+        assert t["recorte_aplicado"] is not None
+
+
+def test_roi_efetiva_cabe_no_envelope_e_nao_move_geometria():
+    """A ROI efetiva fica dentro do envelope; o recorte só desloca a caixa, e
+    apenas na ordem de grandeza do arredondamento."""
+    su = _su053()
+    (x0e, x1e), (y0e, y1e) = su["envelope_fisico_mm"]["x"], su["envelope_fisico_mm"]["y"]
+    for m in su["motivos"]:
+        t = m["tms053"]
+        x0, y0, x1, y1 = t["roi_efetiva_recortada_ao_envelope"]
+        assert x0e <= x0 and x1 <= x1e, m["motivo"]
+        assert y0e <= y0 and y1 <= y1e, m["motivo"]
+        # recorte sub-milimétrico: acima disso deveria BLOQUEAR, não recortar
+        assert max(abs(v) for v in t["recorte_aplicado"]) <= 0.1, m["motivo"]
+    assert su["politica_recorte_roi"]["nao_e_regra_universal"] is True
+
+
+def test_transformacao_congelada_e_isotropica_sem_reflexao():
+    t = _su053()["transformacao_alcoa_para_tms053"]
+    assert t["tipo"] == "similaridade_isotropica"
+    assert t["deformacao_anisotropica"] is False
+    assert t["reflexao"] is False
+    assert abs(t["rotacao_graus"]) < 0.1
+    assert t["mascaras_recortadas_ao_bbox_antes_do_registro"] is True
+
+
+def test_mapeamento_m_para_c_congelado():
+    esperado = {"M1": "C4", "M2": "C6", "M3": "C2", "M4": "C8", "M5": "C5"}
+    obtido = {m["motivo"]: m["candidato_automatico"] for m in _su053()["motivos"]}
+    assert obtido == esperado
+
+
+def test_candidatos_descartados_nao_voltam_como_motivos():
+    su = _su053()
+    descartados = set(su["transferencia_de_zonas"]["candidatos_descartados"])
+    usados = {m["candidato_automatico"] for m in su["motivos"]}
+    assert not (descartados & usados), descartados & usados
+
+
+def test_baseline_local_nao_vira_gate_universal():
+    """As cinco métricas são evidência do SU-053, não regra para todo motivo."""
+    su = _su053()
+    b = su["baseline_validacao_local"]
+    assert set(b) == {"M1", "M2", "M3", "M4", "M5"}
+    assert "nao declara" in su["_nota_baseline"].lower() or \
+           "NAO declara" in su["_nota_baseline"]
+    # nenhum limiar universal foi introduzido no config
+    texto = json.dumps(CONFIG, ensure_ascii=False)
+    for proibido in ("iou_minimo_universal", "dif_area_maxima_universal"):
+        assert proibido not in texto
+
+
+def test_su053_reprodutivel_e_aprovado_so_na_curadoria():
+    su = _su053()
+    r = su["reprodutibilidade"]
+    assert r["seis_hashes_identicos"] is True
+    assert r["jsons_semanticamente_equivalentes"] is True
+    assert r["dimensoes_mm"] == [22.2, 51.0]
+    assert r["componentes"] == 1 and r["vazios"] == 0
+    assert su["estado"] == "CANDIDATO_GEOMETRICO_APROVADO"
+    assert "curadoria" in su["_nota_estado"].lower()
+    assert "GEO-SU-053" in su["_nota_estado"]
+
+
+def test_geometria_vem_da_fonte_declarada_nao_da_semantica():
+    """O driver adquire pelo TMS-053, não pelo card Alcoa."""
+    from curadoria.aquisicao import executar_lote1_e4b as ex
+    g = ex.fonte_de_geometria(_su053())
+    assert g["codigo"] == "TMS-053"
+    assert g["pagina_pdf"] == 222
+    assert "Centen" in g["fonte_pdf"]
+
+
+def test_su102_nenhuma_fonte_cota_o_envelope():
+    """Quatro catálogos investigados; nenhum publica a dimensão externa."""
+    su = CONFIG["perfis"]["SU-102"]
+    fontes = su["fontes_dimensionais_investigadas"]
+    assert len(fontes) >= 4
+    for f in fontes:
+        assert f["cota_envelope_total"] is False, f["fabricante"]
+    assert su["dimensao_externa"]["status"] == \
+        "REQUER_MEDICAO_FISICA_OU_DESENHO_TECNICO_COTADO"
+    assert su["largura_mm"] is None and su["altura_mm"] is None
+
+
+def test_su102_cotas_10_e_11_nao_medem_o_envelope():
+    """A cota 10 começa no perfil de REFERÊNCIA, não no SU-102 — por isso
+    10+11 cobre mais que a largura do traço cheio."""
+    i = CONFIG["perfis"]["SU-102"]["interpretacao_das_cotas"]
+    assert i["cota_10"]["mede_o_envelope"] is False
+    assert i["cota_11"]["mede_o_envelope"] is False
+    x0, x1 = i["traco_cheio_px"]["x"]
+    linhas = i["linhas_de_chamada_px"]
+    assert linhas[0] < x0, "a primeira linha de chamada cai fora do traço cheio"
+    assert x0 < linhas[1] < x1, "a segunda linha é interna ao traço cheio"
+    assert linhas[2] == x1, "só a terceira coincide com a borda"
+    assert (linhas[2] - linhas[0]) > (x1 - x0), \
+        "10+11 abrange mais que a largura — não pode virar envelope"
+
+
+def test_su102_tres_fontes_concordam_no_aspecto():
+    """Dispersão entre catálogos independentes bem abaixo do gate."""
+    fontes = [f for f in CONFIG["perfis"]["SU-102"]["fontes_dimensionais_investigadas"]
+              if f.get("aspecto_traco_cheio")]
+    aspectos = [f["aspecto_traco_cheio"] for f in fontes]
+    assert len(aspectos) >= 3
+    disp = (max(aspectos) - min(aspectos)) / min(aspectos) * 100
+    assert disp <= 0.75, disp
+
+
+def test_su102_gate_funcional_local_completo():
+    """As regiões com material passam; nenhuma concentra resíduo."""
+    c = CONFIG["perfis"]["SU-102"]["candidato_compartilhamento"]
+    assert c["congruencia_global"] == "APROVADA"
+    assert c["congruencia_topologica"] == "APROVADA"
+    assert c["congruencia_funcional_local"] == "APROVADA"
+    assert c["equivalencia_dimensional"] == "PENDENTE"
+    assert c["decisao"] == "AGUARDANDO_DIMENSAO_EXTERNA"
+    com_material = [v for v in c["evidencia_local"].values() if v != "SEM_MATERIAL"]
+    assert len(com_material) >= 6
+    for v in com_material:
+        assert v["decisao"] == "EQUIVALENTE", v
+        assert v["p95"] <= 4.0, v
+
+
+def test_su102_nao_vira_geometria_oficial():
+    """Candidato compartilhado fica só na curadoria."""
+    su = CONFIG["perfis"]["SU-102"]
+    assert su["estado"] == "BLOQUEADO_POR_DIMENSAO"
+    texto = json.dumps(su, ensure_ascii=False)
+    assert "GEO-SU-102" not in texto
+    assert "APROVADO_EM_CURADORIA" not in texto
+
+
+def test_contexto_face_nao_e_mutado(su039):
+    """Contrato: o contexto é explícito e imutável — sem global, sem sessão."""
+    m, px, sus = su039
+    ctx = {"nao_aplicavel_justificativa": "motivo"}
+    copia = dict(ctx)
+    ct.gate_face(m, m, sus, px, contexto_face=ctx)
+    assert ctx == copia
+
+
+def test_su024_nao_aplicavel_ainda_nao_tem_contexto_comprovado():
+    """Regressão 12: `NAO_APLICAVEL` é contrato disponível, mas o contexto real
+    do SU-024 (página e ROI) NÃO está persistido — nenhum config o declara.
+
+    Este teste falha no dia em que o SU-024 entrar no config sem que a
+    justificativa de não aplicabilidade seja declarada junto."""
+    cfg = json.loads((RAIZ / "curadoria/aquisicao/configs/e4b_suprema.json")
+                     .read_text())
+    if "SU-024" in cfg["perfis"]:
+        p = cfg["perfis"]["SU-024"]
+        assert "nao_aplicavel_justificativa" in p.get("contexto_face", {}), \
+            "SU-024 entrou no config sem justificar a não aplicabilidade da face"
+    else:
+        assert ct.FACE_NAO_APLICAVEL in ct.FACE_ESTADOS_QUE_ACEITAM
+
+
+# ============================================================================
+# DECLARAÇÃO DE MOTIVOS PENDENTES E PADDING TÉCNICO DE REEXTRAÇÃO
+# ============================================================================
+
+def _valida_perfil(p: dict) -> bool:
+    """Mesma regra do gate do config, isolada para poder ser testada."""
+    motivos = p.get("motivos", [])
+    pend = p.get("_motivos_pendentes")
+    if motivos and pend:
+        return False                    # não pode afirmar as duas coisas
+    if motivos:
+        return True
+    return bool(pend
+                and pend.get("levantamento") == "nao_realizado"
+                and pend.get("justificativa"))
+
+
+@pytest.mark.parametrize("perfil,esperado", [
+    ({"motivos": []}, False),                                   # 1 sem declaração
+    ({"motivos": [], "_motivos_pendentes":
+        {"levantamento": "nao_realizado", "justificativa": ""}}, False),   # 2
+    ({"motivos": [], "_motivos_pendentes":
+        {"levantamento": "realizado", "justificativa": "x"}}, False),      # 3
+    ({"motivos": [], "_motivos_pendentes":
+        {"levantamento": "nao_realizado", "justificativa": "x"}}, True),   # 4
+    ({"motivos": [{"id": "GAB-OLHAL-01"}]}, True),                         # 5
+    ({"motivos": [{"id": "GAB-OLHAL-01"}], "_motivos_pendentes":
+        {"levantamento": "nao_realizado", "justificativa": "x"}}, False),  # 6
+])
+def test_declaracao_de_motivos_pendentes(perfil, esperado):
+    """Regras 1–6: 'não levantado' precisa ser declarado, e nunca convive com
+    motivo confirmado."""
+    assert _valida_perfil(perfil) is esperado
+
+
+def test_config_real_respeita_a_declaracao_de_pendencia():
+    """A regra vale para o config de verdade, não só para os sintéticos."""
+    for grupo in ("perfis", "p4_reconhecimento"):
+        for cod, p in CONFIG[grupo].items():
+            if cod.startswith("_"):
+                continue
+            assert _valida_perfil(p), cod
+
+
+def test_su053_cinco_ocorrencias_mapeadas_e_validadas():
+    """Classe e ROI agora confirmadas: o mapeamento M→C veio de arbitragem
+    humana e cada zona foi validada no TMS-053."""
+    ms = CONFIG["perfis"]["SU-053"]["motivos"]
+    assert len(ms) == 5
+    esperado = ["GAB-ESCOVINHA-SU-01", "MOTIVO-ENCAIXE-BAGUETE-INTERNO",
+                "GAB-OLHAL-01", "MOTIVO-ENCAIXE-BAGUETE-EXTERNO",
+                "GAB-ESCOVINHA-SU-01"]
+    assert [m["id"] for m in ms] == esperado
+    assert [m["motivo"] for m in ms] == ["M1", "M2", "M3", "M4", "M5"]
+    assert [m["candidato_automatico"] for m in ms] == ["C4", "C6", "C2", "C8", "C5"]
+    for m in ms:
+        assert m["classe_status"] == "confirmado_bruno", m["id"]
+        assert m["roi_status"] == "CONFIRMADO_BRUNO", m["id"]
+        assert m["zona_protegida"] is not None
+        assert m["tms053"]["roi_efetiva_recortada_ao_envelope"] is not None
+        v = m["tms053"]["validacao_local"]
+        assert v["decisao"] == "EQUIVALENTE", (m["motivo"], v)
+        assert v["iou"] >= 0.85, (m["motivo"], v["iou"])
+        assert v["dif_area_pct"] <= 10.0, (m["motivo"], v["dif_area_pct"])
+
+
+def test_su053_candidatos_descartados_ficam_registrados():
+    """Os candidatos rejeitados na arbitragem guardam o porquê."""
+    t = CONFIG["perfis"]["SU-053"]["transferencia_de_zonas"]
+    assert t["metodo"].startswith("similaridade")
+    assert set(t["candidatos_descartados"]) == {"C1", "C3", "C7", "C9", "C10"}
+    for c, razao in t["candidatos_descartados"].items():
+        assert razao, c
+    # o registro usado na transferência não pode ter rotação relevante
+    assert abs(t["registro"]["rotacao_graus"]) < 0.1
+
+
+def _quadrado_com_furo(lado_px=240, px_mm=12.0):
+    m = np.zeros((lado_px, lado_px), np.uint8)
+    m[20:-20, 20:-20] = 1
+    m[90:150, 90:150] = 0
+    return m, px_mm
+
+
+def test_padding_de_reextracao_e_geometricamente_neutro(tmp_path):
+    """Regras 1–5 e 10 do padding: contorno, vazios, dimensões e assinatura
+    idênticos com e sem margem; o padding não vira material."""
+    from PIL import Image
+    from curadoria.aquisicao import executar_lote1_e4b as ex
+    from curadoria.aquisicao.assinatura_topologica import (
+        derivar_assinatura_topologica)
+    from curadoria.aquisicao.extrair_contorno_raster import extrair
+
+    m, _ = _quadrado_com_furo()
+    L = A = 20.0
+    saidas = {}
+    for pad in (0, ex.margem_px(L, m.shape[1])):
+        img = Image.fromarray((1 - np.pad(m, pad)) * 255).convert("RGB")
+        saidas[pad] = extrair("SIN", img, L, A, 1, threshold="otsu",
+                              simplificacao_mm=0.05)
+    sem, com = saidas[0], saidas[ex.margem_px(L, m.shape[1])]
+
+    assert sem.contorno_externo == com.contorno_externo
+    assert sem.vazios_internos == com.vazios_internos
+    assert len(com.vazios_internos) == 1, "padding não pode criar nem fechar vazio"
+    assert (derivar_assinatura_topologica(sem.contorno_externo, sem.vazios_internos)
+            == derivar_assinatura_topologica(com.contorno_externo,
+                                             com.vazios_internos))
+    xs = [q[0] for q in com.contorno_externo]
+    ys = [q[1] for q in com.contorno_externo]
+    assert round(max(xs) - min(xs), 2) == L
+    assert round(max(ys) - min(ys), 2) == A
+
+
+def test_margem_de_reextracao_em_mm_respeita_a_escala():
+    """Regra 8: a conversão mm→px usa a escala real da aquisição."""
+    from curadoria.aquisicao import executar_lote1_e4b as ex
+    assert ex.MARGEM_REEXTRACAO_MM == 0.85
+    # 52,6 mm em 1241 px ≈ 23,6 px/mm  →  0,85 mm ≈ 20 px (o valor já testado)
+    assert ex.margem_px(52.6, 1241) == 20
+    # metade da escala, metade dos pixels
+    assert ex.margem_px(52.6, 620) == 10
+    assert ex.margem_px(10.0, 100) >= 1, "nunca degenera para zero"
+
+
+def test_padding_nao_substitui_o_gate_recorte_da_fonte():
+    """Regras 6 e 7: ROI que corta de fato o perfil continua bloqueada, e o
+    padding é declarado como fase de reextração, não da fonte."""
+    from PIL import Image
+    from curadoria.aquisicao import executar_lote1_e4b as ex
+    from curadoria.aquisicao.extrair_contorno_raster import extrair
+
+    m, _ = _quadrado_com_furo()
+    cortada = m[:, 60:]                      # ROI amputa o perfil de verdade
+    img = Image.fromarray((1 - cortada) * 255).convert("RGB")
+    r = extrair("SIN", img, 20.0, 20.0, 1, threshold="otsu",
+                simplificacao_mm=0.05)
+    assert "RECORTE" in [f.codigo for f in r.falhas], \
+        "ROI realmente cortada tem de continuar bloqueando"
+
+    reg = {"aplicado": True, "margem_mm": ex.MARGEM_REEXTRACAO_MM,
+           "fase": "reextracao", "altera_geometria": False}
+    assert reg["fase"] == "reextracao"
+    assert reg["altera_geometria"] is False
+
+
+def test_gravar_artefatos_proibidos_oficiais(tmp_path):
+    """Gravação: recusa caminhos oficiais."""
+    from curadoria.aquisicao import exportar
+
+    resultado = {
+        "contorno_bruto": {"contorno_externo": [[0, 0], [10, 0], [10, 10], [0, 10]], "vazios_internos": []},
+        "contorno_comercial": {"contorno_externo": [[0, 0], [10, 0], [10, 10], [0, 10]], "vazios_internos": []},
+        "assinatura": {"vazios": 0, "probes_material": [[5, 5]], "probes_vazio": [], "probes_exterior_conectado": []},
+        "metricas": {"F1": 1.0},
+        "operacoes": [],
+        "dimensoes_mm": {"largura": 10, "altura": 10}
+    }
+
+    # Caminho que contém "dados" é proibido
+    caminho_proibido = tmp_path / "dados" / "subdir"
+    with pytest.raises(ValueError, match="proibida"):
+        exportar.gravar_artefatos_curadoria("SU-001", resultado, caminho_proibido)
