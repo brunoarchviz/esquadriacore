@@ -1,0 +1,43 @@
+{
+ "codigo": "SU-001",
+ "estrategia_contaminacao": "LIMPO",
+ "dimensoes_mm": {
+  "largura": 71.0,
+  "altura": 33.0
+ },
+ "pontos_externo": 187,
+ "vazios_detectados": 0,
+ "f1_tolerante": {
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0
+ },
+ "gates_aprovados": true,
+ "falhas": [],
+ "violacoes_assinatura": [],
+ "procedencia": {
+  "fonte_reproducao": {
+   "fonte_pdf": "dados_exemplo/Centenário.pdf",
+   "pagina_pdf": 211,
+   "roi_norm": [
+    0.285,
+    0.098,
+    0.755,
+    0.325
+   ]
+  },
+  "estrategia_aceita": "LIMPO",
+  "fonte_geometrica_primaria": {
+   "fabricante": "Centenario",
+   "pagina_pdf": 211,
+   "roi_norm": [
+    0.285,
+    0.098,
+    0.755,
+    0.325
+   ],
+   "separacao_por_espessura": false,
+   "motivo": "fonte e cotas aprovadas no gate de evidencia (lote 2, quadro da janela)"
+  }
+ }
+}

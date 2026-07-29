@@ -1078,6 +1078,202 @@
         }
       ],
       "_nota_bolsos": "bolsos detectados automaticamente; os de forma circular são candidatos a GAB-OLHAL-01, não a escovinha"
+    },
+    "SU-001": {
+      "fonte_pdf": "dados_exemplo/Centenário.pdf",
+      "pagina_pdf": 211,
+      "roi_norm": [
+        0.285,
+        0.098,
+        0.755,
+        0.325
+      ],
+      "largura_mm": 71.0,
+      "altura_mm": 33.0,
+      "vazios_esperados": 0,
+      "funcao": "trilho_superior_2_planos",
+      "fonte_geometrica_primaria": {
+        "fabricante": "Centenario",
+        "pagina_pdf": 211,
+        "roi_norm": [
+          0.285,
+          0.098,
+          0.755,
+          0.325
+        ],
+        "separacao_por_espessura": false,
+        "motivo": "fonte e cotas aprovadas no gate de evidencia (lote 2, quadro da janela)"
+      },
+      "nota": "Lote 2 — quadro da janela. trilho_superior_2_planos.",
+      "motivos": [],
+      "contagem_motivos": {},
+      "_motivos_pendentes": {
+        "levantamento": "nao_realizado",
+        "justificativa": "perfil recem-adicionado no lote 2; nenhuma ocorrencia foi levantada nem confirmada. Lista vazia significa NAO LEVANTADO, nunca ausencia comprovada.",
+        "_acao": "levantar as ocorrencias e submeter a arbitragem"
+      },
+      "status_vazios": "confirmado_por_topologia_raster",
+      "observacao_topologica": "secao aberta: os bolsos dos trilhos sao C abertos, nao camaras fechadas.",
+      "cotas_internas": [
+        {
+          "valor_mm": 35.0,
+          "funcao": "vao_entre_trilhos",
+          "usar_como_envelope": false
+        }
+      ],
+      "estado": "CANDIDATO_GEOMETRICO_APROVADO",
+      "aprovacao_visual": {
+        "data": "2026-07-28",
+        "painel": "curadoria/composicao/painel_lote2_su001_su002_su003.png",
+        "confirmado": "dois trilhos preservados; ganchos inferiores preservados; travessa superior completa; montantes externos completos; nenhuma contaminacao grafica",
+        "diferenca_bruto_comercial": "somente ajustes controlados de simplificacao das bordas; sem perda de componentes e sem mudanca topologica",
+        "_nota": "aprovado SO na camada de curadoria; nao existe geometria oficial em dados/"
+      }
+    },
+    "SU-002": {
+      "fonte_pdf": "dados_exemplo/Centenário.pdf",
+      "pagina_pdf": 211,
+      "roi_norm": [
+        0.255,
+        0.395,
+        0.745,
+        0.615
+      ],
+      "largura_mm": 71.0,
+      "altura_mm": 47.0,
+      "vazios_esperados": 0,
+      "funcao": "trilho_inferior_2_planos",
+      "fonte_geometrica_primaria": {
+        "fabricante": "Centenario",
+        "pagina_pdf": 211,
+        "roi_norm": [
+          0.255,
+          0.395,
+          0.745,
+          0.615
+        ],
+        "separacao_por_espessura": false,
+        "motivo": "fonte e cotas aprovadas no gate de evidencia (lote 2, quadro da janela)"
+      },
+      "nota": "Lote 2 — quadro da janela. trilho_inferior_2_planos.",
+      "motivos": [],
+      "contagem_motivos": {},
+      "_motivos_pendentes": {
+        "levantamento": "nao_realizado",
+        "justificativa": "perfil recem-adicionado no lote 2; nenhuma ocorrencia foi levantada nem confirmada. Lista vazia significa NAO LEVANTADO, nunca ausencia comprovada.",
+        "_acao": "levantar as ocorrencias e submeter a arbitragem"
+      },
+      "cotas_internas": [
+        {
+          "valor_mm": 35.0,
+          "funcao": "vao_entre_trilhos",
+          "usar_como_envelope": false
+        },
+        {
+          "valor_mm": 16.0,
+          "funcao": "altura_do_trilho",
+          "usar_como_envelope": false
+        },
+        {
+          "valor_mm": 13.0,
+          "funcao": "aba_esquerda",
+          "usar_como_envelope": false
+        }
+      ],
+      "status_vazios": "confirmado_por_topologia_raster",
+      "observacao_topologica": "secao aberta: os bolsos dos trilhos sao C abertos, nao camaras fechadas.",
+      "fonte_dimensional_primaria": {
+        "tipo": "evidencia_composta",
+        "pagina_pdf": 211,
+        "altura": {
+          "valor_mm": 47.0,
+          "origem": "cota_visual_do_card"
+        },
+        "largura": {
+          "valor_mm": 71.0,
+          "origem": "derivacao_validada",
+          "evidencias": [
+            {
+              "bbox_raster": [
+                1683,
+                1116
+              ]
+            },
+            {
+              "aspecto_medido": 1.5081
+            },
+            {
+              "aspecto_esperado_71x47": 1.5106
+            },
+            {
+              "erro_relativo": 0.0017
+            },
+            {
+              "largura_raster_equivalente_a_su001_e_su003": true
+            },
+            {
+              "escala_coerente_entre_os_tres_cards": [
+                23.818,
+                23.745,
+                23.846
+              ]
+            }
+          ],
+          "_nota": "o numero 71 NAO aparece como cota externa no card do SU-002. Foi confirmado por aspecto raster, escala derivada da altura cotada, e coerencia com SU-001 e SU-003 do mesmo quadro."
+        }
+      },
+      "estado": "CANDIDATO_GEOMETRICO_APROVADO",
+      "aprovacao_visual": {
+        "data": "2026-07-28",
+        "painel": "curadoria/composicao/painel_lote2_su001_su002_su003.png",
+        "confirmado": "dois trilhos superiores completos; ganchos preservados; base e extremidades completas; 71 mm = envelope externo; 35 mm = vao interno entre trilhos; nenhuma perda funcional no contorno comercial",
+        "diferenca_bruto_comercial": "somente ajustes controlados de simplificacao das bordas; sem perda de componentes e sem mudanca topologica",
+        "_nota": "aprovado SO na camada de curadoria; nao existe geometria oficial em dados/"
+      }
+    },
+    "SU-003": {
+      "fonte_pdf": "dados_exemplo/Centenário.pdf",
+      "pagina_pdf": 211,
+      "roi_norm": [
+        0.255,
+        0.675,
+        0.725,
+        0.865
+      ],
+      "largura_mm": 71.0,
+      "altura_mm": 26.0,
+      "vazios_esperados": 0,
+      "funcao": "marco_lateral_com_mata_junta",
+      "fonte_geometrica_primaria": {
+        "fabricante": "Centenario",
+        "pagina_pdf": 211,
+        "roi_norm": [
+          0.255,
+          0.675,
+          0.725,
+          0.865
+        ],
+        "separacao_por_espessura": false,
+        "motivo": "fonte e cotas aprovadas no gate de evidencia (lote 2, quadro da janela)"
+      },
+      "nota": "Lote 2 — quadro da janela. marco_lateral_com_mata_junta.",
+      "motivos": [],
+      "contagem_motivos": {},
+      "_motivos_pendentes": {
+        "levantamento": "nao_realizado",
+        "justificativa": "perfil recem-adicionado no lote 2; nenhuma ocorrencia foi levantada nem confirmada. Lista vazia significa NAO LEVANTADO, nunca ausencia comprovada.",
+        "_acao": "levantar as ocorrencias e submeter a arbitragem"
+      },
+      "status_vazios": "confirmado_por_topologia_raster",
+      "observacao_topologica": "secao aberta: os bolsos dos trilhos sao C abertos, nao camaras fechadas.",
+      "estado": "CANDIDATO_GEOMETRICO_APROVADO",
+      "aprovacao_visual": {
+        "data": "2026-07-28",
+        "painel": "curadoria/composicao/painel_lote2_su001_su002_su003.png",
+        "confirmado": "alma horizontal preservada; paredes laterais preservadas; duas aletas inclinadas preservadas; mata-junta completo; 83 pontos compativeis com a simplicidade da secao",
+        "diferenca_bruto_comercial": "somente ajustes controlados de simplificacao das bordas; sem perda de componentes e sem mudanca topologica",
+        "_nota": "aprovado SO na camada de curadoria; nao existe geometria oficial em dados/"
+      }
     }
   },
   "p4_reconhecimento": {

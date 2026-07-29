@@ -1668,7 +1668,9 @@ def test_su102_nao_usa_dimensao_de_perfil_vizinho():
     """13,8 pertence ao TMS-058 e ao TMS-103, nunca ao TMS-102."""
     p = CONFIG["perfis"]["SU-102"]
     assert p["largura_mm"] is None and p["altura_mm"] is None
-    assert p["estado"] == "BLOQUEADO_POR_DIMENSAO"
+    assert p["estado_geometrico"] == "CANDIDATO_ADIMENSIONAL_APROVADO"
+    assert p["estado_dimensional"]["status"] == \
+        "AGUARDANDO_MEDICAO_FISICA_OU_DESENHO_TECNICO_COTADO"
     assert p["cotas_catalogo_secundario"]["valores_mm"] == [11.0, 12.0]
     assert "13,8" in p["_arbitragem_dimensional"]
     assert p["dimensao_bounding_box"]["status"] == "pendente_confirmacao"
@@ -1685,7 +1687,7 @@ def test_su102_calibrador_tem_os_dois_eixos_mas_gate_ainda_reprova():
     # calibrador completo não basta: a dimensão do SU-102 segue nula
     su102 = CONFIG["perfis"]["SU-102"]
     assert su102["largura_mm"] is None and su102["altura_mm"] is None
-    assert su102["estado"] == "BLOQUEADO_POR_DIMENSAO"
+    assert su102["estado_dimensional"]["status"].startswith("AGUARDANDO_")
 
 
 def test_perfil_sem_cota_nao_passa_pelo_driver():
@@ -1778,8 +1780,10 @@ def test_su102_congruente_mas_sem_equivalencia_completa():
     assert e["equivalencia_dimensional"] == "PENDENTE"
     assert e["equivalencia_funcional_local"] == "PENDENTE"
     assert e["decisao"] == "CONGRUENCIA_GLOBAL_SEM_EQUIVALENCIA_GEOMETRICA_COMPLETA"
-    # e o perfil continua bloqueado
-    assert CONFIG["perfis"]["SU-102"]["estado"] == "BLOQUEADO_POR_DIMENSAO"
+    # a forma foi aprovada; o que continua bloqueado é a escala
+    su = CONFIG["perfis"]["SU-102"]
+    assert su["estado_geometrico"] == "CANDIDATO_ADIMENSIONAL_APROVADO"
+    assert su["largura_mm"] is None and su["altura_mm"] is None
 
 
 def test_gate_de_075_nao_foi_ampliado():
@@ -1947,12 +1951,172 @@ def test_su102_gate_funcional_local_completo():
 
 
 def test_su102_nao_vira_geometria_oficial():
-    """Candidato compartilhado fica só na curadoria."""
+    """Candidato compartilhado fica só na curadoria: forma aprovada, escala não."""
     su = CONFIG["perfis"]["SU-102"]
-    assert su["estado"] == "BLOQUEADO_POR_DIMENSAO"
+    assert su["estado_geometrico"] == "CANDIDATO_ADIMENSIONAL_APROVADO"
+    assert "MEDICAO_FISICA" in su["estado_dimensional"]["status"]
     texto = json.dumps(su, ensure_ascii=False)
     assert "GEO-SU-102" not in texto
     assert "APROVADO_EM_CURADORIA" not in texto
+
+
+# ============================================================================
+# LOTE 2 — quadro da janela: SU-001, SU-002, SU-003
+# ============================================================================
+
+LOTE2 = ("SU-001", "SU-002", "SU-003")
+
+
+def test_su002_envelope_e_71x47():
+    p = CONFIG["perfis"]["SU-002"]
+    assert p["largura_mm"] == 71.0
+    assert p["altura_mm"] == 47.0
+
+
+def test_su002_35mm_e_cota_interna_nao_envelope():
+    """A cota 35 mede o vão entre os dois trilhos, não a largura externa."""
+    p = CONFIG["perfis"]["SU-002"]
+    internas = {c["valor_mm"]: c for c in p["cotas_internas"]}
+    assert 35.0 in internas
+    assert internas[35.0]["funcao"] == "vao_entre_trilhos"
+    assert internas[35.0]["usar_como_envelope"] is False
+    # e nenhuma cota interna virou dimensão externa
+    for c in p["cotas_internas"]:
+        assert c["usar_como_envelope"] is False
+        assert p["largura_mm"] != c["valor_mm"], c
+        assert p["altura_mm"] != c["valor_mm"], c
+
+
+def test_su002_aspecto_dentro_do_gate():
+    p = CONFIG["perfis"]["SU-002"]
+    ev = {k: v for d in p["fonte_dimensional_primaria"]["largura"]["evidencias"]
+          for k, v in d.items()}
+    medido = ev["aspecto_medido"]
+    esperado = p["largura_mm"] / p["altura_mm"]
+    assert abs(medido - esperado) / esperado <= 0.0075
+
+
+def test_lote2_larguras_raster_coerentes():
+    """Os três perfis do quadro compartilham a largura de marco."""
+    for cod in LOTE2:
+        assert CONFIG["perfis"][cod]["largura_mm"] == 71.0, cod
+    escalas = {k: v for d in
+               CONFIG["perfis"]["SU-002"]["fonte_dimensional_primaria"]["largura"]["evidencias"]
+               for k, v in d.items()}["escala_coerente_entre_os_tres_cards"]
+    assert len(escalas) == 3
+    assert (max(escalas) - min(escalas)) / min(escalas) <= 0.0075
+
+
+def test_largura_derivada_nao_se_apresenta_como_cota_direta():
+    """A procedência tem de dizer que 71 foi DERIVADO, não lido no card."""
+    larg = CONFIG["perfis"]["SU-002"]["fonte_dimensional_primaria"]["largura"]
+    assert larg["origem"] == "derivacao_validada"
+    assert larg["origem"] != "cota_visual_do_card"
+    assert "NAO aparece como cota externa" in larg["_nota"]
+    alt = CONFIG["perfis"]["SU-002"]["fonte_dimensional_primaria"]["altura"]
+    assert alt["origem"] == "cota_visual_do_card"
+    assert CONFIG["perfis"]["SU-002"]["fonte_dimensional_primaria"]["tipo"] == \
+        "evidencia_composta"
+
+
+# ============================================================================
+# SCHEMA DO CONFIG
+#
+# Renomear chave já quebrou testes três vezes nesta sprint, e sempre pelo mesmo
+# caminho: o erro só aparecia quando um teste distante tentava ler a chave
+# antiga. Aqui a incoerência é apontada de uma vez, com perfil e motivo.
+# ============================================================================
+
+# Incoerência conhecida e NÃO corrigida: o SU-041 está congelado, e mexer nele
+# está fora do escopo. Fica listada para não mascarar as demais — e para não
+# ser silenciosamente "resolvida" por alguém editando um perfil congelado.
+PENDENCIAS_CONHECIDAS = {
+    "SU-041: motivos[GAB-MA-DIAG-ESC-01] — tem zona_protegida com procedência "
+    "'pendente' — nem selo novo nem idioma legado",
+}
+
+
+def test_config_sem_incoerencias_novas():
+    from curadoria.aquisicao.validar_config import validar
+    erros = set(validar(CONFIG))
+    novas = erros - PENDENCIAS_CONHECIDAS
+    assert not novas, "incoerências novas no config:\n  " + "\n  ".join(sorted(novas))
+
+
+def test_pendencia_conhecida_continua_visivel():
+    """Se o SU-041 for corrigido, esta lista tem de encolher junto — senão ela
+    vira lixo que esconde problema futuro."""
+    from curadoria.aquisicao.validar_config import validar
+    assert PENDENCIAS_CONHECIDAS <= set(validar(CONFIG)), \
+        "pendência conhecida sumiu do config: remover de PENDENCIAS_CONHECIDAS"
+
+
+def test_validador_pega_chave_depreciada():
+    from curadoria.aquisicao.validar_config import validar
+    cfg = {"perfis": {"X": {"fonte_pdf": "a", "pagina_pdf": 1, "roi_norm": [0, 0, 1, 1],
+                            "fonte_dimensional": {}, "motivos": [],
+                            "_motivos_pendentes": {"levantamento": "nao_realizado",
+                                                   "justificativa": "x"}}}}
+    e = validar(cfg)
+    assert any("depreciada" in x and "fonte_dimensional_primaria" in x for x in e), e
+
+
+def test_validador_pega_estado_antigo_convivendo():
+    from curadoria.aquisicao.validar_config import validar
+    cfg = {"perfis": {"X": {"fonte_pdf": "a", "pagina_pdf": 1, "roi_norm": [0, 0, 1, 1],
+                            "estado": "velho", "estado_geometrico": "novo",
+                            "estado_dimensional": {"status": "AGUARDANDO_X"},
+                            "motivos": [],
+                            "_motivos_pendentes": {"levantamento": "nao_realizado",
+                                                   "justificativa": "x"}}}}
+    e = validar(cfg)
+    assert any("chave antiga convive" in x for x in e), e
+
+
+def test_validador_pega_cota_interna_virando_envelope():
+    from curadoria.aquisicao.validar_config import validar
+    cfg = {"perfis": {"X": {"fonte_pdf": "a", "pagina_pdf": 1, "roi_norm": [0, 0, 1, 1],
+                            "largura_mm": 35.0, "altura_mm": 47.0,
+                            "cotas_internas": [{"valor_mm": 35.0, "funcao": "vao",
+                                                "usar_como_envelope": False}],
+                            "motivos": [],
+                            "_motivos_pendentes": {"levantamento": "nao_realizado",
+                                                   "justificativa": "x"}}}}
+    e = validar(cfg)
+    assert any("virou envelope" in x for x in e), e
+
+
+def test_validador_pega_dimensao_com_estado_aguardando():
+    from curadoria.aquisicao.validar_config import validar
+    cfg = {"perfis": {"X": {"fonte_pdf": "a", "pagina_pdf": 1, "roi_norm": [0, 0, 1, 1],
+                            "largura_mm": 10.0, "altura_mm": 20.0,
+                            "estado_geometrico": "APROVADO",
+                            "estado_dimensional": {"status": "AGUARDANDO_MEDICAO"},
+                            "motivos": [],
+                            "_motivos_pendentes": {"levantamento": "nao_realizado",
+                                                   "justificativa": "x"}}}}
+    e = validar(cfg)
+    assert any("estado_dimensional" in x and "preenchidas" in x for x in e), e
+
+
+def test_lote2_aprovado_visualmente_so_na_curadoria():
+    """Os três passaram pela revisão visual — e ficam só na curadoria."""
+    for cod, alt in (("SU-001", 33.0), ("SU-002", 47.0), ("SU-003", 26.0)):
+        p = CONFIG["perfis"][cod]
+        assert p["estado"] == "CANDIDATO_GEOMETRICO_APROVADO", cod
+        assert p["largura_mm"] == 71.0 and p["altura_mm"] == alt, cod
+        a = p["aprovacao_visual"]
+        assert a["confirmado"], cod
+        assert "painel_lote2" in a["painel"], cod
+        assert "curadoria" in a["_nota"].lower(), cod
+        assert "dados/" in a["_nota"], cod
+
+
+def test_lote2_nao_cria_geometria_oficial():
+    texto = json.dumps({c: CONFIG["perfis"][c] for c in
+                        ("SU-001", "SU-002", "SU-003")}, ensure_ascii=False)
+    for proibido in ("GEO-SU-001", "GEO-SU-002", "GEO-SU-003"):
+        assert proibido not in texto
 
 
 def test_contexto_face_nao_e_mutado(su039):
