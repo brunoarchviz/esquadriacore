@@ -139,7 +139,8 @@
         "levantamento": "nao_realizado",
         "justificativa": "o trabalho no SU-039 foi a contaminacao grafica (linha de cota aderida a face), nao o reconhecimento de motivos. Nenhuma ocorrencia foi confirmada pelo Bruno ate 2026-07-26 e nenhuma foi inferida: lista vazia significa NAO LEVANTADO, nunca ausencia comprovada.",
         "_acao": "levantar as ocorrencias do SU-039 e submeter a arbitragem antes de tratar a lista vazia como definitiva"
-      }
+      },
+      "estado": "CANDIDATO_GEOMETRICO_APROVADO"
     },
     "SU-053": {
       "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
@@ -923,7 +924,8 @@
           ]
         }
       ],
-      "_nota_bolsos": "bolsos detectados automaticamente; os de forma circular são candidatos a GAB-OLHAL-01, não a escovinha"
+      "_nota_bolsos": "bolsos detectados automaticamente; os de forma circular são candidatos a GAB-OLHAL-01, não a escovinha",
+      "estado": "CANDIDATO_PREVIAMENTE_APROVADO"
     },
     "SU-041": {
       "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
@@ -989,7 +991,9 @@
       "contagem_motivos": {
         "GAB-ESCOVINHA-SU-01": 1,
         "GAB-MA-DIAG-ESC-01": 1
-      }
+      },
+      "estado": "BLOQUEADO_POR_ZONA_PENDENTE",
+      "_nota_estado": "perfil com 2 motivos confirmados (GAB-ESCOVINHA-SU-01 e GAB-MA-DIAG-ESC-01). A zona [23.0, 28.0, 38.5, 33.0] esta anexada ao GAB-MA-DIAG-ESC-01 com atribuicao_geometrica=pendente: qual dos dois motivos ela representa nao foi decidido. A escovinha continua sem ROI (pendente_arbitragem) porque o bolso medido antes era olhal."
     },
     "SU-056": {
       "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
@@ -2179,5 +2183,22 @@
         "consequencia": "O maior componente conectado pega o contorno CHEIO; o contorno fino vizinho pode gerar candidatos falsos junto à interface — foi o que produziu o SU-225 #8."
       }
     }
+  },
+  "microlote_janela": {
+    "perfis": [
+      "SU-001",
+      "SU-002",
+      "SU-003",
+      "SU-039",
+      "SU-040",
+      "SU-041",
+      "SU-053",
+      "SU-102"
+    ],
+    "_nota": "os OITO perfis da composicao final da janela. SU-009 e SU-024 sao trabalhos auxiliares/pilotos importantes — o SU-024 provou a familia de contaminacao por apendice com tirante, o SU-009 o gate RECORTE — mas NAO entram na contagem do microlote.",
+    "auxiliares_fora_da_contagem": [
+      "SU-009",
+      "SU-024"
+    ]
   }
 }
