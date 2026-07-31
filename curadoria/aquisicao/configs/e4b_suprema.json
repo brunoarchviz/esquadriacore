@@ -970,9 +970,18 @@
           "id": "GAB-ESCOVINHA-SU-01",
           "ocorrencia": 1,
           "orientacao": [],
-          "zona_protegida": null,
-          "atribuicao_geometrica": "pendente_arbitragem",
-          "_nota": "ROI da ocorrência não determinada: o bolso medido antes era olhal. Aguarda arbitragem do Bruno."
+          "zona_protegida": [
+            12.0,
+            19.55,
+            17.02,
+            24.57
+          ],
+          "atribuicao_geometrica": "confirmada_por_arbitragem_visual",
+          "_nota": "C5 e o canal superior esquerdo: boca estreita e labios de retencao. Unico par com labios junto do C6, e o C6 foi descartado por ser olhal. Arbitragem visual do Bruno, 2026-07-28.",
+          "candidato": "C5",
+          "classe_status": "confirmado",
+          "roi_status": "confirmado",
+          "metodo_delimitacao": "candidato_automatico_arbitrado"
         },
         {
           "id": "GAB-MA-DIAG-ESC-01",
@@ -984,16 +993,50 @@
             38.5,
             33.0
           ],
-          "atribuicao_geometrica": "pendente",
-          "_nota": "perfil com 2 motivos confirmados: atribuir cada bolso medido a um deles exige classificador ou arbitragem do Bruno"
+          "atribuicao_geometrica": "confirmada_por_arbitragem_visual",
+          "_nota": "regiao ESTRUTURAL composta (aba diagonal), nao um bolso. Por isso nao corresponde a nenhum candidato automatico e nao precisa corresponder. Zona manual confirmada na arbitragem de 2026-07-28.",
+          "candidato": null,
+          "classe_status": "confirmado",
+          "roi_status": "confirmado",
+          "metodo_delimitacao": "zona_manual"
         }
       ],
       "contagem_motivos": {
         "GAB-ESCOVINHA-SU-01": 1,
         "GAB-MA-DIAG-ESC-01": 1
       },
-      "estado": "BLOQUEADO_POR_ZONA_PENDENTE",
-      "_nota_estado": "perfil com 2 motivos confirmados (GAB-ESCOVINHA-SU-01 e GAB-MA-DIAG-ESC-01). A zona [23.0, 28.0, 38.5, 33.0] esta anexada ao GAB-MA-DIAG-ESC-01 com atribuicao_geometrica=pendente: qual dos dois motivos ela representa nao foi decidido. A escovinha continua sem ROI (pendente_arbitragem) porque o bolso medido antes era olhal."
+      "estado": "CANDIDATO_GEOMETRICO_APROVADO",
+      "arbitragem_zonas": {
+        "data": "2026-07-28",
+        "resultado": {
+          "M1": "C5",
+          "M2": "ZONA_EXISTENTE_CONFIRMADA"
+        },
+        "painel": "curadoria/composicao/painel_delimitacao_motivos_su041.png",
+        "candidatos_descartados": {
+          "C6": {
+            "nao_corresponde_a": "GAB-ESCOVINHA-SU-01",
+            "interpretacao": "olhal",
+            "motivo": "formato_C_com_serrilhas_internas",
+            "_nota": "e exatamente a regiao que havia sido confundida com escovinha antes. NAO virar ocorrencia oficial de olhal sem que essa classe esteja confirmada no levantamento do perfil."
+          },
+          "C1": {
+            "relacao_com_zona_m2": "sobreposicao_parcial_incidental",
+            "cobertura_zona_m2": 0.13,
+            "usar_como_delimitacao_m2": false,
+            "_nota": "cavidade adjacente; a sobreposicao e incidental."
+          }
+        },
+        "referencial_zona_m2": {
+          "largura_perfil_mm": 42.4,
+          "altura_perfil_mm": 33.0,
+          "origem": "recorte_isolado_SU-041",
+          "deslocamento_suspeito_entre_cards": false,
+          "_nota": "a zona atinge y = 33,0, o limite superior real do perfil, e cobre a aba diagonal no recorte atual. O card tem dois perfis lado a lado (MONTANTE MAO DE AMIGO 0,520 kg/m e SU-041 P-629/E 0,507 kg/m) e a ROI captura o segundo — verificado que a zona NAO veio deslocada do vizinho."
+        }
+      },
+      "pendencia_zona": "resolvida",
+      "promocao_oficial": "ainda_nao_autorizada"
     },
     "SU-056": {
       "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
@@ -2199,6 +2242,13 @@
     "auxiliares_fora_da_contagem": [
       "SU-009",
       "SU-024"
-    ]
+    ],
+    "fechados_na_curadoria": 7,
+    "aguardando_evidencia_externa": 1,
+    "pendencia_restante": {
+      "perfil": "SU-102",
+      "motivo": "escala_dimensional"
+    },
+    "_nota_contagem": "SU-001, SU-002, SU-003, SU-039, SU-041 e SU-053 fecharam nesta sequencia; SU-040 ja estava como CANDIDATO_PREVIAMENTE_APROVADO. Sao 7 de 8. Nenhum promovido oficialmente."
   }
 }

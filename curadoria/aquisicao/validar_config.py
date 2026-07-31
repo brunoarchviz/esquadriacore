@@ -21,6 +21,24 @@ GRUPOS = ("perfis", "p4_reconhecimento")
 # Todo perfil precisa localizar a própria fonte.
 OBRIGATORIAS = ("fonte_pdf", "pagina_pdf", "roi_norm")
 
+# Selos que atestam procedência HUMANA de uma zona. Fonte única — os testes
+# importam daqui em vez de repetir a lista, que foi o que fez o mesmo remendo
+# aparecer quatro vezes nesta sprint.
+#
+#   roi_status: o selo explícito. `confirmado_bruno` nasceu no SU-053,
+#              `confirmado` na arbitragem do SU-041.
+#   atribuicao_geometrica: idiomas legados dos perfis homologados antes deles.
+ROI_STATUS_HUMANO = ("confirmado_bruno", "confirmado")
+ATRIBUICAO_HUMANA = ("medida", "zona_curada", "confirmada_por_arbitragem_visual")
+ATRIBUICAO_PENDENTE = ("pendente", "pendente_arbitragem")
+
+
+def zona_tem_procedencia_humana(m: dict) -> bool:
+    """Uma zona só é legítima com procedência humana declarada."""
+    return (str(m.get("roi_status", "")).lower() in ROI_STATUS_HUMANO
+            or m.get("atribuicao_geometrica") in ATRIBUICAO_HUMANA)
+
+
 # Chaves que existiram e foram substituídas. Manter aqui é o que impede um
 # perfil novo de nascer com o nome velho.
 DEPRECIADAS = {
@@ -116,13 +134,62 @@ def _valida_motivos(cod, p) -> list[str]:
         # (SU-053); `atribuicao_geometrica` em 'medida' ou 'zona_curada' é o
         # legado dos perfis homologados antes dele. Os dois valem — o que não
         # vale é zona existir com atribuição declarada PENDENTE.
-        selo = str(m.get("roi_status", "")).lower() == "confirmado_bruno"
-        legado = m.get("atribuicao_geometrica") in ("medida", "zona_curada")
-        if not (selo or legado):
+        if not zona_tem_procedencia_humana(m):
             e.append(_erro(cod, f"motivos[{m.get('id')}]",
                            f"tem zona_protegida com procedência "
                            f"{m.get('atribuicao_geometrica')!r} — nem selo novo "
                            f"nem idioma legado"))
+    return e
+
+
+def _valida_su041(cfg) -> list[str]:
+    """Travas específicas da arbitragem do SU-041 (2026-07-28).
+
+    Existem porque as três decisões são fáceis de desfazer por engano: o C6 é
+    visualmente parecido com escovinha (foi confundido antes), o C1 encosta na
+    zona do M2, e a zona do M2 não corresponde a bolso nenhum — o que convida a
+    "consertar" substituindo por um candidato.
+    """
+    e = []
+    su = cfg.get("perfis", {}).get("SU-041")
+    if su is None:
+        return e
+    arb = su.get("arbitragem_zonas")
+    if not arb:
+        return [_erro("SU-041", "arbitragem_zonas", "ausente")]
+
+    por_id = {m["id"]: m for m in su.get("motivos", [])}
+    esc = por_id.get("GAB-ESCOVINHA-SU-01")
+    diag = por_id.get("GAB-MA-DIAG-ESC-01")
+
+    if esc is None or diag is None:
+        return [_erro("SU-041", "motivos", "os dois motivos confirmados têm de existir")]
+
+    if esc.get("candidato") != "C5":
+        e.append(_erro("SU-041", "GAB-ESCOVINHA-SU-01.candidato",
+                       f"deve ser C5, está {esc.get('candidato')!r}"))
+    if esc.get("candidato") == "C6":
+        e.append(_erro("SU-041", "GAB-ESCOVINHA-SU-01",
+                       "C6 é olhal (formato C com serrilhas internas) e não pode "
+                       "ser atribuído à escovinha"))
+    if diag.get("metodo_delimitacao") != "zona_manual":
+        e.append(_erro("SU-041", "GAB-MA-DIAG-ESC-01.metodo_delimitacao",
+                       "a zona do M2 é manual — região estrutural, não bolso"))
+    if diag.get("candidato") is not None:
+        e.append(_erro("SU-041", "GAB-MA-DIAG-ESC-01.candidato",
+                       f"deve ser null; C1 não delimita o M2 "
+                       f"(está {diag.get('candidato')!r})"))
+    for m in (esc, diag):
+        if m.get("atribuicao_geometrica") in ATRIBUICAO_PENDENTE:
+            e.append(_erro("SU-041", f"motivos[{m['id']}]",
+                           "atribuição voltou a pendente após a arbitragem"))
+        if m.get("zona_protegida") is None:
+            e.append(_erro("SU-041", f"motivos[{m['id']}]",
+                           "zona sumiu após a arbitragem"))
+    c1 = arb.get("candidatos_descartados", {}).get("C1", {})
+    if c1.get("usar_como_delimitacao_m2") is not False:
+        e.append(_erro("SU-041", "arbitragem_zonas.C1",
+                       "usar_como_delimitacao_m2 tem de ser explicitamente false"))
     return e
 
 
@@ -145,6 +212,7 @@ def validar(cfg=None) -> list[str]:
             erros += _valida_dimensoes(cod, p)
             erros += _valida_fontes(cod, p)
             erros += _valida_motivos(cod, p)
+    erros += _valida_su041(cfg)
     return erros
 
 

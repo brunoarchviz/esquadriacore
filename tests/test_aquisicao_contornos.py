@@ -620,6 +620,8 @@ def test_duas_ocorrencias_nao_compartilham_a_mesma_roi():
 def test_escovinha_so_tem_zona_com_arbitragem_humana():
     """A atribuição automática de escovinha continua desativada. Zona só existe
     onde houve arbitragem explícita — nunca inferida pelo detector."""
+    from curadoria.aquisicao.validar_config import (ATRIBUICAO_PENDENTE,
+                                                    zona_tem_procedencia_humana)
     assert CONFIG["gabaritos"]["_atribuicao_automatica_escovinha"]["habilitada"] is False
     for grupo in ("perfis", "p4_reconhecimento"):
         for cod, perfil in CONFIG[grupo].items():
@@ -629,13 +631,13 @@ def test_escovinha_so_tem_zona_com_arbitragem_humana():
                 if not m["id"].startswith("GAB-ESCOVINHA"):
                     continue
                 if m["zona_protegida"] is None:
-                    assert m["atribuicao_geometrica"] == "pendente_arbitragem", \
+                    assert m["atribuicao_geometrica"] in ATRIBUICAO_PENDENTE, \
                         (cod, m["id"])
                 else:
-                    assert m.get("roi_status") in ("confirmado_bruno",
-                                                   "CONFIRMADO_BRUNO"), \
+                    # os selos aceitos vivem no validador — fonte única, para o
+                    # mesmo remendo não aparecer numa quinta vez
+                    assert zona_tem_procedencia_humana(m), \
                         f"{cod}/{m['id']}: zona sem arbitragem humana"
-                    assert m["atribuicao_geometrica"] == "zona_curada"
 
 
 def test_metricas_de_olhal_nao_alimentam_politica_de_escovinha():
@@ -2027,13 +2029,10 @@ def test_largura_derivada_nao_se_apresenta_como_cota_direta():
 # antiga. Aqui a incoerência é apontada de uma vez, com perfil e motivo.
 # ============================================================================
 
-# Incoerência conhecida e NÃO corrigida: o SU-041 está congelado, e mexer nele
-# está fora do escopo. Fica listada para não mascarar as demais — e para não
-# ser silenciosamente "resolvida" por alguém editando um perfil congelado.
-PENDENCIAS_CONHECIDAS = {
-    "SU-041: motivos[GAB-MA-DIAG-ESC-01] — tem zona_protegida com procedência "
-    "'pendente' — nem selo novo nem idioma legado",
-}
+# A pendência do SU-041 foi resolvida pela arbitragem de 2026-07-28 (M1 = C5,
+# M2 = zona manual confirmada), então a lista está vazia. Ela existe para o caso
+# de aparecer outra incoerência que precise ficar visível sem mascarar as demais.
+PENDENCIAS_CONHECIDAS = set()
 
 
 def test_config_sem_incoerencias_novas():
@@ -2044,11 +2043,11 @@ def test_config_sem_incoerencias_novas():
 
 
 def test_pendencia_conhecida_continua_visivel():
-    """Se o SU-041 for corrigido, esta lista tem de encolher junto — senão ela
-    vira lixo que esconde problema futuro."""
+    """Toda entrada da lista tem de continuar sendo reportada pelo validador —
+    senão ela é lixo que esconderia problema futuro."""
     from curadoria.aquisicao.validar_config import validar
     assert PENDENCIAS_CONHECIDAS <= set(validar(CONFIG)), \
-        "pendência conhecida sumiu do config: remover de PENDENCIAS_CONHECIDAS"
+        "pendência listada sumiu do config: remover de PENDENCIAS_CONHECIDAS"
 
 
 def test_validador_pega_chave_depreciada():
@@ -2117,6 +2116,114 @@ def test_lote2_nao_cria_geometria_oficial():
                         ("SU-001", "SU-002", "SU-003")}, ensure_ascii=False)
     for proibido in ("GEO-SU-001", "GEO-SU-002", "GEO-SU-003"):
         assert proibido not in texto
+
+
+# ============================================================================
+# SU-041 — arbitragem das duas zonas
+#
+# As três decisões são fáceis de desfazer por engano: o C6 é visualmente
+# parecido com escovinha (foi confundido antes), o C1 encosta na zona do M2, e a
+# zona do M2 não corresponde a bolso nenhum — o que convida a "consertar"
+# substituindo-a por um candidato.
+# ============================================================================
+
+def _su041():
+    return CONFIG["perfis"]["SU-041"]
+
+
+def _motivo_su041(gid):
+    return next(m for m in _su041()["motivos"] if m["id"] == gid)
+
+
+def test_su041_m1_aponta_para_c5():
+    m = _motivo_su041("GAB-ESCOVINHA-SU-01")
+    assert m["candidato"] == "C5"
+    assert m["zona_protegida"] == [12.00, 19.55, 17.02, 24.57]
+    assert m["roi_status"] == "confirmado"
+    assert m["atribuicao_geometrica"] == "confirmada_por_arbitragem_visual"
+
+
+def test_su041_c6_nao_pode_ser_a_escovinha():
+    """C6 é olhal — formato C com serrilhas internas. Foi a região confundida
+    com escovinha antes da correção de 25/07/2026."""
+    d = _su041()["arbitragem_zonas"]["candidatos_descartados"]["C6"]
+    assert d["nao_corresponde_a"] == "GAB-ESCOVINHA-SU-01"
+    assert d["interpretacao"] == "olhal"
+    assert d["motivo"] == "formato_C_com_serrilhas_internas"
+    assert _motivo_su041("GAB-ESCOVINHA-SU-01")["candidato"] != "C6"
+    # e o olhal NÃO virou ocorrência oficial do perfil
+    assert not any(m["id"].startswith("GAB-OLHAL") for m in _su041()["motivos"])
+
+
+def test_su041_m2_usa_zona_manual():
+    m = _motivo_su041("GAB-MA-DIAG-ESC-01")
+    assert m["candidato"] is None
+    assert m["zona_protegida"] == [23.0, 28.0, 38.5, 33.0]
+    assert m["metodo_delimitacao"] == "zona_manual"
+    assert m["roi_status"] == "confirmado"
+
+
+def test_su041_c1_nao_delimita_m2():
+    d = _su041()["arbitragem_zonas"]["candidatos_descartados"]["C1"]
+    assert d["usar_como_delimitacao_m2"] is False
+    assert d["relacao_com_zona_m2"] == "sobreposicao_parcial_incidental"
+    assert d["cobertura_zona_m2"] == 0.13
+
+
+def test_su041_sem_atribuicao_pendente():
+    su = _su041()
+    from curadoria.aquisicao.validar_config import ATRIBUICAO_PENDENTE
+    for m in su["motivos"]:
+        assert m["atribuicao_geometrica"] not in ATRIBUICAO_PENDENTE, m["id"]
+        assert m["zona_protegida"] is not None, m["id"]
+    assert su["estado"] == "CANDIDATO_GEOMETRICO_APROVADO"
+    assert su["pendencia_zona"] == "resolvida"
+    assert su["promocao_oficial"] == "ainda_nao_autorizada"
+
+
+def test_su041_zona_m2_cabe_no_referencial():
+    """A zona atinge y = 33,0, o topo real do perfil. O card tem dois perfis
+    lado a lado, e isso confirma que ela não veio deslocada do vizinho."""
+    r = _su041()["arbitragem_zonas"]["referencial_zona_m2"]
+    assert r["deslocamento_suspeito_entre_cards"] is False
+    x0, y0, x1, y1 = _motivo_su041("GAB-MA-DIAG-ESC-01")["zona_protegida"]
+    assert 0 <= x0 < x1 <= r["largura_perfil_mm"]
+    assert 0 <= y0 < y1 <= r["altura_perfil_mm"]
+
+
+def test_su041_zonas_sobrevivem_a_limpeza_byte_identicamente():
+    """As duas zonas são protegidas: a limpeza comercial não pode alterá-las."""
+    import tempfile
+    from curadoria.aquisicao.renderizar_fonte import (renderizar_pagina_png,
+                                                      aplicar_roi)
+    from curadoria.aquisicao.extrair_contorno_raster import extrair
+    from curadoria.aquisicao import contaminacao as ct
+    p = _su041()
+    pdf = RAIZ / p["fonte_pdf"]
+    if not pdf.exists():
+        pytest.skip("catálogo ausente")
+    with tempfile.TemporaryDirectory() as d:
+        pag = renderizar_pagina_png(pdf, p["pagina_pdf"], 600, Path(d) / "p")
+        card = aplicar_roi(pag, roi_norm=p["roi_norm"])
+    r = extrair("SU-041", card, p["largura_mm"], p["altura_mm"],
+                p["vazios_esperados"], threshold="otsu", simplificacao_mm=0.05)
+    m = (np.asarray(r.mascara) > 0).astype(np.uint8)
+    px = m.shape[1] / p["largura_mm"]
+    zonas = [x["zona_protegida"] for x in p["motivos"]]
+    restaurada = ct.restaurar_zonas(m, m.copy(), px, p["altura_mm"], zonas)
+    for z in zonas:
+        sl = (slice(max(0, int((p["altura_mm"] - z[3]) * px)),
+                    max(0, int((p["altura_mm"] - z[1]) * px))),
+              slice(max(0, int(z[0] * px)), max(0, int(z[2] * px))))
+        assert np.array_equal(m[sl], restaurada[sl]), z
+
+
+def test_su041_geometria_nao_mudou_na_arbitragem():
+    """A arbitragem é semântica: dimensões e topologia esperadas seguem iguais."""
+    p = _su041()
+    assert p["largura_mm"] == 42.4
+    assert p["altura_mm"] == 33.0
+    assert p["vazios_esperados"] == 1
 
 
 def test_contexto_face_nao_e_mutado(su039):
