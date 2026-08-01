@@ -1,0 +1,16 @@
+{
+ "vazios": 1,
+ "probes_material": [
+  [
+   25.71,
+   0.47
+  ]
+ ],
+ "probes_vazio": [
+  [
+   25.71,
+   12.27
+  ]
+ ],
+ "probes_exterior_conectado": []
+}

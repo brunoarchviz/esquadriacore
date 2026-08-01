@@ -1,0 +1,95 @@
+{
+ "gate_recorte_fonte": "APROVADO",
+ "padding_reextracao": {
+  "aplicado": true,
+  "margem_mm": 0.85,
+  "margem_px": 20,
+  "dpi": 600,
+  "altera_geometria": false,
+  "fase": "reextracao"
+ },
+ "tentativas": [
+  {
+   "etapa": "diagnostico",
+   "dados": {
+    "espessura_tirante_mm": 0.186,
+    "parede_mediana_mm": 0.932,
+    "raio_quebra_mm": 0.085,
+    "componentes_apos_quebra": 3,
+    "fracao_principal": 0.9875,
+    "fracao_suspeita_remanescente": 0.0,
+    "motivo": "a quebra do tirante separou a contaminação e o componente principal permaneceu íntegro"
+   }
+  },
+  {
+   "componentes": 1,
+   "gate_procedencia": {
+    "pixels_residuais": 0,
+    "aprovado": true
+   },
+   "gate_face": {
+    "estado": "REJEITADO",
+    "aprovado": false,
+    "pixels_alem_da_face": 6,
+    "continuidade": false,
+    "regra_quantizacao": "floor",
+    "limite_discreto_px": 323,
+    "motivo": "6 px conectados além da face; 3 linhas sem parede"
+   },
+   "pixels_residuais": 0,
+   "zonas_protegidas_byte_identicas": true,
+   "dimensoes_esperadas_mm": [
+    52.6,
+    25.0
+   ],
+   "dimensoes_obtidas_mm": [
+    52.6,
+    24.99
+   ],
+   "dimensoes_ok": true,
+   "pixels_adicionados": 0,
+   "pixels_removidos": 1470,
+   "aceita": false,
+   "motivo": "gate local da face REJEITADO: 6 px conectados além da face; 3 linhas sem parede",
+   "estrategia": "QUEBRA_CONTROLADA_DE_PONTE",
+   "rollback": {
+    "realizado": true
+   }
+  },
+  {
+   "componentes": 1,
+   "gate_procedencia": {
+    "pixels_residuais": 0,
+    "aprovado": true
+   },
+   "gate_face": {
+    "estado": "APROVADO",
+    "aprovado": true,
+    "pixels_alem_da_face": 0,
+    "continuidade": true,
+    "regra_quantizacao": "floor",
+    "limite_discreto_px": 323,
+    "motivo": "face contínua e sem material além dela"
+   },
+   "pixels_residuais": 0,
+   "zonas_protegidas_byte_identicas": true,
+   "dimensoes_esperadas_mm": [
+    52.6,
+    25.0
+   ],
+   "dimensoes_obtidas_mm": [
+    52.6,
+    24.99
+   ],
+   "dimensoes_ok": true,
+   "pixels_adicionados": 19,
+   "pixels_removidos": 1424,
+   "aceita": true,
+   "motivo": "todos os critérios atendidos",
+   "estrategia": "RECONSTRUCAO_LOCAL_DA_PAREDE",
+   "rollback": {
+    "realizado": false
+   }
+  }
+ ]
+}

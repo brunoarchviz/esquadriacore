@@ -8,6 +8,9 @@ output/
 # catálogos reais (colocados manualmente — ver CLAUDE.md)
 dados_exemplo/*.pdf
 .claude/
+# insumos locais de curadoria — somente leitura, NUNCA commitados
+# (planilha de gabaritos revisada e lista de perfis — pacote de aprovação §2)
+curadoria/insumos/
 
 # Evidência visual de homologações (auditoria do ADR-005)
 !curadoria/comparacao/*_lado_a_lado.png
@@ -18,3 +21,7 @@ dados_exemplo/*.pdf
 !curadoria/contornos/painel_10_comerciais.png
 !curadoria/contornos/feedback/*.png
 !curadoria/contornos/*_render3d_*.png
+# Evidências aprovadas do Sprint E.4B — SOMENTE estas duas (arbitragem do Bruno).
+# Painéis intermediários, inválidos, diagnósticos e recortes de trabalho ficam fora.
+!curadoria/composicao/painel_ground_truth_olhal_escovinha.png
+!curadoria/composicao/painel_interface_baguete_su225.png

@@ -1,0 +1,18 @@
+# Dependências EXCLUSIVAS de curadoria/aquisição de contornos.
+# NUNCA são dependências de runtime (domain/, contrato/, core_engine/, pipeline/).
+# Pressupõe requirements.txt já instalado (numpy, matplotlib).
+# Instalação: pip install -r requirements-curadoria.txt (dentro da .venv)
+# Registro do ambiente testado: Python 3.12.3, numpy 2.5.1 (inalterado pela instalação).
+
+# Extração de contorno por raster — curadoria/aquisicao/ (isolado pelo gate cv2)
+opencv-python-headless==5.0.0.93
+
+# Geometria: limpeza de contorno comercial, assinatura topológica, seções E.2/E.4B
+shapely==2.1.2
+
+# Planilha de curadoria — curadoria/gerar_planilha.py, aquisicao/gabaritos.py
+openpyxl==3.1.5
+
+# Leitura/desenho dos cards e evidências. Chega transitivamente por matplotlib,
+# mas curadoria/ importa PIL diretamente — por isso é declarada aqui.
+pillow==12.3.0

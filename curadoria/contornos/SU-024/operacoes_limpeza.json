@@ -1,0 +1,57 @@
+{
+ "gate_recorte_fonte": "APROVADO",
+ "padding_reextracao": {
+  "aplicado": true,
+  "margem_mm": 0.85,
+  "margem_px": 20,
+  "dpi": 600,
+  "altera_geometria": false,
+  "fase": "reextracao"
+ },
+ "tentativas": [
+  {
+   "etapa": "diagnostico",
+   "dados": {
+    "espessura_tirante_mm": 0.17,
+    "parede_mediana_mm": 0.78,
+    "raio_quebra_mm": 0.085,
+    "componentes_apos_quebra": 5,
+    "fracao_principal": 0.9805,
+    "fracao_suspeita_remanescente": 0.0,
+    "motivo": "a quebra do tirante separou a contaminação e o componente principal permaneceu íntegro"
+   }
+  },
+  {
+   "componentes": 1,
+   "gate_procedencia": {
+    "pixels_residuais": 0,
+    "aprovado": true
+   },
+   "gate_face": {
+    "estado": "NAO_APLICAVEL",
+    "aprovado": true,
+    "estrategia": "QUEBRA_CONTROLADA_DE_PONTE",
+    "justificativa": "apendice grafico EXTERNO preso por tirante fino: a suspeita ocupa y 0,0-12,0 mm e o corpo do perfil comeca em y 12,13 mm — ela nao encosta em parede nenhuma. Nao ha face local a reconstruir nem a validar, ao contrario do SU-039 (linha de cota ADERIDA a face do montante). O validador acusa faces divergentes porque procura parede onde so existe fundo. Protecao mantida por: procedencia = 0, 1 componente, ganchos J byte-identicos e dimensao contra a cota do catalogo (106 x 39)."
+   },
+   "pixels_residuais": 0,
+   "zonas_protegidas_byte_identicas": true,
+   "dimensoes_esperadas_mm": [
+    106.0,
+    39.0
+   ],
+   "dimensoes_obtidas_mm": [
+    106.0,
+    39.01
+   ],
+   "dimensoes_ok": true,
+   "pixels_adicionados": 0,
+   "pixels_removidos": 4460,
+   "aceita": true,
+   "motivo": "todos os critérios atendidos",
+   "estrategia": "QUEBRA_CONTROLADA_DE_PONTE",
+   "rollback": {
+    "realizado": false
+   }
+  }
+ ]
+}

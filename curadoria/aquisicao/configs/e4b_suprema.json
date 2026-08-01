@@ -1,0 +1,2431 @@
+{
+  "_comentario": "Config oficial do pipeline de aquisição raster (E.4B). Política do manifest v1.1 aprovado. ROIs normalizados 0-1 sobre a página renderizada; motivos esperados com autoridade do pacote de aprovação (§3/§8) até a planilha canônica existir. Probes da assinatura em mm no referencial calibrado do card (origem no canto inferior-esquerdo do componente).",
+  "politica": {
+    "bruto": {
+      "erro_aspecto_max": 0.0075,
+      "f1_min": 0.99,
+      "tolerancia_mm": 0.15,
+      "topologia_exata": true
+    },
+    "comercial": {
+      "f1_min": 0.98,
+      "tolerancia_mm": 0.15,
+      "diferenca_area_max": 0.035,
+      "dimensoes_tolerancia_mm": 0.1,
+      "topologia_exata": true
+    },
+    "dpi_padrao": 600,
+    "dpi_escalada": 1200,
+    "simplificacao_bruta_mm": 0.05,
+    "eps_limpeza_mm": 0.07
+  },
+  "gabaritos": {
+    "_comentario": "Políticas de limpeza por MOTIVO (não por perfil). O canal de escovinha da Suprema e o da Gold são gabaritos SEPARADOS (decisão do Bruno, 25/07/2026), medidos e não presumidos. A orientação NÃO é discriminante de família: é atributo de cada ocorrência, medido no referencial local normalizado. O SU-225 tem duas escovinhas abrindo para regiões distintas (câmara interna e exterior) — a amostra não autoriza regra universal. GAB-ESCOVINHA-01 é alias legado: resolve por família do perfil e, sem família, levanta ambiguidade explícita (nunca assume Gold).",
+    "GAB-ESCOVINHA-LG-01": {
+      "descricao": "Canal para escovinha / veda-fresta — linha Gold",
+      "familia": "Gold",
+      "referencia_principal": "LG-006",
+      "validacao_cruzada": [
+        "LG-007",
+        "LG-056",
+        "LG-074"
+      ],
+      "politica": {
+        "preservar_canal": true,
+        "preservar_labios": true,
+        "serrilha_simplificavel": true,
+        "nao_fechar_abertura": true,
+        "nao_transformar_canal_em_bloco": true
+      },
+      "medicoes": {
+        "estado": "A_REFAZER_SOBRE_GROUND_TRUTH",
+        "motivo": "MEDIÇÕES INVALIDADAS COMO ESCOVINHA (correção do Bruno, 25/07/2026). O detector genérico de bolso localizou OLHAIS e os rotulou escovinha. Confirmado pela forma: circularidade 0,62-0,64 e alongamento ~1,05 = câmara arredondada de parafuso. As métricas (boca, interior, razão, área, orientação) ficam preservadas como evidência de GAB-OLHAL-01 e NÃO podem orientar os gabaritos de escovinha nem a política de limpeza.",
+        "geometria_confirmada": null,
+        "proxima_acao": "arbitragem do Bruno sobre o painel de ground truth",
+        "ocorrencias_confirmadas": "ver arbitragem_bruno.perfis"
+      },
+      "comparacao_suprema_x_gold": {
+        "estado": "SUSPENSA",
+        "motivo": "a comparação anterior foi feita sobre olhais nos dois lados; não caracteriza diferença entre os canais de escovinha"
+      }
+    },
+    "GAB-ESCOVINHA-SU-01": {
+      "descricao": "Canal para escovinha / veda-fresta — linha Suprema",
+      "familia": "Suprema",
+      "referencia_principal": "SU-053",
+      "comparacao": "SU-225",
+      "validacao_cruzada": [
+        "SU-246",
+        "SU-279"
+      ],
+      "politica": {
+        "preservar_canal": true,
+        "preservar_labios": true,
+        "serrilha_simplificavel": true,
+        "nao_fechar_abertura": true,
+        "nao_transformar_canal_em_bloco": true,
+        "nao_aplicar_proporcoes_da_gold": true,
+        "simplificacao_comercial_so_apos_comparacao": true
+      },
+      "medicoes": {
+        "estado": "A_REFAZER_SOBRE_GROUND_TRUTH",
+        "motivo": "MEDIÇÕES INVALIDADAS COMO ESCOVINHA (correção do Bruno, 25/07/2026). O detector genérico de bolso localizou OLHAIS e os rotulou escovinha. Confirmado pela forma: circularidade 0,62-0,64 e alongamento ~1,05 = câmara arredondada de parafuso. As métricas (boca, interior, razão, área, orientação) ficam preservadas como evidência de GAB-OLHAL-01 e NÃO podem orientar os gabaritos de escovinha nem a política de limpeza.",
+        "geometria_confirmada": null,
+        "proxima_acao": "arbitragem do Bruno sobre o painel de ground truth",
+        "ocorrencias_confirmadas": "ver arbitragem_bruno.perfis"
+      },
+      "comparacao_suprema_x_gold": {
+        "estado": "SUSPENSA",
+        "motivo": "a comparação anterior foi feita sobre olhais nos dois lados; não caracteriza diferença entre os canais de escovinha"
+      }
+    },
+    "_atribuicao_automatica_escovinha": {
+      "habilitada": false,
+      "motivo": "MEDIÇÕES INVALIDADAS COMO ESCOVINHA (correção do Bruno, 25/07/2026). O detector genérico de bolso localizou OLHAIS e os rotulou escovinha. Confirmado pela forma: circularidade 0,62-0,64 e alongamento ~1,05 = câmara arredondada de parafuso. As métricas (boca, interior, razão, área, orientação) ficam preservadas como evidência de GAB-OLHAL-01 e NÃO podem orientar os gabaritos de escovinha nem a política de limpeza.",
+      "condicao_para_reabilitar": "ground truth visual aprovado pelo Bruno sobre curadoria/composicao/painel_ground_truth_olhal_escovinha.png",
+      "regra_decisiva": {
+        "olhal": "formato circular dominante para parafuso",
+        "escovinha": "boca estreita + lábios de retenção + bolso/trilho de inserção",
+        "proibido_usar_sozinho": [
+          "área do vazio",
+          "orientação",
+          "circularidade",
+          "proximidade da borda",
+          "detector genérico de bolso"
+        ]
+      },
+      "ground_truth": "arbitragem_bruno.perfis — classificação humana; o detector NÃO sobrescreve"
+    }
+  },
+  "perfis": {
+    "SU-039": {
+      "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
+      "pagina_pdf": 184,
+      "roi_norm": [
+        0.485,
+        0.12,
+        0.96,
+        0.3
+      ],
+      "largura_mm": 52.6,
+      "altura_mm": 25.0,
+      "vazios_esperados": 1,
+      "assinatura": {
+        "vazios": 1,
+        "probes_material": [
+          [
+            25.71,
+            0.47
+          ]
+        ],
+        "probes_vazio": [
+          [
+            25.71,
+            12.27
+          ]
+        ],
+        "probes_exterior_conectado": [],
+        "_derivacao": "derivada da geometria reconstruida (RECONSTRUCAO_LOCAL_DA_PAREDE) em 2026-07-26"
+      },
+      "contaminacao": {
+        "esperada": true,
+        "estrategia_esperada": "RECONSTRUCAO_LOCAL_DA_PAREDE",
+        "_nota": "linha de cota 8.2 aderida a face do montante. A quebra de ponte zera a procedencia mas deixa 6 px alem da face com continuidade falsa: rejeitada no gate da face. Microgate congelado: contaminado 1443 px / quebra 6 px / reconstrucao 0 px."
+      },
+      "nota": "Montante lateral externo da folha. ROI e cota migradas de tests/test_aquisicao_contornos.py para o config canonico em 2026-07-26.",
+      "motivos": [],
+      "contagem_motivos": {},
+      "_motivos_pendentes": {
+        "levantamento": "nao_realizado",
+        "justificativa": "o trabalho no SU-039 foi a contaminacao grafica (linha de cota aderida a face), nao o reconhecimento de motivos. Nenhuma ocorrencia foi confirmada pelo Bruno ate 2026-07-26 e nenhuma foi inferida: lista vazia significa NAO LEVANTADO, nunca ausencia comprovada.",
+        "_acao": "levantar as ocorrencias do SU-039 e submeter a arbitragem antes de tratar a lista vazia como definitiva"
+      },
+      "estado": "CANDIDATO_GEOMETRICO_APROVADO"
+    },
+    "SU-053": {
+      "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
+      "pagina_pdf": 187,
+      "roi_norm": [
+        0.655,
+        0.635,
+        0.835,
+        0.955
+      ],
+      "largura_mm": 22.2,
+      "altura_mm": 51.0,
+      "vazios_esperados": 0,
+      "estado": "CANDIDATO_GEOMETRICO_APROVADO",
+      "fonte_geometrica_primaria": {
+        "fabricante": "Centenario",
+        "codigo": "TMS-053",
+        "pagina_pdf": 222,
+        "roi_norm": [
+          0.55,
+          0.64,
+          0.95,
+          0.9
+        ],
+        "motivo": "Card cotado diretamente em 22,2 x 51 mm e aprovado no gate de aspecto (0,67%). O card Alcoa limpo continua evidencia valida, mas erra 1,47% no aspecto.",
+        "separacao_por_espessura": false,
+        "_nota_separacao": "o card Centenario NAO tem perfil de referencia sobreposto; a abertura morfologica mataria o perfil e deixaria so a pilula do rotulo (639x331 px com 14 falsos vazios, que sao as letras). Aquisicao usa binarizacao simples e maior componente."
+      },
+      "fonte_dimensional_primaria": {
+        "fabricante": "Centenario",
+        "codigo": "TMS-053",
+        "pagina_pdf": 222,
+        "largura_mm": 22.2,
+        "altura_mm": 51.0,
+        "status": "confirmado_visual_card",
+        "_nota": "a largura 22,2 coincide exatamente com a ja confirmada do SU-053, o que sustenta a associacao dimensional entre os dois codigos."
+      },
+      "fonte_semantica_motivos": {
+        "fabricante": "Alcoa",
+        "codigo": "SU-053",
+        "pagina_pdf": 187,
+        "motivo": "Cinco ocorrencias funcionais classificadas e confirmadas pelo Bruno. A troca da fonte geometrica NAO elimina esse ground truth."
+      },
+      "fonte_evidencia_contaminacao": {
+        "fabricante": "Alcoa",
+        "codigo": "SU-053",
+        "pagina_pdf": 187,
+        "contaminacao": "cota grafica 5.5 removida"
+      },
+      "_nota_fontes": "nao ha conflito de fontes: ha separacao explicita entre fonte geometrica, dimensional, semantica e de evidencia de contaminacao.",
+      "medicao_geometria_limpa": {
+        "largura_mm": 22.2,
+        "altura_mm": 50.26,
+        "erro_altura_relativo": 0.0145,
+        "_nota": "extracao Alcoa apos remover a cota 5.5. A dimensao NOMINAL esta confirmada; o que falta e a aquisicao geometrica reproduzir 51,00 dentro do gate de 0,75%."
+      },
+      "status_vazios": "confirmado_por_topologia_raster",
+      "observacao_topologica": "A cavidade funcional visivel no perfil e ABERTA para o exterior e nao constitui vazio topologico fechado. Camara funcional nao e sinonimo de ciclo fechado no contorno 2D: 0 vazios em multiplas ROIs, thresholds 110-210, 1200 DPI, antes e depois da remocao da cota, e fechamento morfologico ate 0,50 mm.",
+      "dimensao_altura": {
+        "status": "pendente_confirmacao_catalogo",
+        "valor_bbox_contaminado_mm": 53.57,
+        "valor_medido_sem_cota_mm": 50.26,
+        "usar_como_cota_oficial": false,
+        "motivo": "O valor 53,57 mm coincide com o bbox contaminado pela seta inferior da cota 5.5. Precedente comprovado no SU-024: bbox contaminado 51,13 mm contra cota oficial 39 mm. O valor 50,26 e medicao limpa, NAO cota nominal — nao promover automaticamente."
+      },
+      "contaminacao": {
+        "esperada": true,
+        "cota_grafica": "5.5",
+        "cadeia_removida_px": 3082,
+        "_nota": "cadeia completa: 3 tracos finos (1.105 px) + 2 pontas de seta solidas que se soltam apos a remocao (1.977 px). A seta inferior fica ABAIXO dos pes do perfil e inflava o bbox em 3,31 mm."
+      },
+      "nota": "Travessa da folha (sup. e inf.), pagina impressa 174.",
+      "ground_truth_motivos": [
+        {
+          "ordem": 1,
+          "motivo": "escovinha"
+        },
+        {
+          "ordem": 2,
+          "motivo": "encaixe interno do baguete"
+        },
+        {
+          "ordem": 3,
+          "motivo": "olhal"
+        },
+        {
+          "ordem": 4,
+          "motivo": "encaixe externo do baguete"
+        },
+        {
+          "ordem": 5,
+          "motivo": "escovinha"
+        }
+      ],
+      "_nota_ground_truth": "classificacao do Bruno; prevalece sobre inferencia automatica. Suspeita proxima a qualquer uma das cinco: nao remover, gerar painel numerado, parar para arbitragem.",
+      "motivos": [
+        {
+          "id": "GAB-ESCOVINHA-SU-01",
+          "ocorrencia": 1,
+          "orientacao": [],
+          "zona_protegida": [
+            0.0,
+            4.44,
+            5.2,
+            10.04
+          ],
+          "atribuicao_geometrica": "zona_curada",
+          "classe_status": "confirmado_bruno",
+          "roi_status": "CONFIRMADO_BRUNO",
+          "_nota": "M1 mapeado ao candidato C4 por arbitragem do Bruno em 2026-07-28. zona_protegida no referencial Alcoa (22,20 x 50,26 mm); zona_protegida_tms053 transferida por similaridade.",
+          "motivo": "M1",
+          "candidato_automatico": "C4",
+          "tms053": {
+            "roi_status": "VALIDADO_POR_TRANSFERENCIA_E_EQUIVALENCIA_LOCAL",
+            "roi_transformada_bruta": [
+              -0.03,
+              4.64,
+              5.19,
+              10.25
+            ],
+            "roi_efetiva_recortada_ao_envelope": [
+              0.0,
+              4.64,
+              5.19,
+              10.25
+            ],
+            "recorte_aplicado": [
+              0.03,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "validacao_local": {
+              "iou": 0.9378,
+              "dif_area_pct": 4.42,
+              "area_alcoa_mm2": 15.73,
+              "area_tms_mm2": 16.45,
+              "decisao": "EQUIVALENTE"
+            },
+            "_nota": "coordenadas CALCULADAS pela transferencia e validadas pela comparacao local — nao foram desenhadas manualmente pelo Bruno. O recorte serve so para indexar a matriz raster; a coordenada bruta fica na procedencia e a geometria nao muda."
+          }
+        },
+        {
+          "id": "MOTIVO-ENCAIXE-BAGUETE-INTERNO",
+          "ocorrencia": 1,
+          "orientacao": [],
+          "zona_protegida": [
+            3.41,
+            36.56,
+            8.81,
+            41.96
+          ],
+          "atribuicao_geometrica": "zona_curada",
+          "classe_status": "confirmado_bruno",
+          "roi_status": "CONFIRMADO_BRUNO",
+          "_nota": "M2 mapeado ao candidato C6 por arbitragem do Bruno em 2026-07-28. zona_protegida no referencial Alcoa (22,20 x 50,26 mm); zona_protegida_tms053 transferida por similaridade.",
+          "motivo": "M2",
+          "candidato_automatico": "C6",
+          "tms053": {
+            "roi_status": "VALIDADO_POR_TRANSFERENCIA_E_EQUIVALENCIA_LOCAL",
+            "roi_transformada_bruta": [
+              3.4,
+              36.85,
+              8.81,
+              42.27
+            ],
+            "roi_efetiva_recortada_ao_envelope": [
+              3.4,
+              36.85,
+              8.81,
+              42.27
+            ],
+            "recorte_aplicado": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "validacao_local": {
+              "iou": 0.9213,
+              "dif_area_pct": 7.77,
+              "area_alcoa_mm2": 7.59,
+              "area_tms_mm2": 8.23,
+              "decisao": "EQUIVALENTE"
+            },
+            "_nota": "coordenadas CALCULADAS pela transferencia e validadas pela comparacao local — nao foram desenhadas manualmente pelo Bruno. O recorte serve so para indexar a matriz raster; a coordenada bruta fica na procedencia e a geometria nao muda."
+          }
+        },
+        {
+          "id": "GAB-OLHAL-01",
+          "ocorrencia": 1,
+          "orientacao": [],
+          "zona_protegida": [
+            7.99,
+            31.36,
+            14.22,
+            37.59
+          ],
+          "atribuicao_geometrica": "zona_curada",
+          "classe_status": "confirmado_bruno",
+          "roi_status": "CONFIRMADO_BRUNO",
+          "_nota": "M3 mapeado ao candidato C2 por arbitragem do Bruno em 2026-07-28. zona_protegida no referencial Alcoa (22,20 x 50,26 mm); zona_protegida_tms053 transferida por similaridade.",
+          "motivo": "M3",
+          "candidato_automatico": "C2",
+          "tms053": {
+            "roi_status": "VALIDADO_POR_TRANSFERENCIA_E_EQUIVALENCIA_LOCAL",
+            "roi_transformada_bruta": [
+              7.99,
+              31.64,
+              14.24,
+              37.89
+            ],
+            "roi_efetiva_recortada_ao_envelope": [
+              7.99,
+              31.64,
+              14.24,
+              37.89
+            ],
+            "recorte_aplicado": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "validacao_local": {
+              "iou": 0.9134,
+              "dif_area_pct": 8.46,
+              "area_alcoa_mm2": 23.41,
+              "area_tms_mm2": 25.58,
+              "decisao": "EQUIVALENTE"
+            },
+            "_nota": "coordenadas CALCULADAS pela transferencia e validadas pela comparacao local — nao foram desenhadas manualmente pelo Bruno. O recorte serve so para indexar a matriz raster; a coordenada bruta fica na procedencia e a geometria nao muda."
+          }
+        },
+        {
+          "id": "MOTIVO-ENCAIXE-BAGUETE-EXTERNO",
+          "ocorrencia": 1,
+          "orientacao": [],
+          "zona_protegida": [
+            0.0,
+            39.69,
+            4.88,
+            45.09
+          ],
+          "atribuicao_geometrica": "zona_curada",
+          "classe_status": "confirmado_bruno",
+          "roi_status": "CONFIRMADO_BRUNO",
+          "_nota": "M4 mapeado ao candidato C8 por arbitragem do Bruno em 2026-07-28. zona_protegida no referencial Alcoa (22,20 x 50,26 mm); zona_protegida_tms053 transferida por similaridade.",
+          "motivo": "M4",
+          "candidato_automatico": "C8",
+          "tms053": {
+            "roi_status": "VALIDADO_POR_TRANSFERENCIA_E_EQUIVALENCIA_LOCAL",
+            "roi_transformada_bruta": [
+              -0.02,
+              39.99,
+              4.87,
+              45.41
+            ],
+            "roi_efetiva_recortada_ao_envelope": [
+              0.0,
+              39.99,
+              4.87,
+              45.41
+            ],
+            "recorte_aplicado": [
+              0.02,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "validacao_local": {
+              "iou": 0.9784,
+              "dif_area_pct": 2.77,
+              "area_alcoa_mm2": 10.83,
+              "area_tms_mm2": 11.14,
+              "decisao": "EQUIVALENTE"
+            },
+            "_nota": "coordenadas CALCULADAS pela transferencia e validadas pela comparacao local — nao foram desenhadas manualmente pelo Bruno. O recorte serve so para indexar a matriz raster; a coordenada bruta fica na procedencia e a geometria nao muda."
+          }
+        },
+        {
+          "id": "GAB-ESCOVINHA-SU-01",
+          "ocorrencia": 2,
+          "orientacao": [],
+          "zona_protegida": [
+            17.05,
+            4.48,
+            22.2,
+            10.0
+          ],
+          "atribuicao_geometrica": "zona_curada",
+          "classe_status": "confirmado_bruno",
+          "roi_status": "CONFIRMADO_BRUNO",
+          "_nota": "M5 mapeado ao candidato C5 por arbitragem do Bruno em 2026-07-28. zona_protegida no referencial Alcoa (22,20 x 50,26 mm); zona_protegida_tms053 transferida por similaridade.",
+          "motivo": "M5",
+          "candidato_automatico": "C5",
+          "tms053": {
+            "roi_status": "VALIDADO_POR_TRANSFERENCIA_E_EQUIVALENCIA_LOCAL",
+            "roi_transformada_bruta": [
+              17.07,
+              4.67,
+              22.24,
+              10.21
+            ],
+            "roi_efetiva_recortada_ao_envelope": [
+              17.07,
+              4.67,
+              22.2,
+              10.21
+            ],
+            "recorte_aplicado": [
+              0.0,
+              0.0,
+              -0.04,
+              0.0
+            ],
+            "validacao_local": {
+              "iou": 0.9648,
+              "dif_area_pct": 3.58,
+              "area_alcoa_mm2": 15.57,
+              "area_tms_mm2": 16.14,
+              "decisao": "EQUIVALENTE"
+            },
+            "_nota": "coordenadas CALCULADAS pela transferencia e validadas pela comparacao local — nao foram desenhadas manualmente pelo Bruno. O recorte serve so para indexar a matriz raster; a coordenada bruta fica na procedencia e a geometria nao muda."
+          }
+        }
+      ],
+      "contagem_motivos": {
+        "GAB-ESCOVINHA-SU-01": 2,
+        "MOTIVO-ENCAIXE-BAGUETE-INTERNO": 1,
+        "GAB-OLHAL-01": 1,
+        "MOTIVO-ENCAIXE-BAGUETE-EXTERNO": 1
+      },
+      "transferencia_de_zonas": {
+        "metodo": "similaridade (escala unica, rotacao, translacao)",
+        "origem": "SU-053 Alcoa p.187 (contorno limpo)",
+        "destino": "TMS-053 Centenario p.222",
+        "registro": {
+          "escala": 1.006841,
+          "rotacao_graus": 0.009,
+          "translacao": [
+            -0.51,
+            1.39
+          ],
+          "erro_medio_px": 1.498,
+          "erro_p95_px": 3.824,
+          "erro_max_px": 7.233,
+          "iou": 0.9379
+        },
+        "candidatos_descartados": {
+          "C1": "engloba detalhe demais — nao serve como ROI final",
+          "C3": "engloba detalhe demais — nao serve como ROI final",
+          "C7": "parede/apoio de contexto, nao motivo principal",
+          "C9": "regiao auxiliar, nao motivo final",
+          "C10": "regiao auxiliar, nao motivo final"
+        },
+        "_nota": "descartes conforme observacao do Bruno na arbitragem de 2026-07-28."
+      },
+      "transformacao_alcoa_para_tms053": {
+        "tipo": "similaridade_isotropica",
+        "escala": 1.006841,
+        "rotacao_graus": 0.009,
+        "erro_medio_px": 1.5,
+        "iou_global": 0.9379,
+        "deformacao_anisotropica": false,
+        "reflexao": false,
+        "mascaras_recortadas_ao_bbox_antes_do_registro": true,
+        "_nota_recorte": "as duas mascaras sao recortadas ao proprio bounding box antes do registro. Sem isso a posicao da mascara DENTRO do card e tomada como origem geometrica e a transferencia devolve coordenadas fora do envelope (erro cometido e corrigido em 2026-07-28)."
+      },
+      "envelope_fisico_mm": {
+        "x": [
+          0.0,
+          22.2
+        ],
+        "y": [
+          0.0,
+          51.0
+        ]
+      },
+      "politica_recorte_roi": {
+        "permitido": "ultrapassagem sub-milimetrica por arredondamento da similaridade",
+        "aplicado_em": "M1 (-0,03), M4 (-0,02), M5 (+0,04) mm",
+        "nao_e_regra_universal": true,
+        "_nota": "ultrapassagem MAIOR ou estruturalmente relevante deve BLOQUEAR, nao ser recortada. Este recorte e especifico do SU-053 e da ordem de grandeza do arredondamento."
+      },
+      "baseline_validacao_local": {
+        "M1": {
+          "iou": 0.9378,
+          "diferenca_area_percentual": 4.42
+        },
+        "M2": {
+          "iou": 0.9213,
+          "diferenca_area_percentual": 7.77
+        },
+        "M3": {
+          "iou": 0.9134,
+          "diferenca_area_percentual": 8.46
+        },
+        "M4": {
+          "iou": 0.9784,
+          "diferenca_area_percentual": 2.77
+        },
+        "M5": {
+          "iou": 0.9648,
+          "diferenca_area_percentual": 3.58
+        }
+      },
+      "_nota_baseline": "evidencia ESPECIFICA do SU-053. NAO declara IoU minimo universal nem diferenca de area maxima universal: nao ha amostra para regra geral. Serve para a proxima execucao reproduzir deterministicamente.",
+      "_nota_estado": "APROVADO SO NA CURADORIA. Nao existe GEO-SU-053 nos dados oficiais e nao ha associacao oficial entre fabricantes: a gravacao oficial aguarda o fechamento das oito geometrias do microlote.",
+      "reprodutibilidade": {
+        "seis_hashes_identicos": true,
+        "jsons_semanticamente_equivalentes": true,
+        "transformacao_reproduzida": true,
+        "cinco_rois_reproduzidas": true,
+        "metricas_locais_reproduzidas": true,
+        "dimensoes_mm": [
+          22.2,
+          51.0
+        ],
+        "componentes": 1,
+        "vazios": 0,
+        "pontos_externo": 163,
+        "f1_tolerante": 1.0
+      }
+    },
+    "SU-102": {
+      "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
+      "pagina_pdf": 198,
+      "codigo_catalogo": "SU-102 (U-1230/E)",
+      "roi_norm": [
+        0.17,
+        0.11,
+        0.44,
+        0.37
+      ],
+      "largura_mm": 17.0,
+      "altura_mm": 15.0,
+      "vazios_esperados": 0,
+      "cotas_catalogo_secundario": {
+        "fonte": "Centenario",
+        "codigo": "TMS-102",
+        "pagina_pdf": 235,
+        "valores_mm": [
+          11.0,
+          12.0
+        ],
+        "_leitura": "verificado VISUALMENTE no card: a cota 11 e horizontal (topo) e a 12 e vertical (direita). O TMS-102 e desenhado com perfil de referencia em cinza claro, mesma convencao do card Alcoa."
+      },
+      "dimensao_bounding_box": {
+        "status": "pendente_confirmacao",
+        "aspecto_medido": 1.1366,
+        "bbox_camada_grossa_px": [
+          416,
+          366
+        ],
+        "_conflito": "as cotas 11 e 12 nao descrevem o bounding box em NENHUMA das duas fontes: o TMS-102, que e o card onde elas estao desenhadas, erra 24,08% contra 11x12. Sao segmentos internos."
+      },
+      "equivalencia_tms102": {
+        "equivalencia_global": "PASSA",
+        "equivalencia_topologica": "PASSA",
+        "equivalencia_dimensional": "PENDENTE",
+        "equivalencia_funcional_local": "PENDENTE",
+        "decisao": "CONGRUENCIA_GLOBAL_SEM_EQUIVALENCIA_GEOMETRICA_COMPLETA",
+        "evidencia": {
+          "aspecto_su102": 1.1366,
+          "aspecto_tms102": 1.1374,
+          "divergencia_aspecto_pct": 0.07,
+          "registro_isotropico": {
+            "escala": 1.000054,
+            "rotacao_graus": -0.03,
+            "erro_medio_px": 0.915,
+            "erro_p95_px": 1.26,
+            "erro_max_px": 2.484,
+            "iou": 0.9224
+          },
+          "vazios_su102": 0,
+          "vazios_tms102": 0
+        },
+        "_nota": "escala 1,00005 e rotacao -0,03 graus significam que os dois catalogos publicam o MESMO desenho na mesma escala. Isso comprova congruencia global e topologica, mas NAO comprova a dimensao externa: nenhuma das fontes cota o bounding box. IoU isolado nao autoriza compartilhar geometria — falta o gate funcional local por regiao (ganchos, pe, encaixes, terminacoes)."
+      },
+      "calibracao_isotropica_pela_referencia_fina": {
+        "metodo": "ICP com escala unica (Procrustes isotropico)",
+        "escala_px_mm": 23.7978,
+        "rotacao_graus": 0.006,
+        "erro_medio_px": 2.614,
+        "erro_medio_mm": 0.109,
+        "reproduz_largura_mm": 22.229,
+        "erro_largura_pct": 0.13,
+        "reproduz_altura_mm": 50.383,
+        "erro_altura_pct": 1.21,
+        "gate": "REPROVA",
+        "_nota": "o registro isotropico confirmou que existe UMA escala e rotacao zero — o bbox nao era o problema. Mas a escala unica nao reproduz as duas cotas: a largura fecha em 0,13% e a altura erra 1,21%. A referencia fina do card Alcoa e proporcionalmente mais baixa que 22,2 x 51. Nao ampliar a tolerancia, nao calibrar X e Y separadamente."
+      },
+      "_arbitragem_dimensional": "REVOGADO 21 x 12 (nunca foi bounding box: 10 e 11 sao segmentos internos, nao somam a largura). REVOGADO 13,8 x 12: o valor 13,8 pertence ao TMS-058 e ao TMS-103, NAO ao TMS-102 — erro meu de leitura da camada de texto embaralhada do PDF, corrigido pelo Bruno e confirmado visualmente no card em 2026-07-27.",
+      "contorno_referencia": {
+        "perfil": "SU-053",
+        "estado": "CONTORNO_REFERENCIA_OUTRO_PERFIL_DETECTADO",
+        "tratamento": "separacao_por_espessura",
+        "espessura_min_mm": 0.42,
+        "largura_referencia_mm": 22.2,
+        "raio_calibracao_px": 5,
+        "_nota_escala": "o card e calibrado pela largura homologada do SU-053 (22,2 mm), nao pelo SU-102 — e a cota do SU-102 que esta em questao. 1a passagem com raio_calibracao_px isola a camada fina e da a escala; a 2a deriva o raio real de espessura_min_mm. Espessura medida no card: mediana 4 px, p90 19 px.",
+        "_nota": "o card desenha o SU-053 em linha fina como referencia de aplicacao. NAO e cota e NAO e contaminacao grafica: as duas camadas sao preservadas como evidencia, a grossa e o SU-102."
+      },
+      "nota": "Baguete (perimetro do vidro), pagina impressa 185.",
+      "motivos": [],
+      "contagem_motivos": {},
+      "_motivos_pendentes": {
+        "levantamento": "nao_realizado",
+        "justificativa": "o trabalho no SU-102 e a separacao por espessura entre o traco cheio (SU-102) e a linha fina de referencia (SU-053). Nenhuma ocorrencia de motivo foi levantada nem confirmada ate 2026-07-26.",
+        "_acao": "levantar as ocorrencias do SU-102 apos a separacao das camadas"
+      },
+      "fontes_dimensionais_investigadas": [
+        {
+          "fabricante": "Alcoa",
+          "codigo": "SU-102",
+          "arquivo": "dados_exemplo/catalago-alcoa (1).pdf",
+          "pagina_pdf": 198,
+          "pagina_impressa": 185,
+          "cotas_visiveis": [
+            10,
+            11,
+            12
+          ],
+          "cota_envelope_total": false,
+          "perfil_complementar": "SU-053",
+          "aspecto_traco_cheio": 1.1366,
+          "peso_kg_m": 0.111
+        },
+        {
+          "fabricante": "Centenario",
+          "codigo": "TMS-102",
+          "arquivo": "dados_exemplo/Centenário.pdf",
+          "pagina_pdf": 235,
+          "cotas_visiveis": [
+            11,
+            12
+          ],
+          "cota_envelope_total": false,
+          "perfil_complementar": "referencia em cinza claro",
+          "aspecto_traco_cheio": 1.1374,
+          "peso_kg_m": 0.11
+        },
+        {
+          "fabricante": "Vitral Sul",
+          "codigo": "SU-102",
+          "arquivo": "dados_exemplo/PERFIS-DE-ALUMINIO-02-07-2026.pdf",
+          "pagina_pdf": 91,
+          "cotas_visiveis": [
+            10,
+            11,
+            12
+          ],
+          "cota_envelope_total": false,
+          "perfil_complementar": "PSU-053",
+          "aspecto_traco_cheio": 1.1375,
+          "peso_kg_m": 0.111
+        },
+        {
+          "fabricante": "nao identificado (cebf22)",
+          "codigo": "TMS-102",
+          "arquivo": "dados_exemplo/cebf22_d839ce1e6a6b43c8ad951a7737f1a517.pdf",
+          "pagina_pdf": 108,
+          "cotas_visiveis": [
+            12
+          ],
+          "cota_envelope_total": false,
+          "perfil_complementar": "referencia fina",
+          "aspecto_traco_cheio": null,
+          "_nota": "ROI usada capturou a pilula do rotulo (640x232 px com 7 falsos vazios). Card existe e usa a mesma convencao; medicao pendente de ROI adequada."
+        }
+      ],
+      "interpretacao_das_cotas": {
+        "metodo": "posicao medida das linhas de chamada verticais contra os extremos do traco cheio, no card Alcoa a 600 DPI",
+        "traco_cheio_px": {
+          "x": [
+            373,
+            788
+          ],
+          "y": [
+            685,
+            1050
+          ]
+        },
+        "linhas_de_chamada_px": [
+          293,
+          527,
+          788
+        ],
+        "cota_10": {
+          "vao_px": 234,
+          "ancora_esquerda": "x=293, 80 px A ESQUERDA do inicio do traco cheio — cai sobre o SU-053 de referencia",
+          "ancora_direita": "x=527, ponto INTERNO do traco cheio",
+          "mede_o_envelope": false
+        },
+        "cota_11": {
+          "vao_px": 261,
+          "ancora_esquerda": "x=527, ponto INTERNO do traco cheio",
+          "ancora_direita": "x=788, borda direita do traco cheio",
+          "mede_o_envelope": false
+        },
+        "cota_12": {
+          "orientacao": "vertical",
+          "mede_o_envelope": "indeterminado — as setas abrangem a extensao vertical do traco cheio, mas isso nao foi confirmado com a mesma medicao das linhas verticais"
+        },
+        "conclusao": "NENHUMA das cotas mede a largura total. A soma 10+11 cobre 495 px, MAIS que os 416 px do traco cheio, porque a cota 10 comeca no perfil de referencia e nao no SU-102. Foi por isso que 21 mm superestimou."
+      },
+      "dimensao_externa": {
+        "status": "RESOLVIDA_POR_MEDICAO_FISICA",
+        "largura_mm": 17.0,
+        "altura_mm": 15.0,
+        "_nota": "quatro catalogos investigados, nenhum cota o envelope externo. A cota veio da medicao fisica repetida do Bruno (4 leituras do eixo maior, 3 do menor), validada pelo aspecto das 3 fontes."
+      },
+      "candidato_compartilhamento": {
+        "congruencia_global": "APROVADA",
+        "congruencia_topologica": "APROVADA",
+        "congruencia_funcional_local": "APROVADA",
+        "equivalencia_dimensional": "PENDENTE",
+        "decisao": "AGUARDANDO_DIMENSAO_EXTERNA_DO_TMS102",
+        "evidencia_local": {
+          "terminacao sup-esq": "SEM_MATERIAL",
+          "gancho superior": {
+            "pontos": 436,
+            "medio": 0.99,
+            "p95": 1.22,
+            "max": 1.54,
+            "decisao": "EQUIVALENTE"
+          },
+          "terminacao sup-dir": {
+            "pontos": 462,
+            "medio": 1.0,
+            "p95": 1.16,
+            "max": 1.5,
+            "decisao": "EQUIVALENTE"
+          },
+          "labio esquerdo": "SEM_MATERIAL",
+          "encaixe do baguete": {
+            "pontos": 230,
+            "medio": 0.91,
+            "p95": 1.23,
+            "max": 1.28,
+            "decisao": "EQUIVALENTE"
+          },
+          "labio direito": {
+            "pontos": 244,
+            "medio": 1.02,
+            "p95": 1.07,
+            "max": 1.38,
+            "decisao": "EQUIVALENTE"
+          },
+          "pe / term. inf-esq": {
+            "pontos": 415,
+            "medio": 0.82,
+            "p95": 1.72,
+            "max": 2.48,
+            "decisao": "EQUIVALENTE"
+          },
+          "gancho inferior": {
+            "pontos": 33,
+            "medio": 0.81,
+            "p95": 1.09,
+            "max": 1.1,
+            "decisao": "EQUIVALENTE"
+          },
+          "term. inf-dir": {
+            "pontos": 290,
+            "medio": 0.7,
+            "p95": 1.26,
+            "max": 1.4,
+            "decisao": "EQUIVALENTE"
+          }
+        },
+        "registro": {
+          "escala": 1.000057,
+          "rotacao_graus": -0.03,
+          "translacao": [
+            -1.08,
+            -0.69
+          ],
+          "erro_medio_px": 0.913,
+          "erro_p95_px": 1.261,
+          "erro_max_px": 2.484,
+          "iou": 0.9319
+        },
+        "_nota": "tres fontes independentes dao aspecto 1,1366 / 1,1374 / 1,1375 — dispersao 0,08%. As nove regioes do gate local passam com residuo p95 abaixo de 1,8 px. O SU-102 esta fechado dimensionalmente na curadoria; o que falta e o envelope externo do TMS-102, medido de forma independente. Sao duas afirmacoes distintas.",
+        "motivo_pendencia": "A medicao fisica de 17 x 15 mm pertence ao SU-102 medido. Ela nao comprova automaticamente o envelope externo do TMS-102."
+      },
+      "estado_geometrico": "CANDIDATO_GEOMETRICO_APROVADO",
+      "estado_dimensional": {
+        "status": "DIMENSAO_NOMINAL_APROVADA_POR_ARBITRAGEM_DE_DOMINIO",
+        "fonte": "medicao_fisica_repetida_com_nominalizacao",
+        "validacao": "aspecto contra 3 catalogos independentes"
+      },
+      "fonte_dimensional_primaria": {
+        "tipo": "medicao_fisica_repetida_com_nominalizacao",
+        "operador": "Bruno",
+        "data": "2026-08-01",
+        "leitura_fisica_mm": [
+          16.9,
+          15.0
+        ],
+        "dimensao_nominal_mm": [
+          17.0,
+          15.0
+        ],
+        "eixo_maior_fisico_mm": 16.9,
+        "eixo_menor_fisico_mm": 15.0,
+        "instrumento": "paquimetro com vernier; contato pelas GARRAS EXTERNAS grandes",
+        "_nota": "Nenhum dos quatro catalogos investigados cota o envelope externo do SU-102. A dimensao vem da medicao fisica; os catalogos entram como validacao de forma e aspecto, NAO como fonte da cota."
+      },
+      "medicoes_fisicas": {
+        "eixo_maior_mm": 16.9,
+        "eixo_menor_mm": 15.0,
+        "eixo_maior": {
+          "imagens": [
+            "005_EIXO_A_MAX_1",
+            "006_EIXO_A_MAX_2",
+            "007_EIXO_A_MAX_3",
+            "008_EIXO_A_MAX_4"
+          ],
+          "repeticoes_validas": 4,
+          "valor_fisico_mm": 16.9,
+          "valor_nominal_mm": 17.0,
+          "status": "CONFIRMADO_POR_REPETICAO"
+        },
+        "eixo_menor": {
+          "imagens": [
+            "012_EIXO_MENOR_1",
+            "013_EIXO_MENOR_2",
+            "014_EIXO_MENOR_3"
+          ],
+          "repeticoes_validas": 3,
+          "valor_fisico_mm": 15.0,
+          "valor_nominal_mm": 15.0,
+          "status": "CONFIRMADO_POR_REPETICAO"
+        },
+        "posicoes_alternativas": {
+          "imagens": [
+            "009_EIXO_B_MAX_1",
+            "010_EIXO_B_MAX_2",
+            "011_EIXO_B_MAX_3"
+          ],
+          "papel": "evidencia complementar da secao e do encaixe",
+          "eixo_independente": false,
+          "_nota": "o perfil tem uma aba maior e outra menor para permitir o encaixe; por isso posicoes de contato distintas produzem medidas proximas, mas nao identicas."
+        },
+        "preliminares_nao_contabilizadas": {
+          "imagens": [
+            "001_16,9",
+            "002_15,5",
+            "003_16",
+            "004_15"
+          ],
+          "papel": "diagnostico preliminar; contato parcialmente encoberto",
+          "repeticoes_validas": 0
+        },
+        "_correcao_de_leitura": "Uma analise anterior classificou 005-014 como 'paquimetro aberto no ar'. ERRO DE LEITURA DO INSTRUMENTO: o que aparecia aberto eram as garras pequenas superiores (medicao interna), que ficam naturalmente abertas quando se mede pelo lado externo. As garras grandes inferiores estao em contato com as faces externas do perfil — verificado por ampliacao em 012, 013, 014 e 008. As medicoes sao validas e nao precisam ser repetidas."
+      },
+      "dimensoes_nominais": {
+        "eixo_maior_mm": 17.0,
+        "eixo_menor_mm": 15.0,
+        "arredondamento_nominal": {
+          "eixo_maior": {
+            "medido_mm": 16.9,
+            "nominal_mm": 17.0,
+            "justificativa": "tolerancia_pratica_sem_impacto",
+            "autoridade": "especialista de dominio (Bruno)"
+          },
+          "eixo_menor": {
+            "medido_mm": 15.0,
+            "nominal_mm": 15.0,
+            "justificativa": "leitura fisica e nominal coincidem"
+          }
+        },
+        "_nota": "o paquimetro NAO leu 17,0 mm. Leu 16,9 mm. 17,0 e a dimensao nominal adotada por arredondamento declarado."
+      },
+      "validacao_catalogo": {
+        "funcao": "validacao_de_forma_e_aspecto",
+        "dimensao_externa_diretamente_cotada": false,
+        "aspectos": [
+          1.1366,
+          1.1374,
+          1.1375
+        ],
+        "fontes_independentes": 3,
+        "_nota": "os catalogos validam forma e proporcao. Nenhum cota o envelope externo — ver fontes_dimensionais_investigadas."
+      },
+      "normalizacao_dimensional": {
+        "tipo": "NOMINALIZACAO_POS_CURADORIA_COM_FATORES_INDEPENDENTES",
+        "anisotropica": true,
+        "origem_fisica_mm": [
+          16.9,
+          15.0
+        ],
+        "destino_nominal_mm": [
+          17.0,
+          15.0
+        ],
+        "fator_x": 1.005917,
+        "fator_y": 1.0,
+        "aspecto_bruto_anterior_a_normalizacao": 1.126667,
+        "aspecto_alvo_nominal": 1.133333,
+        "aplicada_apos": [
+          "aquisicao_da_forma",
+          "registro_isotropico_entre_fontes",
+          "gate_de_aspecto_das_fontes"
+        ],
+        "finalidade": "ajustar_escala_fisica_para_dimensao_nominal",
+        "usada_no_registro_entre_catalogos": false,
+        "altera_topologia": false,
+        "justificativa": {
+          "tipo": "arbitragem_de_dominio",
+          "responsavel": "Bruno",
+          "impacto_funcional": "nenhum"
+        },
+        "_distincao": "registro geometrico entre fontes = ISOTROPICO (escala 1.000054, rotacao -0.03 graus). Nominalizacao dimensional final = ANISOTROPICA (fator_x 1.005917 != fator_y 1.0), explicitamente auditada. Sao duas transformacoes distintas."
+      },
+      "promocao_oficial": "ainda_nao_autorizada",
+      "gate_aspecto_fisico_bruto": {
+        "dimensoes_mm": [
+          16.9,
+          15.0
+        ],
+        "aspecto": 1.126667,
+        "erro_minimo_catalogos_pct": 0.874,
+        "erro_maximo_catalogos_pct": 0.952,
+        "limite_pct": 0.75,
+        "resultado": "REPROVADO",
+        "_nota": "registrado como de fato ocorreu. NAO foi substituido pelo resultado nominal."
+      },
+      "gate_aspecto_nominal": {
+        "dimensoes_mm": [
+          17.0,
+          15.0
+        ],
+        "aspecto": 1.133333,
+        "erro_minimo_catalogos_pct": 0.287,
+        "erro_maximo_catalogos_pct": 0.366,
+        "limite_pct": 0.75,
+        "resultado": "APROVADO"
+      },
+      "decisao_dimensional": {
+        "tipo": "APROVADO_POR_ARBITRAGEM_DE_DOMINIO_COM_NOMINALIZACAO",
+        "operador_medicao": "Bruno",
+        "especialista_dominio": "Bruno",
+        "leitura_fisica_mm": [
+          16.9,
+          15.0
+        ],
+        "dimensao_nominal_mm": [
+          17.0,
+          15.0
+        ],
+        "justificativa": "arredondamento_nominal_sem_impacto_funcional",
+        "validacao_cruzada": "aspecto_de_tres_catalogos",
+        "_nota": "NAO e APROVADO_AUTOMATICAMENTE_PELO_GATE_FISICO: o gate fisico bruto reprovou (0,952%). A aprovacao vem da arbitragem de dominio sobre a nominalizacao, com o gate preservado intacto."
+      },
+      "separacao_por_espessura": true,
+      "_nota_separacao": "o card Alcoa p.198 desenha o SU-053 em linha fina como referencia de aplicacao. A separacao por espessura ocorre no PROPRIO card, sem fonte_geometrica_primaria: a geometria do SU-102 vem do card dele mesmo.",
+      "_nota_vazios": "0 vazios ja registrado em equivalencia_tms102.evidencia (vazios_su102: 0) e confirmado na topologia do traco cheio."
+    },
+    "SU-040": {
+      "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
+      "pagina_pdf": 184,
+      "roi_norm": [
+        0.03,
+        0.36,
+        0.52,
+        0.67
+      ],
+      "largura_mm": 42.4,
+      "altura_mm": 30.7,
+      "vazios_esperados": 1,
+      "assinatura": {
+        "vazios": 1,
+        "probes_material": [
+          [
+            15.51,
+            6.12
+          ],
+          [
+            15.51,
+            30.18
+          ],
+          [
+            3.94,
+            17.92
+          ]
+        ],
+        "probes_vazio": [
+          [
+            15.51,
+            17.92
+          ]
+        ],
+        "probes_exterior_conectado": [
+          [
+            0.74,
+            17.92
+          ],
+          [
+            31.78,
+            8.12
+          ],
+          [
+            32.68,
+            8.92
+          ]
+        ],
+        "_derivacao": "bruto 600 DPI de 2026-07-24: centroide do vazio; material acima/abaixo/à esquerda da câmara; exterior = boca do canal esquerdo + rebaixo direito oco"
+      },
+      "referencia_comercial": "curadoria/contornos/SU-040/90_referencia_v4/GEO-SU-040_simplificado_v4_contornos.json",
+      "motivos": [
+        {
+          "id": "GAB-MA-DIAG-01",
+          "ocorrencia": 1,
+          "orientacao": [],
+          "zona_protegida": [
+            19.0,
+            0.0,
+            32.0,
+            7.5
+          ],
+          "atribuicao_geometrica": "zona_curada",
+          "_nota": "zona homologada prevalece; bolsos medidos ficam em bolsos_medidos como evidência"
+        }
+      ],
+      "contagem_motivos": {
+        "GAB-MA-DIAG-01": 1
+      },
+      "bolsos_medidos_candidatos_olhal": [
+        {
+          "ocorrencia": 1,
+          "orientacao": [
+            "esquerda",
+            "exterior"
+          ],
+          "boca_mm": 1.33,
+          "diametro_interno_mm": 1.86,
+          "razao_interno_boca": 1.4,
+          "area_mm2": 3.56,
+          "posicao_rel": [
+            0.672,
+            0.013
+          ],
+          "posicao_mm": [
+            28.46,
+            0.4
+          ]
+        }
+      ],
+      "_nota_bolsos": "bolsos detectados automaticamente; os de forma circular são candidatos a GAB-OLHAL-01, não a escovinha",
+      "estado": "CANDIDATO_PREVIAMENTE_APROVADO"
+    },
+    "SU-041": {
+      "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
+      "pagina_pdf": 184,
+      "roi_norm": [
+        0.5,
+        0.36,
+        0.97,
+        0.67
+      ],
+      "largura_mm": 42.4,
+      "altura_mm": 33.0,
+      "vazios_esperados": 1,
+      "_nota_zonas": "zona 2 corrigida em 2026-07-25: o encaixe C com lábios fica em x 13.3-15.5 / y 4.7-6.1 (medido no bruto 600 DPI); a zona herdada da it2 [0,4.5,7.5,9.5] cobria espaço vazio",
+      "assinatura": {
+        "vazios": 1,
+        "probes_material": [
+          [
+            26.92,
+            0.47
+          ],
+          [
+            26.92,
+            24.54
+          ],
+          [
+            38.5,
+            12.28
+          ]
+        ],
+        "probes_vazio": [
+          [
+            26.92,
+            12.28
+          ]
+        ],
+        "probes_exterior_conectado": [],
+        "_derivacao": "bruto 600 DPI de 2026-07-25; probes_exterior preenchidos pelo fluxo (boca da escovinha + boca do encaixe C)"
+      },
+      "motivos": [
+        {
+          "id": "GAB-ESCOVINHA-SU-01",
+          "ocorrencia": 1,
+          "orientacao": [],
+          "zona_protegida": [
+            12.0,
+            19.55,
+            17.02,
+            24.57
+          ],
+          "atribuicao_geometrica": "confirmada_por_arbitragem_visual",
+          "_nota": "C5 e o canal superior esquerdo: boca estreita e labios de retencao. Unico par com labios junto do C6, e o C6 foi descartado por ser olhal. Arbitragem visual do Bruno, 2026-07-28.",
+          "candidato": "C5",
+          "classe_status": "confirmado",
+          "roi_status": "confirmado",
+          "metodo_delimitacao": "candidato_automatico_arbitrado"
+        },
+        {
+          "id": "GAB-MA-DIAG-ESC-01",
+          "ocorrencia": 1,
+          "orientacao": [],
+          "zona_protegida": [
+            23.0,
+            28.0,
+            38.5,
+            33.0
+          ],
+          "atribuicao_geometrica": "confirmada_por_arbitragem_visual",
+          "_nota": "regiao ESTRUTURAL composta (aba diagonal), nao um bolso. Por isso nao corresponde a nenhum candidato automatico e nao precisa corresponder. Zona manual confirmada na arbitragem de 2026-07-28.",
+          "candidato": null,
+          "classe_status": "confirmado",
+          "roi_status": "confirmado",
+          "metodo_delimitacao": "zona_manual"
+        }
+      ],
+      "contagem_motivos": {
+        "GAB-ESCOVINHA-SU-01": 1,
+        "GAB-MA-DIAG-ESC-01": 1
+      },
+      "estado": "CANDIDATO_GEOMETRICO_APROVADO",
+      "arbitragem_zonas": {
+        "data": "2026-07-28",
+        "resultado": {
+          "M1": "C5",
+          "M2": "ZONA_EXISTENTE_CONFIRMADA"
+        },
+        "painel": "curadoria/composicao/painel_delimitacao_motivos_su041.png",
+        "candidatos_descartados": {
+          "C6": {
+            "nao_corresponde_a": "GAB-ESCOVINHA-SU-01",
+            "interpretacao": "olhal",
+            "motivo": "formato_C_com_serrilhas_internas",
+            "_nota": "e exatamente a regiao que havia sido confundida com escovinha antes. NAO virar ocorrencia oficial de olhal sem que essa classe esteja confirmada no levantamento do perfil."
+          },
+          "C1": {
+            "relacao_com_zona_m2": "sobreposicao_parcial_incidental",
+            "cobertura_zona_m2": 0.13,
+            "usar_como_delimitacao_m2": false,
+            "_nota": "cavidade adjacente; a sobreposicao e incidental."
+          }
+        },
+        "referencial_zona_m2": {
+          "largura_perfil_mm": 42.4,
+          "altura_perfil_mm": 33.0,
+          "origem": "recorte_isolado_SU-041",
+          "deslocamento_suspeito_entre_cards": false,
+          "_nota": "a zona atinge y = 33,0, o limite superior real do perfil, e cobre a aba diagonal no recorte atual. O card tem dois perfis lado a lado (MONTANTE MAO DE AMIGO 0,520 kg/m e SU-041 P-629/E 0,507 kg/m) e a ROI captura o segundo — verificado que a zona NAO veio deslocada do vizinho."
+        }
+      },
+      "pendencia_zona": "resolvida",
+      "promocao_oficial": "ainda_nao_autorizada"
+    },
+    "SU-056": {
+      "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
+      "pagina_pdf": 188,
+      "roi_norm": [
+        0.03,
+        0.36,
+        0.52,
+        0.67
+      ],
+      "largura_mm": 38.9,
+      "altura_mm": 31.8,
+      "vazios_esperados": 1,
+      "assinatura": {
+        "vazios": 1,
+        "probes_material": [
+          [
+            23.84,
+            0.47
+          ],
+          [
+            23.84,
+            28.78
+          ]
+        ],
+        "probes_vazio": [
+          [
+            23.84,
+            13.14
+          ]
+        ],
+        "probes_exterior_conectado": [
+          [
+            4.88,
+            12.62
+          ],
+          [
+            18.0,
+            28.3
+          ],
+          [
+            37.0,
+            8.0
+          ]
+        ],
+        "_derivacao": "bruto 600 DPI de 2026-07-25; frestas: face esquerda (canal C), fresta central (slot sob a diagonal), rebaixo direito"
+      },
+      "nota": "Regressão: 1 vazio + fresta central aberta + face esquerda aberta + rebaixo direito preservado. Escovinha (retenção estreita) guardada pela zona, não por probe.",
+      "motivos": [
+        {
+          "id": "GAB-MA-DIAG-ESC-01",
+          "ocorrencia": 1,
+          "orientacao": [],
+          "zona_protegida": [
+            13.0,
+            26.0,
+            30.0,
+            31.8
+          ],
+          "atribuicao_geometrica": "zona_curada",
+          "_nota": "zona homologada prevalece; bolsos medidos ficam em bolsos_medidos como evidência"
+        }
+      ],
+      "contagem_motivos": {
+        "GAB-MA-DIAG-ESC-01": 1
+      },
+      "bolsos_medidos_candidatos_olhal": [
+        {
+          "ocorrencia": 1,
+          "orientacao": [
+            "esquerda",
+            "exterior"
+          ],
+          "boca_mm": 0.46,
+          "diametro_interno_mm": 1.77,
+          "razao_interno_boca": 3.85,
+          "area_mm2": 3.33,
+          "posicao_rel": [
+            0.54,
+            0.99
+          ],
+          "posicao_mm": [
+            21.01,
+            31.49
+          ]
+        }
+      ],
+      "_nota_bolsos": "bolsos detectados automaticamente; os de forma circular são candidatos a GAB-OLHAL-01, não a escovinha"
+    },
+    "SU-001": {
+      "fonte_pdf": "dados_exemplo/Centenário.pdf",
+      "pagina_pdf": 211,
+      "roi_norm": [
+        0.285,
+        0.098,
+        0.755,
+        0.325
+      ],
+      "largura_mm": 71.0,
+      "altura_mm": 33.0,
+      "vazios_esperados": 0,
+      "funcao": "trilho_superior_2_planos",
+      "fonte_geometrica_primaria": {
+        "fabricante": "Centenario",
+        "pagina_pdf": 211,
+        "roi_norm": [
+          0.285,
+          0.098,
+          0.755,
+          0.325
+        ],
+        "separacao_por_espessura": false,
+        "motivo": "fonte e cotas aprovadas no gate de evidencia (lote 2, quadro da janela)"
+      },
+      "nota": "Lote 2 — quadro da janela. trilho_superior_2_planos.",
+      "motivos": [],
+      "contagem_motivos": {},
+      "_motivos_pendentes": {
+        "levantamento": "nao_realizado",
+        "justificativa": "perfil recem-adicionado no lote 2; nenhuma ocorrencia foi levantada nem confirmada. Lista vazia significa NAO LEVANTADO, nunca ausencia comprovada.",
+        "_acao": "levantar as ocorrencias e submeter a arbitragem"
+      },
+      "status_vazios": "confirmado_por_topologia_raster",
+      "observacao_topologica": "secao aberta: os bolsos dos trilhos sao C abertos, nao camaras fechadas.",
+      "cotas_internas": [
+        {
+          "valor_mm": 35.0,
+          "funcao": "vao_entre_trilhos",
+          "usar_como_envelope": false
+        }
+      ],
+      "estado": "CANDIDATO_GEOMETRICO_APROVADO",
+      "aprovacao_visual": {
+        "data": "2026-07-28",
+        "painel": "curadoria/composicao/painel_lote2_su001_su002_su003.png",
+        "confirmado": "dois trilhos preservados; ganchos inferiores preservados; travessa superior completa; montantes externos completos; nenhuma contaminacao grafica",
+        "diferenca_bruto_comercial": "somente ajustes controlados de simplificacao das bordas; sem perda de componentes e sem mudanca topologica",
+        "_nota": "aprovado SO na camada de curadoria; nao existe geometria oficial em dados/"
+      }
+    },
+    "SU-002": {
+      "fonte_pdf": "dados_exemplo/Centenário.pdf",
+      "pagina_pdf": 211,
+      "roi_norm": [
+        0.255,
+        0.395,
+        0.745,
+        0.615
+      ],
+      "largura_mm": 71.0,
+      "altura_mm": 47.0,
+      "vazios_esperados": 0,
+      "funcao": "trilho_inferior_2_planos",
+      "fonte_geometrica_primaria": {
+        "fabricante": "Centenario",
+        "pagina_pdf": 211,
+        "roi_norm": [
+          0.255,
+          0.395,
+          0.745,
+          0.615
+        ],
+        "separacao_por_espessura": false,
+        "motivo": "fonte e cotas aprovadas no gate de evidencia (lote 2, quadro da janela)"
+      },
+      "nota": "Lote 2 — quadro da janela. trilho_inferior_2_planos.",
+      "motivos": [],
+      "contagem_motivos": {},
+      "_motivos_pendentes": {
+        "levantamento": "nao_realizado",
+        "justificativa": "perfil recem-adicionado no lote 2; nenhuma ocorrencia foi levantada nem confirmada. Lista vazia significa NAO LEVANTADO, nunca ausencia comprovada.",
+        "_acao": "levantar as ocorrencias e submeter a arbitragem"
+      },
+      "cotas_internas": [
+        {
+          "valor_mm": 35.0,
+          "funcao": "vao_entre_trilhos",
+          "usar_como_envelope": false
+        },
+        {
+          "valor_mm": 16.0,
+          "funcao": "altura_do_trilho",
+          "usar_como_envelope": false
+        },
+        {
+          "valor_mm": 13.0,
+          "funcao": "aba_esquerda",
+          "usar_como_envelope": false
+        }
+      ],
+      "status_vazios": "confirmado_por_topologia_raster",
+      "observacao_topologica": "secao aberta: os bolsos dos trilhos sao C abertos, nao camaras fechadas.",
+      "fonte_dimensional_primaria": {
+        "tipo": "evidencia_composta",
+        "pagina_pdf": 211,
+        "altura": {
+          "valor_mm": 47.0,
+          "origem": "cota_visual_do_card"
+        },
+        "largura": {
+          "valor_mm": 71.0,
+          "origem": "derivacao_validada",
+          "evidencias": [
+            {
+              "bbox_raster": [
+                1683,
+                1116
+              ]
+            },
+            {
+              "aspecto_medido": 1.5081
+            },
+            {
+              "aspecto_esperado_71x47": 1.5106
+            },
+            {
+              "erro_relativo": 0.0017
+            },
+            {
+              "largura_raster_equivalente_a_su001_e_su003": true
+            },
+            {
+              "escala_coerente_entre_os_tres_cards": [
+                23.818,
+                23.745,
+                23.846
+              ]
+            }
+          ],
+          "_nota": "o numero 71 NAO aparece como cota externa no card do SU-002. Foi confirmado por aspecto raster, escala derivada da altura cotada, e coerencia com SU-001 e SU-003 do mesmo quadro."
+        }
+      },
+      "estado": "CANDIDATO_GEOMETRICO_APROVADO",
+      "aprovacao_visual": {
+        "data": "2026-07-28",
+        "painel": "curadoria/composicao/painel_lote2_su001_su002_su003.png",
+        "confirmado": "dois trilhos superiores completos; ganchos preservados; base e extremidades completas; 71 mm = envelope externo; 35 mm = vao interno entre trilhos; nenhuma perda funcional no contorno comercial",
+        "diferenca_bruto_comercial": "somente ajustes controlados de simplificacao das bordas; sem perda de componentes e sem mudanca topologica",
+        "_nota": "aprovado SO na camada de curadoria; nao existe geometria oficial em dados/"
+      }
+    },
+    "SU-003": {
+      "fonte_pdf": "dados_exemplo/Centenário.pdf",
+      "pagina_pdf": 211,
+      "roi_norm": [
+        0.255,
+        0.675,
+        0.725,
+        0.865
+      ],
+      "largura_mm": 71.0,
+      "altura_mm": 26.0,
+      "vazios_esperados": 0,
+      "funcao": "marco_lateral_com_mata_junta",
+      "fonte_geometrica_primaria": {
+        "fabricante": "Centenario",
+        "pagina_pdf": 211,
+        "roi_norm": [
+          0.255,
+          0.675,
+          0.725,
+          0.865
+        ],
+        "separacao_por_espessura": false,
+        "motivo": "fonte e cotas aprovadas no gate de evidencia (lote 2, quadro da janela)"
+      },
+      "nota": "Lote 2 — quadro da janela. marco_lateral_com_mata_junta.",
+      "motivos": [],
+      "contagem_motivos": {},
+      "_motivos_pendentes": {
+        "levantamento": "nao_realizado",
+        "justificativa": "perfil recem-adicionado no lote 2; nenhuma ocorrencia foi levantada nem confirmada. Lista vazia significa NAO LEVANTADO, nunca ausencia comprovada.",
+        "_acao": "levantar as ocorrencias e submeter a arbitragem"
+      },
+      "status_vazios": "confirmado_por_topologia_raster",
+      "observacao_topologica": "secao aberta: os bolsos dos trilhos sao C abertos, nao camaras fechadas.",
+      "estado": "CANDIDATO_GEOMETRICO_APROVADO",
+      "aprovacao_visual": {
+        "data": "2026-07-28",
+        "painel": "curadoria/composicao/painel_lote2_su001_su002_su003.png",
+        "confirmado": "alma horizontal preservada; paredes laterais preservadas; duas aletas inclinadas preservadas; mata-junta completo; 83 pontos compativeis com a simplicidade da secao",
+        "diferenca_bruto_comercial": "somente ajustes controlados de simplificacao das bordas; sem perda de componentes e sem mudanca topologica",
+        "_nota": "aprovado SO na camada de curadoria; nao existe geometria oficial em dados/"
+      }
+    }
+  },
+  "p4_reconhecimento": {
+    "_comentario": "Prova LIMITADA dos 6 gabaritos (pacote de aprovação §3). Reconhecimento e preservação de motivo, NÃO homologação. Calibração: cota de largura + aspecto do bbox bruto (600 DPI isotrópico) deriva a altura. Páginas reais do Centenário.pdf desta edição (diferem da referência 2023) e do catálogo Alcoa.",
+    "SU-009": {
+      "fonte_pdf": "dados_exemplo/Centenário.pdf",
+      "pagina_pdf": 213,
+      "codigo_catalogo": "TMS-009",
+      "roi_norm": [
+        0.2,
+        0.3,
+        0.78,
+        0.7
+      ],
+      "largura_cota_mm": 69.6,
+      "tipo_probe": "material",
+      "zona_frac": [
+        0.15,
+        0.48,
+        0.45,
+        0.85
+      ],
+      "_correcao_roi": "2026-07-25: a ROI anterior [0.30,0.42,0.655,0.57] cortava o topo do componente (aba externa direita perdia 6,58 mm). ROI atual verificada: o maior componente não toca nenhuma borda do recorte.",
+      "motivos": [
+        {
+          "id": "GAB-OLHAL-01",
+          "ocorrencia": 1,
+          "orientacao": [
+            "inferior",
+            "camara_interna"
+          ],
+          "zona_protegida": [
+            14.97,
+            30.67,
+            21.15,
+            36.85
+          ],
+          "posicao_rel": [
+            0.26,
+            0.685
+          ],
+          "posicao_mm": [
+            18.06,
+            33.76
+          ],
+          "medidas_mm": {
+            "boca": 2.58,
+            "interior": 3.78,
+            "razao": 1.47
+          },
+          "atribuicao_geometrica": "medida"
+        },
+        {
+          "id": "GAB-OLHAL-01",
+          "ocorrencia": 2,
+          "orientacao": [
+            "superior",
+            "camara_interna"
+          ],
+          "zona_protegida": [
+            49.86,
+            12.54,
+            55.94,
+            18.62
+          ],
+          "posicao_rel": [
+            0.76,
+            0.316
+          ],
+          "posicao_mm": [
+            52.9,
+            15.58
+          ],
+          "medidas_mm": {
+            "boca": 2.5,
+            "interior": 3.67,
+            "razao": 1.47
+          },
+          "atribuicao_geometrica": "medida"
+        }
+      ],
+      "contagem_motivos": {
+        "GAB-OLHAL-01": 2
+      },
+      "bolsos_medidos_candidatos_olhal": [
+        {
+          "ocorrencia": 1,
+          "orientacao": [
+            "inferior",
+            "camara_interna"
+          ],
+          "boca_mm": 2.58,
+          "diametro_interno_mm": 3.78,
+          "razao_interno_boca": 1.47,
+          "area_mm2": 14.09,
+          "posicao_rel": [
+            0.26,
+            0.685
+          ],
+          "posicao_mm": [
+            18.06,
+            33.76
+          ]
+        },
+        {
+          "ocorrencia": 2,
+          "orientacao": [
+            "superior",
+            "camara_interna"
+          ],
+          "boca_mm": 2.5,
+          "diametro_interno_mm": 3.67,
+          "razao_interno_boca": 1.47,
+          "area_mm2": 13.55,
+          "posicao_rel": [
+            0.76,
+            0.316
+          ],
+          "posicao_mm": [
+            52.9,
+            15.58
+          ]
+        }
+      ],
+      "_nota_bolsos": "bolsos detectados automaticamente; os de forma circular são candidatos a GAB-OLHAL-01, não a escovinha"
+    },
+    "SU-024": {
+      "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
+      "pagina_pdf": 178,
+      "codigo_catalogo": "SU-024 (E-576/E)",
+      "roi_norm": [
+        0.08,
+        0.12,
+        0.82,
+        0.4
+      ],
+      "largura_cota_mm": 106.0,
+      "largura_mm": 106.0,
+      "altura_mm": 39.0,
+      "altura_bruta_mm": 51.13,
+      "vazios_esperados": 0,
+      "_nota_vazios": "perfil ABERTO (tipo_probe: aberto): 0 camaras fechadas. A mascara BRUTA acusa 1 vazio porque a linha de cota pendurada fecha um laco com a seta — o vazio desaparece junto com o apendice, o que e evidencia adicional de que o descarte foi correto.",
+      "_arbitragem_dimensional": "cotas do card p.178: largura 106 mm; altura 19 + 20 = 39 mm. A dimensao bruta 106 x 51,13 e PROIBIDA como resultado — mas e a altura REAL do bbox contaminado na fonte, necessaria so para a aquisicao passar no gate de aspecto antes do descarte do apendice. O gate comercial valida contra 39,0.",
+      "contexto_face": {
+        "nao_aplicavel_justificativa": "apendice grafico EXTERNO preso por tirante fino: a suspeita ocupa y 0,0-12,0 mm e o corpo do perfil comeca em y 12,13 mm — ela nao encosta em parede nenhuma. Nao ha face local a reconstruir nem a validar, ao contrario do SU-039 (linha de cota ADERIDA a face do montante). O validador acusa faces divergentes porque procura parede onde so existe fundo. Protecao mantida por: procedencia = 0, 1 componente, ganchos J byte-identicos e dimensao contra a cota do catalogo (106 x 39).",
+        "_condicao": "so vale enquanto a estrategia aceita for QUEBRA_CONTROLADA_DE_PONTE com descarte de apendice externo. Se a aceita passar a ser RECONSTRUCAO_LOCAL_DA_PAREDE, existe face e esta justificativa deixa de ser coerente."
+      },
+      "tipo_probe": "aberto",
+      "zona_frac": [
+        0.3,
+        0.0,
+        0.75,
+        0.5
+      ],
+      "motivos": [
+        {
+          "id": "GAB-TRILHO-J-SU-01",
+          "ocorrencia": 1,
+          "orientacao": [
+            "inferior",
+            "exterior"
+          ],
+          "zona_protegida": [
+            102.53,
+            20.69,
+            106.0,
+            26.09
+          ],
+          "posicao_rel": [
+            0.993,
+            0.457
+          ],
+          "posicao_mm": [
+            105.23,
+            23.39
+          ],
+          "medidas_mm": {
+            "boca": 1.5,
+            "interior": 3.0,
+            "razao": 2.0
+          },
+          "atribuicao_geometrica": "medida"
+        },
+        {
+          "id": "GAB-TRILHO-J-SU-01",
+          "ocorrencia": 2,
+          "orientacao": [
+            "direita",
+            "exterior"
+          ],
+          "zona_protegida": [
+            16.31,
+            42.84,
+            22.45,
+            48.97
+          ],
+          "posicao_rel": [
+            0.183,
+            0.898
+          ],
+          "posicao_mm": [
+            19.38,
+            45.91
+          ],
+          "medidas_mm": {
+            "boca": 1.96,
+            "interior": 3.73,
+            "razao": 1.9
+          },
+          "atribuicao_geometrica": "medida"
+        }
+      ],
+      "contagem_motivos": {
+        "GAB-TRILHO-J-SU-01": 2
+      },
+      "bolsos_medidos_candidatos_olhal": [
+        {
+          "ocorrencia": 1,
+          "orientacao": [
+            "inferior",
+            "exterior"
+          ],
+          "boca_mm": 1.5,
+          "diametro_interno_mm": 3.0,
+          "razao_interno_boca": 2.0,
+          "area_mm2": 32.1,
+          "posicao_rel": [
+            0.993,
+            0.457
+          ],
+          "posicao_mm": [
+            105.23,
+            23.39
+          ]
+        },
+        {
+          "ocorrencia": 2,
+          "orientacao": [
+            "direita",
+            "exterior"
+          ],
+          "boca_mm": 1.96,
+          "diametro_interno_mm": 3.73,
+          "razao_interno_boca": 1.9,
+          "area_mm2": 14.12,
+          "posicao_rel": [
+            0.183,
+            0.898
+          ],
+          "posicao_mm": [
+            19.38,
+            45.91
+          ]
+        }
+      ],
+      "_nota_bolsos": "bolsos detectados automaticamente; os de forma circular são candidatos a GAB-OLHAL-01, não a escovinha"
+    },
+    "LG-004": {
+      "fonte_pdf": "dados_exemplo/Centenário.pdf",
+      "pagina_pdf": 189,
+      "codigo_catalogo": "TMG-004",
+      "roi_norm": [
+        0.22,
+        0.12,
+        0.82,
+        0.44
+      ],
+      "largura_cota_mm": 100.4,
+      "tipo_probe": "aberto",
+      "zona_frac": [
+        0.25,
+        0.0,
+        0.75,
+        0.45
+      ],
+      "motivos": [
+        {
+          "id": "GAB-OLHAL-01",
+          "ocorrencia": 1,
+          "orientacao": [],
+          "zona_protegida": null,
+          "atribuicao_geometrica": "pendente",
+          "_nota": "perfil com 2 motivos confirmados: atribuir cada bolso medido a um deles exige classificador ou arbitragem do Bruno"
+        },
+        {
+          "id": "GAB-TRILHO-J-LG-01",
+          "ocorrencia": 1,
+          "orientacao": [],
+          "zona_protegida": null,
+          "atribuicao_geometrica": "pendente",
+          "_nota": "perfil com 2 motivos confirmados: atribuir cada bolso medido a um deles exige classificador ou arbitragem do Bruno"
+        }
+      ],
+      "contagem_motivos": {
+        "GAB-OLHAL-01": 1,
+        "GAB-TRILHO-J-LG-01": 1
+      },
+      "bolsos_medidos_candidatos_olhal": [
+        {
+          "ocorrencia": 1,
+          "orientacao": [
+            "esquerda",
+            "exterior"
+          ],
+          "boca_mm": 1.83,
+          "diametro_interno_mm": 2.5,
+          "razao_interno_boca": 1.37,
+          "area_mm2": 5.24,
+          "posicao_rel": [
+            0.68,
+            0.01
+          ],
+          "posicao_mm": [
+            68.25,
+            0.61
+          ]
+        }
+      ],
+      "_nota_bolsos": "bolsos detectados automaticamente; os de forma circular são candidatos a GAB-OLHAL-01, não a escovinha"
+    },
+    "LG-006": {
+      "fonte_pdf": "dados_exemplo/Centenário.pdf",
+      "pagina_pdf": 194,
+      "codigo_catalogo": "TMG-006",
+      "roi_norm": [
+        0.19,
+        0.135,
+        0.36,
+        0.375
+      ],
+      "largura_cota_mm": 28.5,
+      "tipo_probe": "aberto",
+      "zona_frac": [
+        0.15,
+        0.0,
+        0.95,
+        0.35
+      ],
+      "motivos": [
+        {
+          "id": "GAB-ESCOVINHA-LG-01",
+          "ocorrencia": 1,
+          "orientacao": [],
+          "zona_protegida": null,
+          "atribuicao_geometrica": "pendente_arbitragem",
+          "_nota": "ROI da ocorrência não determinada: o bolso medido antes era olhal. Aguarda arbitragem do Bruno."
+        },
+        {
+          "id": "GAB-OLHAL-01",
+          "ocorrencia": 1,
+          "orientacao": [],
+          "zona_protegida": null,
+          "atribuicao_geometrica": "pendente",
+          "_nota": "perfil com 2 motivos confirmados: atribuir cada bolso medido a um deles exige classificador ou arbitragem do Bruno"
+        }
+      ],
+      "contagem_motivos": {
+        "GAB-ESCOVINHA-LG-01": 1,
+        "GAB-OLHAL-01": 1
+      },
+      "bolsos_medidos_candidatos_olhal": [
+        {
+          "ocorrencia": 1,
+          "orientacao": [
+            "superior",
+            "exterior"
+          ],
+          "boca_mm": 2.71,
+          "diametro_interno_mm": 3.71,
+          "razao_interno_boca": 1.37,
+          "area_mm2": 13.65,
+          "posicao_rel": [
+            0.499,
+            0.39
+          ],
+          "posicao_mm": [
+            14.22,
+            21.9
+          ]
+        }
+      ],
+      "_nota_bolsos": "bolsos detectados automaticamente; os de forma circular são candidatos a GAB-OLHAL-01, não a escovinha"
+    }
+  },
+  "p0_reproducao": {
+    "_nota_escala": "ROIs do manifest v1.1 estavam no espaço de exibição do chat (~1109px SU-041 / ~1134px SU-040 de largura); as fontes locais têm 1600px. Fator aplicado: 1600/1109 (SU-041) e 1600/1134 (SU-040). Causa única identificada e registrada — sem ajuste artificial de parâmetro. IoU/pts diferem do manifest pela resolução da fonte; topologia (1 vazio), F1=1.0 e aspecto <0,4% reproduzem.",
+    "SU-041-manifest": {
+      "imagem": "curadoria/contornos/SU-041_catalogo_x_secao_it2.png",
+      "roi_pixels": [
+        173,
+        202,
+        1515,
+        1096
+      ],
+      "largura_mm": 42.4,
+      "altura_mm": 33.0,
+      "vazios_esperados": 1,
+      "threshold": "otsu",
+      "simplificacao_mm_candidatas": [
+        0.05,
+        0.07
+      ],
+      "esperado": {
+        "vazios_detectados": 1,
+        "f1": 1.0,
+        "iou_exato": 0.9726,
+        "erro_aspecto": 0.0038
+      }
+    },
+    "SU-040-v4-metrica": {
+      "imagem": "curadoria/contornos/SU-040_catalogo_x_secao_it2.png",
+      "roi_pixels": [
+        395,
+        437,
+        1199,
+        1016
+      ],
+      "largura_mm": 42.4,
+      "altura_mm": 30.7,
+      "referencia_json": "curadoria/contornos/SU-040/90_referencia_v4/GEO-SU-040_simplificado_v4_contornos.json",
+      "esperado": {
+        "f1_aprox": 0.987,
+        "diferenca_area_aprox": 0.012
+      }
+    }
+  },
+  "_modelo_motivos": "Um gabarito é um MOTIVO GEOMÉTRICO LOCAL, não uma categoria do perfil. Um perfil pode ter vários motivos e várias ocorrências do mesmo motivo (SU-225: escovinha x2, uma para câmara interna e outra para o exterior). Por isso 'motivos' é uma lista de OCORRÊNCIAS, cada uma com posição, orientação e zona próprias. Exclusividade existe só entre variantes do MESMO motivo base (escovinha SU x LG). Orientação é atributo da ocorrência, medida no referencial local normalizado — nunca regra universal de família.",
+  "arbitragem_bruno": {
+    "_comentario": "Arbitragem oficial do Bruno (25/07/2026) sobre o painel de candidatos numerados. PREVALECE sobre qualquer inferência automática conflitante. Não reinterpretar os números.",
+    "procedimento_padrao_para_duvidas": [
+      "mostrar o perfil completo",
+      "numerar todos os candidatos",
+      "gerar zoom de cada candidato",
+      "não promover automaticamente",
+      "marcar PENDENTE BRUNO",
+      "pedir arbitragem",
+      "aplicar exatamente a classificação fornecida",
+      "registrar origem como confirmado pelo Bruno"
+    ],
+    "baguete": {
+      "_regra": "Todo perfil que usa baguete precisa dos DOIS lados do encaixe, que trabalham em paralelo. Ausência no painel pode significar apenas 'não focado na ROI', nunca ausência real.",
+      "baguetes_confirmados": {
+        "Suprema": "SU-102",
+        "Gold": "LG-057"
+      }
+    },
+    "perfis": {
+      "SU-053": {
+        "largura_mm": 22.2,
+        "altura_mm": 53.57,
+        "ocorrencias": [
+          {
+            "candidato": 1,
+            "id": "GAB-ESCOVINHA-SU-01",
+            "ocorrencia": 1,
+            "estado": "confirmado_bruno",
+            "zona": [
+              1.62,
+              3.38,
+              9.35,
+              11.11
+            ],
+            "orientacao": [
+              "direita",
+              "exterior"
+            ],
+            "posicao_mm": [
+              5.48,
+              7.24
+            ],
+            "origem": "confirmado pelo Bruno (arbitragem 25/07/2026)"
+          },
+          {
+            "candidato": 2,
+            "id": "MOTIVO-ENCAIXE-BAGUETE-INTERNO",
+            "ocorrencia": 1,
+            "estado": "confirmado_bruno",
+            "zona": [
+              0.0,
+              32.53,
+              8.11,
+              40.77
+            ],
+            "orientacao": [
+              "inferior",
+              "exterior"
+            ],
+            "posicao_mm": [
+              3.99,
+              36.65
+            ],
+            "origem": "confirmado pelo Bruno (arbitragem 25/07/2026)"
+          },
+          {
+            "candidato": 3,
+            "id": "GAB-OLHAL-01",
+            "ocorrencia": 1,
+            "estado": "confirmado_bruno",
+            "zona": [
+              7.99,
+              31.36,
+              14.22,
+              37.59
+            ],
+            "orientacao": [
+              "inferior",
+              "exterior"
+            ],
+            "posicao_mm": [
+              11.11,
+              34.48
+            ],
+            "origem": "confirmado pelo Bruno (arbitragem 25/07/2026)"
+          },
+          {
+            "candidato": 4,
+            "id": "MOTIVO-ENCAIXE-BAGUETE-EXTERNO",
+            "ocorrencia": 1,
+            "estado": "confirmado_bruno",
+            "zona": [
+              13.35,
+              31.7,
+              21.59,
+              39.93
+            ],
+            "orientacao": [
+              "inferior",
+              "exterior"
+            ],
+            "posicao_mm": [
+              17.47,
+              35.81
+            ],
+            "origem": "confirmado pelo Bruno (arbitragem 25/07/2026)"
+          },
+          {
+            "candidato": 5,
+            "id": "GAB-ESCOVINHA-SU-01",
+            "ocorrencia": 2,
+            "estado": "confirmado_bruno",
+            "zona": [
+              17.05,
+              4.48,
+              22.2,
+              10.0
+            ],
+            "orientacao": [
+              "esquerda",
+              "exterior"
+            ],
+            "posicao_mm": [
+              19.81,
+              7.24
+            ],
+            "origem": "confirmado pelo Bruno (arbitragem 25/07/2026)"
+          }
+        ],
+        "contagem": {
+          "GAB-ESCOVINHA-SU-01": 2,
+          "MOTIVO-ENCAIXE-BAGUETE-INTERNO": 1,
+          "GAB-OLHAL-01": 1,
+          "MOTIVO-ENCAIXE-BAGUETE-EXTERNO": 1
+        }
+      },
+      "SU-225": {
+        "largura_mm": 22.4,
+        "altura_mm": 98.43,
+        "ocorrencias": [
+          {
+            "candidato": 1,
+            "id": "GAB-OLHAL-01",
+            "ocorrencia": 1,
+            "estado": "confirmado_bruno",
+            "zona": [
+              8.09,
+              75.95,
+              14.34,
+              82.2
+            ],
+            "orientacao": [
+              "inferior",
+              "camara_interna"
+            ],
+            "posicao_mm": [
+              11.21,
+              79.08
+            ],
+            "origem": "confirmado pelo Bruno (arbitragem 25/07/2026)"
+          },
+          {
+            "candidato": 2,
+            "id": "GAB-OLHAL-01",
+            "ocorrencia": 2,
+            "estado": "confirmado_bruno",
+            "zona": [
+              8.1,
+              27.38,
+              14.33,
+              33.62
+            ],
+            "orientacao": [
+              "inferior",
+              "exterior"
+            ],
+            "posicao_mm": [
+              11.21,
+              30.5
+            ],
+            "origem": "confirmado pelo Bruno (arbitragem 25/07/2026)"
+          },
+          {
+            "candidato": 3,
+            "id": "INTERFACE-BAGUETE-REPRESENTADA",
+            "ocorrencia": 1,
+            "estado": "confirmado_bruno",
+            "zona": null,
+            "orientacao": [
+              "direita",
+              "camara_interna"
+            ],
+            "posicao_mm": [
+              9.27,
+              84.08
+            ],
+            "origem": "confirmado pelo Bruno (arbitragem 25/07/2026)",
+            "rotulo": "interface_interna_do_baguete",
+            "perfil_base": "SU-225",
+            "baguete_referencia": "SU-102",
+            "evidencia_visual": "representação aplicada em linha fina",
+            "roi_geometria_perfil_base": "pendente_de_delimitacao",
+            "_nota": "A arbitragem do Bruno (é o encaixe interno) permanece válida. O que muda é a REPRESENTAÇÃO: o círculo do painel caía dentro do contorno fino do SU-102. A linha fina pertence ao baguete; a superfície correspondente do SU-225 ainda precisa ser delimitada separadamente. Não escrever '#3 = encaixe interno confirmado' enquanto a marca estiver sobre o baguete."
+          },
+          {
+            "candidato": 4,
+            "id": "GAB-ESCOVINHA-SU-01",
+            "ocorrencia": 1,
+            "estado": "confirmado_bruno",
+            "zona": [
+              0.0,
+              0.2,
+              5.08,
+              5.86
+            ],
+            "orientacao": [
+              "direita",
+              "exterior"
+            ],
+            "posicao_mm": [
+              2.25,
+              3.03
+            ],
+            "origem": "confirmado pelo Bruno (arbitragem 25/07/2026)"
+          },
+          {
+            "candidato": 5,
+            "id": "GAB-ESCOVINHA-SU-01",
+            "ocorrencia": 2,
+            "estado": "confirmado_bruno",
+            "zona": [
+              17.38,
+              0.25,
+              22.4,
+              5.81
+            ],
+            "orientacao": [
+              "esquerda",
+              "exterior"
+            ],
+            "posicao_mm": [
+              20.16,
+              3.03
+            ],
+            "origem": "confirmado pelo Bruno (arbitragem 25/07/2026)"
+          },
+          {
+            "candidato": 6,
+            "id": null,
+            "estado": "sem_motivo",
+            "zona": null,
+            "orientacao": [],
+            "origem": "confirmado pelo Bruno (complemento)",
+            "_nota": "somente a parte interna do perfil"
+          },
+          {
+            "candidato": 7,
+            "id": null,
+            "estado": "sem_motivo",
+            "zona": null,
+            "orientacao": [],
+            "origem": "confirmado pelo Bruno (complemento)",
+            "_nota": "somente a parte interna do perfil; o pequeno relevo interno pode até ser simplificado/reto, não interfere na utilidade comercial"
+          },
+          {
+            "candidato": 8,
+            "id": null,
+            "estado": "sem_motivo",
+            "zona": null,
+            "orientacao": [],
+            "origem": "confirmado pelo Bruno (complemento)",
+            "_nota": "é a PONTA DO BAGUETE SU-102 desenhado no card, não um encaixe do SU-225. NÃO promover como encaixe externo.",
+            "_classe": "representacao_de_outro_perfil"
+          },
+          {
+            "candidato": 11,
+            "id": null,
+            "estado": "sem_motivo",
+            "zona": null,
+            "orientacao": [],
+            "origem": "confirmado pelo Bruno (complemento)",
+            "_nota": "parte EXTERNA do olhal, quase onde ele inicia — não é motivo próprio"
+          },
+          {
+            "candidato": null,
+            "id": "MOTIVO-ENCAIXE-BAGUETE-EXTERNO",
+            "ocorrencia": 1,
+            "estado": "nao_evidenciado",
+            "zona": null,
+            "orientacao": [],
+            "origem": "confirmado pelo Bruno",
+            "_nota": "presença esperada = SIM. Ainda NÃO evidenciado corretamente nesta ROI: a representação do baguete SU-102 no card mascarou a marcação. Localização esperada: ENTRE o #3 (encaixe interno) e o #8 (ponta do SU-102 desenhada). Ação: novo recorte / nova ROI com foco nessa faixa."
+          },
+          {
+            "candidato": null,
+            "id": "MOTIVO-ENCAIXE-BAGUETE-INTERNO",
+            "ocorrencia": 1,
+            "estado": "nao_evidenciado",
+            "zona": null,
+            "orientacao": [],
+            "origem": "confirmado pelo Bruno (presença); geometria pendente",
+            "evidencia": "INTERFACE-BAGUETE-REPRESENTADA no antigo candidato #3",
+            "roi_geometria_perfil_base": "pendente_de_delimitacao",
+            "_nota": "PRESENÇA confirmada pelo Bruno. A superfície do SU-225 que forma este encaixe ainda não foi delimitada: a marca do #3 caía dentro do contorno fino do SU-102. Ver painel_interface_baguete_su225.png (camada ROXA = superfícies do SU-225 em contato com o baguete)."
+          }
+        ],
+        "contagem": {
+          "GAB-OLHAL-01": 2,
+          "GAB-ESCOVINHA-SU-01": 2,
+          "MOTIVO-ENCAIXE-BAGUETE-EXTERNO": 1,
+          "MOTIVO-ENCAIXE-BAGUETE-INTERNO": 1
+        },
+        "marcacoes_de_evidencia": {
+          "INTERFACE-BAGUETE-REPRESENTADA": 1,
+          "_nota": "marcações de curadoria; não entram na contagem de motivos do perfil"
+        },
+        "_separacao_de_contornos": {
+          "metodo": "abertura morfológica de 0,15 mm sobre a máscara 600 DPI",
+          "linha_fina_mm": 0.085,
+          "mediana_perfil_mm": 0.912,
+          "fracao_referencia": 0.025,
+          "painel": "curadoria/composicao/painel_interface_baguete_su225.png",
+          "camadas": {
+            "preto": "geometria do SU-225",
+            "cinza": "contorno de referência do SU-102",
+            "roxo": "superfície do SU-225 que forma o encaixe interno",
+            "laranja": "superfície do encaixe externo — pendente"
+          }
+        }
+      },
+      "LG-006": {
+        "largura_mm": 28.5,
+        "altura_mm": 56.16,
+        "ocorrencias": [
+          {
+            "candidato": 1,
+            "id": "GAB-OLHAL-01",
+            "ocorrencia": 1,
+            "estado": "confirmado_bruno",
+            "zona": [
+              11.13,
+              18.8,
+              17.37,
+              25.02
+            ],
+            "orientacao": [
+              "superior",
+              "exterior"
+            ],
+            "posicao_mm": [
+              14.25,
+              21.91
+            ],
+            "origem": "confirmado pelo Bruno (arbitragem 25/07/2026)"
+          },
+          {
+            "candidato": 2,
+            "id": "GAB-ESCOVINHA-LG-01",
+            "ocorrencia": 1,
+            "estado": "confirmado_bruno",
+            "zona": [
+              0.0,
+              47.61,
+              5.8,
+              54.47
+            ],
+            "orientacao": [
+              "direita",
+              "exterior"
+            ],
+            "posicao_mm": [
+              2.37,
+              51.04
+            ],
+            "origem": "confirmado pelo Bruno (arbitragem 25/07/2026)"
+          },
+          {
+            "candidato": 3,
+            "id": "GAB-ESCOVINHA-LG-01",
+            "ocorrencia": 2,
+            "estado": "confirmado_bruno",
+            "zona": [
+              22.7,
+              47.61,
+              28.5,
+              54.47
+            ],
+            "orientacao": [
+              "esquerda",
+              "exterior"
+            ],
+            "posicao_mm": [
+              26.13,
+              51.04
+            ],
+            "origem": "confirmado pelo Bruno (arbitragem 25/07/2026)"
+          },
+          {
+            "candidato": 4,
+            "id": null,
+            "estado": "sem_motivo",
+            "zona": [
+              0.23,
+              13.37,
+              8.34,
+              21.48
+            ],
+            "orientacao": [
+              "superior",
+              "exterior"
+            ],
+            "origem": "confirmado pelo Bruno",
+            "_nota": "ângulo de 90° da região onde o vidro se apoia entre perfil e baguete — não é motivo, não deve virar gabarito"
+          },
+          {
+            "candidato": 5,
+            "id": "MOTIVO-ENCAIXE-BAGUETE-INTERNO",
+            "ocorrencia": 1,
+            "estado": "confirmado_bruno",
+            "zona": [
+              8.11,
+              14.7,
+              13.29,
+              19.88
+            ],
+            "orientacao": [
+              "direita",
+              "exterior"
+            ],
+            "posicao_mm": [
+              10.7,
+              17.29
+            ],
+            "origem": "confirmado pelo Bruno (arbitragem 25/07/2026)"
+          },
+          {
+            "candidato": 6,
+            "id": "MOTIVO-ENCAIXE-BAGUETE-EXTERNO",
+            "ocorrencia": 1,
+            "estado": "confirmado_bruno",
+            "zona": [
+              23.62,
+              14.73,
+              28.5,
+              19.92
+            ],
+            "orientacao": [
+              "esquerda",
+              "exterior"
+            ],
+            "posicao_mm": [
+              26.21,
+              17.33
+            ],
+            "origem": "confirmado pelo Bruno (arbitragem complementar 25/07/2026)"
+          }
+        ],
+        "contagem": {
+          "GAB-OLHAL-01": 1,
+          "GAB-ESCOVINHA-LG-01": 2,
+          "MOTIVO-ENCAIXE-BAGUETE-INTERNO": 1,
+          "MOTIVO-ENCAIXE-BAGUETE-EXTERNO": 1
+        }
+      }
+    },
+    "_complemento": {
+      "data": "2026-07-25",
+      "regra_representacao": "O card pode conter DOIS contornos: o perfil principal e a representação de outro perfil/baguete desenhado como referência de aplicação. NÃO promover automaticamente candidatos dessa região. Distinguir contorno do perfil principal × contorno do baguete de referência. Havendo ambiguidade: novo recorte, novo zoom, nova ROI ou comparação com outro catálogo.",
+      "evidencia_tambore": {
+        "catalogo": "dados_exemplo/cebf22_d839ce1e6a6b43c8ad951a7737f1a517.pdf",
+        "pagina_pdf": 108,
+        "pagina_impressa": 104,
+        "perfil": "TMS-102",
+        "leitura": "Caso ESPELHADO do SU-225: aqui o baguete TMS-102 está em traço cheio e o perfil-base aparece em LINHA FINA como referência de aplicação (olhal e os dois pés em J visíveis no contorno fino). No card do SU-225 ocorre o inverso: o perfil está cheio e o baguete SU-102 é a linha fina. Confirma que 'perfil base + baguete representado' é uma convenção de desenho recorrente, não ruído.",
+        "consequencia": "O maior componente conectado pega o contorno CHEIO; o contorno fino vizinho pode gerar candidatos falsos junto à interface — foi o que produziu o SU-225 #8."
+      }
+    }
+  },
+  "microlote_janela": {
+    "perfis": [
+      "SU-001",
+      "SU-002",
+      "SU-003",
+      "SU-039",
+      "SU-040",
+      "SU-041",
+      "SU-053",
+      "SU-102"
+    ],
+    "_nota": "os OITO perfis da composicao final da janela. SU-009 e SU-024 sao trabalhos auxiliares/pilotos importantes — o SU-024 provou a familia de contaminacao por apendice com tirante, o SU-009 o gate RECORTE — mas NAO entram na contagem do microlote.",
+    "auxiliares_fora_da_contagem": [
+      "SU-009",
+      "SU-024"
+    ],
+    "fechados_na_curadoria": 8,
+    "aguardando_evidencia_externa": 0,
+    "pendencia_restante": null,
+    "_nota_contagem": "8 de 8 fechados na curadoria. Nenhum perfil promovido oficialmente.",
+    "perfis_fechados": [
+      "SU-001",
+      "SU-002",
+      "SU-003",
+      "SU-039",
+      "SU-040",
+      "SU-041",
+      "SU-053",
+      "SU-102"
+    ],
+    "_nota_fechamento": "fechamento da CURADORIA do microlote E.4B. NAO e promocao oficial para dados/: nenhum GEO-* foi criado.",
+    "promocao_oficial_realizada": false
+  }
+}

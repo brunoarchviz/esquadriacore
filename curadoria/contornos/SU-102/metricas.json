@@ -1,0 +1,113 @@
+{
+ "codigo": "SU-102",
+ "estrategia_contaminacao": "LIMPO",
+ "dimensoes_mm": {
+  "largura": 17.0,
+  "altura": 15.0
+ },
+ "pontos_externo": 87,
+ "vazios_detectados": 0,
+ "f1_tolerante": {
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0
+ },
+ "gates_aprovados": true,
+ "falhas": [],
+ "violacoes_assinatura": [],
+ "procedencia": {
+  "fonte_reproducao": {
+   "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
+   "pagina_pdf": 198,
+   "roi_norm": [
+    0.17,
+    0.11,
+    0.44,
+    0.37
+   ]
+  },
+  "estrategia_aceita": "LIMPO",
+  "fonte_dimensional_primaria": {
+   "tipo": "medicao_fisica_repetida_com_nominalizacao",
+   "operador": "Bruno",
+   "data": "2026-08-01",
+   "leitura_fisica_mm": [
+    16.9,
+    15.0
+   ],
+   "dimensao_nominal_mm": [
+    17.0,
+    15.0
+   ],
+   "eixo_maior_fisico_mm": 16.9,
+   "eixo_menor_fisico_mm": 15.0,
+   "instrumento": "paquimetro com vernier; contato pelas GARRAS EXTERNAS grandes"
+  },
+  "normalizacao_dimensional": {
+   "tipo": "NOMINALIZACAO_POS_CURADORIA_COM_FATORES_INDEPENDENTES",
+   "anisotropica": true,
+   "origem_fisica_mm": [
+    16.9,
+    15.0
+   ],
+   "destino_nominal_mm": [
+    17.0,
+    15.0
+   ],
+   "fator_x": 1.005917,
+   "fator_y": 1.0,
+   "aspecto_bruto_anterior_a_normalizacao": 1.126667,
+   "aspecto_alvo_nominal": 1.133333,
+   "aplicada_apos": [
+    "aquisicao_da_forma",
+    "registro_isotropico_entre_fontes",
+    "gate_de_aspecto_das_fontes"
+   ],
+   "finalidade": "ajustar_escala_fisica_para_dimensao_nominal",
+   "usada_no_registro_entre_catalogos": false,
+   "altera_topologia": false,
+   "justificativa": {
+    "tipo": "arbitragem_de_dominio",
+    "responsavel": "Bruno",
+    "impacto_funcional": "nenhum"
+   }
+  },
+  "gate_aspecto_fisico_bruto": {
+   "dimensoes_mm": [
+    16.9,
+    15.0
+   ],
+   "aspecto": 1.126667,
+   "erro_minimo_catalogos_pct": 0.874,
+   "erro_maximo_catalogos_pct": 0.952,
+   "limite_pct": 0.75,
+   "resultado": "REPROVADO"
+  },
+  "gate_aspecto_nominal": {
+   "dimensoes_mm": [
+    17.0,
+    15.0
+   ],
+   "aspecto": 1.133333,
+   "erro_minimo_catalogos_pct": 0.287,
+   "erro_maximo_catalogos_pct": 0.366,
+   "limite_pct": 0.75,
+   "resultado": "APROVADO"
+  },
+  "decisao_dimensional": {
+   "tipo": "APROVADO_POR_ARBITRAGEM_DE_DOMINIO_COM_NOMINALIZACAO",
+   "operador_medicao": "Bruno",
+   "especialista_dominio": "Bruno",
+   "leitura_fisica_mm": [
+    16.9,
+    15.0
+   ],
+   "dimensao_nominal_mm": [
+    17.0,
+    15.0
+   ],
+   "justificativa": "arredondamento_nominal_sem_impacto_funcional",
+   "validacao_cruzada": "aspecto_de_tres_catalogos"
+  }
+ }
+}
