@@ -1980,18 +1980,16 @@ def test_calibracao_isotropica_do_su102_reprova():
     assert abs(c["rotacao_graus"]) < 0.1, "rotação é zero: não é problema de giro"
 
 
-def test_su102_congruente_mas_sem_equivalencia_completa():
-    """IoU e aspecto não bastam: sem dimensão externa e sem gate funcional
-    local, a geometria não é compartilhável."""
+def test_su102_equivalencia_completa_por_identidade_de_perfil():
+    """IoU e aspecto sozinhos nunca bastaram. O que fecha a equivalência é a
+    identidade de produto declarada pelo especialista — os dois códigos são o
+    mesmo perfil físico."""
     e = CONFIG["perfis"]["SU-102"]["equivalencia_tms102"]
     assert e["equivalencia_global"] == "PASSA"
     assert e["equivalencia_topologica"] == "PASSA"
-    assert e["equivalencia_dimensional"] == "PENDENTE"
-    assert e["equivalencia_funcional_local"] == "PENDENTE"
-    assert e["decisao"] == "CONGRUENCIA_GLOBAL_SEM_EQUIVALENCIA_GEOMETRICA_COMPLETA"
-    # A escala do SU-102 foi resolvida por medição física — mas isso NÃO
-    # resolve a equivalência com o TMS-102, que segue pendente: medir o
-    # SU-102 não mede o perfil do outro catálogo.
+    assert e["equivalencia_dimensional"] == "APROVADA"
+    assert e["equivalencia_funcional_local"] == "PASSA"
+    assert e["decisao"] == "EQUIVALENCIA_GEOMETRICA_COMPLETA_POR_IDENTIDADE_DE_PERFIL"
     su = CONFIG["perfis"]["SU-102"]
     assert su["estado_geometrico"] == "CANDIDATO_GEOMETRICO_APROVADO"
     assert su["largura_mm"] == 17.0 and su["altura_mm"] == 15.0
@@ -2154,9 +2152,9 @@ def test_su102_gate_funcional_local_completo():
     assert c["congruencia_global"] == "APROVADA"
     assert c["congruencia_topologica"] == "APROVADA"
     assert c["congruencia_funcional_local"] == "APROVADA"
-    # A forma casa; a dimensão do TMS-102 continua sem medição independente.
-    assert c["equivalencia_dimensional"] == "PENDENTE"
-    assert c["decisao"] == "AGUARDANDO_DIMENSAO_EXTERNA_DO_TMS102"
+    # A cota do SU-102 vale para o TMS-102 por identidade de produto.
+    assert c["equivalencia_dimensional"] == "APROVADA"
+    assert c["decisao"] == "EQUIVALENCIA_DIMENSIONAL_CONFIRMADA_POR_IDENTIDADE_DE_PERFIL"
     com_material = [v for v in c["evidencia_local"].values() if v != "SEM_MATERIAL"]
     assert len(com_material) >= 6
     for v in com_material:
@@ -2340,21 +2338,6 @@ def test_validador_pega_duplicata_em_perfis_fechados():
     assert any("duplicatas" in x for x in e), e
 
 
-def test_validador_pega_equivalencia_tms102_sem_medicao_independente():
-    """Medir o SU-102 não mede o TMS-102 — o erro real que a auditoria achou."""
-    from curadoria.aquisicao.validar_config import validar
-    cfg = _ml()
-    cfg["perfis"] = {"SU-102": {
-        "candidato_compartilhamento": {"equivalencia_dimensional": "APROVADA"},
-        # nenhuma fonte TMS-102 cota o envelope
-        "fontes_dimensionais_investigadas": [
-            {"codigo": "TMS-102", "cota_envelope_total": False}],
-    }}
-    e = validar(cfg)
-    assert any("equivalencia_dimensional" in x and "TMS-102" in x
-               for x in e), e
-
-
 def test_validador_pega_promocao_marcada_como_realizada():
     from curadoria.aquisicao.validar_config import validar
     e = validar(_ml(promocao_oficial_realizada=True))
@@ -2374,18 +2357,108 @@ def test_microlote_do_config_real_esta_integro():
     assert sorted(ml["perfis_fechados"]) == sorted(OITO)
 
 
-def test_su102_fechado_nao_fecha_equivalencia_com_tms102():
-    """As duas afirmações ficam separadas: o SU-102 fechou; a equivalência não."""
+def test_su102_e_tms102_sao_o_mesmo_perfil_fisico():
+    """Identidade de produto declarada pelo especialista — não é semelhança
+    geométrica nem compatibilidade de família de mercado (ADR-004)."""
+    ident = CONFIG["perfis"]["SU-102"]["identidade_de_perfil"]
+    assert ident["confirmada"] is True
+    assert ident["confirmada_por"] == "especialista_de_dominio"
+    assert ident["declaracao"] == "SU-102_E_TMS-102_SAO_O_MESMO_PERFIL_FISICO"
+    assert sorted(ident["codigos_equivalentes"]) == ["SU-102", "TMS-102"]
+
+
+def test_equivalencia_dimensional_su102_tms102_aprovada():
+    """Sem pendência dimensional entre os dois códigos."""
     su = CONFIG["perfis"]["SU-102"]
-    assert su["largura_mm"] == 17.0 and su["altura_mm"] == 15.0
     comp = su["candidato_compartilhamento"]
-    assert comp["equivalencia_dimensional"] == "PENDENTE"
-    assert comp["decisao"] == "AGUARDANDO_DIMENSAO_EXTERNA_DO_TMS102"
-    assert "TMS-102" in comp["motivo_pendencia"]
-    # a congruência de forma continua aprovada — é só a dimensional que falta
-    assert comp["congruencia_global"] == "APROVADA"
-    assert comp["congruencia_topologica"] == "APROVADA"
-    assert comp["congruencia_funcional_local"] == "APROVADA"
+    assert comp["equivalencia_dimensional"] == "APROVADA"
+    assert comp["decisao"] == \
+        "EQUIVALENCIA_DIMENSIONAL_CONFIRMADA_POR_IDENTIDADE_DE_PERFIL"
+    assert comp["fundamento"]["tipo"] == "confirmacao_do_especialista_de_dominio"
+    assert "motivo_pendencia" not in comp
+    # a congruência de forma continua aprovada
+    for k in ("congruencia_global", "congruencia_topologica",
+              "congruencia_funcional_local"):
+        assert comp[k] == "APROVADA", k
+
+
+def test_ambos_os_codigos_usam_a_mesma_dimensao_nominal():
+    su = CONFIG["perfis"]["SU-102"]
+    ap = su["candidato_compartilhamento"]["aplicacao_dimensional"]
+    assert [su["largura_mm"], su["altura_mm"]] == [17.0, 15.0]
+    assert ap["dimensao_nominal_mm"] == [17.0, 15.0]
+    assert ap["aplicavel_ao_TMS-102"] is True
+
+
+def test_medicao_de_origem_continua_sendo_a_do_su102():
+    """A cota se transfere por identidade; a medição tem dono."""
+    ap = CONFIG["perfis"]["SU-102"]["candidato_compartilhamento"][
+        "aplicacao_dimensional"]
+    assert ap["medicao_fisica_origem"] == "SU-102"
+    assert ap["leitura_fisica_mm"] == [16.9, 15.0]
+
+
+def test_nao_existe_alegacao_de_medicao_independente_do_tms102():
+    """O registro não pode afirmar que o TMS-102 foi medido — ele não foi."""
+    su = CONFIG["perfis"]["SU-102"]
+    ap = su["candidato_compartilhamento"]["aplicacao_dimensional"]
+    assert ap["tms102_medido_separadamente"] is False
+    # nenhuma fonte de catálogo passou a cotar o envelope
+    for f in su["fontes_dimensionais_investigadas"]:
+        assert f["cota_envelope_total"] is False, f["fabricante"]
+
+
+def test_validador_pega_equivalencia_aprovada_sem_identidade():
+    """Sem identidade confirmada, transferir a cota volta a ser inferência."""
+    from curadoria.aquisicao.validar_config import (
+        _valida_equivalencia_su102_tms102)
+    cfg = {"perfis": {"SU-102": {
+        "largura_mm": 17.0, "altura_mm": 15.0,
+        "candidato_compartilhamento": {
+            "equivalencia_dimensional": "APROVADA",
+            "aplicacao_dimensional": {
+                "medicao_fisica_origem": "SU-102",
+                "dimensao_nominal_mm": [17.0, 15.0],
+                "tms102_medido_separadamente": False}},
+    }}}
+    e = _valida_equivalencia_su102_tms102(cfg)
+    assert any("identidade_de_perfil" in x for x in e), e
+
+
+def test_validador_pega_alegacao_falsa_de_medicao_do_tms102():
+    from curadoria.aquisicao.validar_config import (
+        _valida_equivalencia_su102_tms102)
+    cfg = {"perfis": {"SU-102": {
+        "largura_mm": 17.0, "altura_mm": 15.0,
+        "identidade_de_perfil": {"confirmada": True,
+                                 "confirmada_por": "especialista_de_dominio"},
+        "candidato_compartilhamento": {
+            "equivalencia_dimensional": "APROVADA",
+            "aplicacao_dimensional": {
+                "medicao_fisica_origem": "SU-102",
+                "dimensao_nominal_mm": [17.0, 15.0],
+                "tms102_medido_separadamente": True}},
+    }}}
+    e = _valida_equivalencia_su102_tms102(cfg)
+    assert any("tms102_medido_separadamente" in x for x in e), e
+
+
+def test_validador_pega_dimensao_divergente_entre_os_codigos():
+    from curadoria.aquisicao.validar_config import (
+        _valida_equivalencia_su102_tms102)
+    cfg = {"perfis": {"SU-102": {
+        "largura_mm": 17.0, "altura_mm": 15.0,
+        "identidade_de_perfil": {"confirmada": True,
+                                 "confirmada_por": "especialista_de_dominio"},
+        "candidato_compartilhamento": {
+            "equivalencia_dimensional": "APROVADA",
+            "aplicacao_dimensional": {
+                "medicao_fisica_origem": "SU-102",
+                "dimensao_nominal_mm": [17.0, 16.0],   # diverge
+                "tms102_medido_separadamente": False}},
+    }}}
+    e = _valida_equivalencia_su102_tms102(cfg)
+    assert any("diverge" in x for x in e), e
 
 
 def test_estado_atual_e4b_reflete_o_estado_presente():
@@ -2397,8 +2470,13 @@ def test_estado_atual_e4b_reflete_o_estado_presente():
         assert presente in txt, presente
     for obsoleto in ("5 de 8", "7 de 8", "sem upstream",
                      "aguardando medição física", "223 passed",
-                     "BLOQUEADO_POR_ZONA_PENDENTE"):
+                     "BLOQUEADO_POR_ZONA_PENDENTE",
+                     "AGUARDANDO_DIMENSAO_EXTERNA_DO_TMS102",
+                     "AINDA NÃO PROVADO"):
         assert obsoleto not in txt, f"frase obsoleta ainda presente: {obsoleto}"
+    # a identidade entre os dois códigos tem de estar declarada
+    assert "identidade_de_perfil:    CONFIRMADA" in txt
+    assert "equivalencia_dimensional: APROVADA" in txt
 
 
 def test_validador_pega_cota_interna_virando_envelope():

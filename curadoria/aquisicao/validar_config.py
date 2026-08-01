@@ -252,18 +252,53 @@ def _valida_microlote_janela(cfg) -> list[str]:
         e.append(_erro_ml("promocao_oficial_realizada",
                           "tem de ser explicitamente false — o fechamento da "
                           "curadoria não é promoção oficial"))
-    # 8. medir o SU-102 não mede o TMS-102
+    # 8. equivalência dimensional SU-102 × TMS-102
+    e += _valida_equivalencia_su102_tms102(cfg)
+    return e
+
+
+def _valida_equivalencia_su102_tms102(cfg) -> list[str]:
+    """A dimensão do TMS-102 pode vir da medição do SU-102 — mas só porque o
+    especialista declarou que são o MESMO perfil físico (2026-08-01).
+
+    Sem essa identidade, transferir a cota seria inferência. Com ela, a
+    transferência é legítima; o que não pode é o registro alegar que o TMS-102
+    foi medido separadamente, nem as duas cotas divergirem.
+    """
+    e = []
     su102 = cfg.get("perfis", {}).get("SU-102", {})
+    if not su102:
+        return e
     comp = su102.get("candidato_compartilhamento", {})
+    ident = su102.get("identidade_de_perfil", {})
+
     if comp.get("equivalencia_dimensional") == "APROVADA":
-        fontes = su102.get("fontes_dimensionais_investigadas", [])
-        tms = [f for f in fontes if f.get("codigo") == "TMS-102"]
-        independente = any(f.get("cota_envelope_total") for f in tms)
-        if not independente:
+        # a) identidade confirmada é o único fundamento aceito aqui
+        if not (ident.get("confirmada") is True
+                and ident.get("confirmada_por") == "especialista_de_dominio"):
             e.append(_erro_ml(
                 "SU-102.candidato_compartilhamento.equivalencia_dimensional",
-                "APROVADA sem dimensão externa independente do TMS-102: a "
-                "medição física pertence ao SU-102 medido"))
+                "APROVADA sem identidade_de_perfil confirmada pelo "
+                "especialista de domínio"))
+
+        ap = comp.get("aplicacao_dimensional", {})
+        # b) o registro não pode alegar medição independente do TMS-102
+        if ap.get("tms102_medido_separadamente") is not False:
+            e.append(_erro_ml(
+                "SU-102.candidato_compartilhamento.aplicacao_dimensional",
+                "tms102_medido_separadamente tem de ser explicitamente false: "
+                "a medição física foi feita no SU-102"))
+        if ap.get("medicao_fisica_origem") != "SU-102":
+            e.append(_erro_ml(
+                "SU-102.candidato_compartilhamento.aplicacao_dimensional",
+                "medicao_fisica_origem tem de ser SU-102"))
+        # c) as cotas não podem divergir
+        nominal = [su102.get("largura_mm"), su102.get("altura_mm")]
+        if ap.get("dimensao_nominal_mm") != nominal:
+            e.append(_erro_ml(
+                "SU-102.candidato_compartilhamento.aplicacao_dimensional",
+                f"dimensao_nominal_mm {ap.get('dimensao_nominal_mm')} diverge "
+                f"da cota do SU-102 {nominal}"))
     return e
 
 
