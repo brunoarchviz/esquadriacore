@@ -1667,36 +1667,243 @@ def test_cavidade_aberta_sintetica_conta_zero_vazios():
 
 
 def test_su102_nao_usa_dimensao_de_perfil_vizinho():
-    """13,8 pertence ao TMS-058 e ao TMS-103, nunca ao TMS-102."""
+    """13,8 pertence ao TMS-058 e ao TMS-103, nunca ao TMS-102.
+
+    A cota do SU-102 passou a existir (medição física), mas continua sem
+    qualquer relação com 13,8 — a arbitragem que revogou aquele valor segue
+    registrada."""
     p = CONFIG["perfis"]["SU-102"]
-    assert p["largura_mm"] is None and p["altura_mm"] is None
-    assert p["estado_geometrico"] == "CANDIDATO_ADIMENSIONAL_APROVADO"
-    assert p["estado_dimensional"]["status"] == \
-        "AGUARDANDO_MEDICAO_FISICA_OU_DESENHO_TECNICO_COTADO"
     assert p["cotas_catalogo_secundario"]["valores_mm"] == [11.0, 12.0]
     assert "13,8" in p["_arbitragem_dimensional"]
+    assert p["largura_mm"] != 13.8 and p["altura_mm"] != 13.8
     assert p["dimensao_bounding_box"]["status"] == "pendente_confirmacao"
 
 
-def test_su102_calibrador_tem_os_dois_eixos_mas_gate_ainda_reprova():
-    """Com 22,2 × 51 confirmados, a referência fina pode calibrar os dois eixos
-    — mas o SU-102 continua bloqueado, porque o gate de escala não fecha."""
+def test_su102_dimensao_vem_da_medicao_fisica_nao_do_catalogo():
+    """Nenhum dos catálogos cota o envelope externo: a cota é física."""
+    p = CONFIG["perfis"]["SU-102"]
+    f = p["fonte_dimensional_primaria"]
+    assert f["tipo"] == "medicao_fisica_repetida_com_nominalizacao"
+    assert f["eixo_maior_fisico_mm"] == 16.9
+    assert f["eixo_menor_fisico_mm"] == 15.0
+    # nenhuma fonte de catálogo cota o envelope
+    for fonte in p["fontes_dimensionais_investigadas"]:
+        assert fonte["cota_envelope_total"] is False
+    v = p["validacao_catalogo"]
+    assert v["funcao"] == "validacao_de_forma_e_aspecto"
+    assert v["dimensao_externa_diretamente_cotada"] is False
+
+
+def test_su102_eixos_confirmados_por_repeticao():
+    """4 repetições do eixo maior (005-008), 3 do menor (012-014)."""
+    m = CONFIG["perfis"]["SU-102"]["medicoes_fisicas"]
+    assert m["eixo_maior"]["repeticoes_validas"] == 4
+    assert m["eixo_maior"]["status"] == "CONFIRMADO_POR_REPETICAO"
+    assert m["eixo_menor"]["repeticoes_validas"] == 3
+    assert m["eixo_menor"]["status"] == "CONFIRMADO_POR_REPETICAO"
+    assert m["eixo_menor"]["imagens"] == [
+        "012_EIXO_MENOR_1", "013_EIXO_MENOR_2", "014_EIXO_MENOR_3"]
+    # 009-011 são posições alternativas, não um eixo independente
+    assert m["posicoes_alternativas"]["eixo_independente"] is False
+    # as 4 fotos preliminares não contam como repetição
+    assert m["preliminares_nao_contabilizadas"]["repeticoes_validas"] == 0
+
+
+def test_su102_leitura_fisica_nao_vira_nominal_silenciosamente():
+    """16,9 é o que o paquímetro leu; 17,0 é arredondamento declarado."""
+    p = CONFIG["perfis"]["SU-102"]
+    assert p["medicoes_fisicas"]["eixo_maior_mm"] == 16.9
+    assert p["largura_mm"] == 17.0
+    arr = p["dimensoes_nominais"]["arredondamento_nominal"]["eixo_maior"]
+    assert arr["medido_mm"] == 16.9 and arr["nominal_mm"] == 17.0
+    assert arr["justificativa"] == "tolerancia_pratica_sem_impacto"
+    # o eixo menor não sofreu arredondamento
+    assert p["altura_mm"] == p["medicoes_fisicas"]["eixo_menor_mm"] == 15.0
+
+
+def test_su102_os_dois_gates_ficam_separados_e_o_bruto_reprovou():
+    """O gate físico bruto REPROVOU e continua registrado como tal. O nominal
+    passou. Um não substitui o outro."""
+    p = CONFIG["perfis"]["SU-102"]
+    gate = CONFIG["politica"]["bruto"]["erro_aspecto_max"] * 100
+    assert gate == 0.75
+
+    fis = p["gate_aspecto_fisico_bruto"]
+    assert fis["dimensoes_mm"] == [16.9, 15.0]
+    assert fis["aspecto"] == pytest.approx(16.9 / 15.0, abs=1e-6)
+    assert fis["limite_pct"] == gate
+    assert fis["erro_maximo_catalogos_pct"] > gate
+    assert fis["resultado"] == "REPROVADO"
+
+    nom = p["gate_aspecto_nominal"]
+    assert nom["dimensoes_mm"] == [17.0, 15.0]
+    assert nom["aspecto"] == pytest.approx(17.0 / 15.0, abs=1e-6)
+    assert nom["limite_pct"] == gate
+    assert nom["erro_maximo_catalogos_pct"] < gate
+    assert nom["resultado"] == "APROVADO"
+
+
+def test_su102_decisao_e_arbitragem_nao_aprovacao_automatica():
+    """A aprovação vem da arbitragem de domínio, não do gate físico."""
+    dec = CONFIG["perfis"]["SU-102"]["decisao_dimensional"]
+    assert dec["tipo"] == "APROVADO_POR_ARBITRAGEM_DE_DOMINIO_COM_NOMINALIZACAO"
+    assert dec["tipo"] != "APROVADO_AUTOMATICAMENTE_PELO_GATE_FISICO"
+    assert dec["leitura_fisica_mm"] == [16.9, 15.0]
+    assert dec["dimensao_nominal_mm"] == [17.0, 15.0]
+    assert dec["especialista_dominio"] == "Bruno"
+    assert dec["justificativa"] == "arredondamento_nominal_sem_impacto_funcional"
+
+
+def test_su102_normalizacao_e_declaradamente_anisotropica():
+    """fator_x != fator_y ⇒ a transformação É anisotrópica. Dizer o contrário
+    seria falso; o registro entre catálogos é que é isotrópico."""
+    n = CONFIG["perfis"]["SU-102"]["normalizacao_dimensional"]
+    assert n["anisotropica"] is True
+    assert n["tipo"] == "NOMINALIZACAO_POS_CURADORIA_COM_FATORES_INDEPENDENTES"
+    assert n["origem_fisica_mm"] == [16.9, 15.0]
+    assert n["destino_nominal_mm"] == [17.0, 15.0]
+    assert n["fator_x"] == pytest.approx(17.0 / 16.9, abs=1e-6)
+    assert n["fator_y"] == pytest.approx(1.0, abs=1e-6)
+    assert n["fator_x"] != n["fator_y"], "é isto que a torna anisotrópica"
+    assert n["usada_no_registro_entre_catalogos"] is False
+    assert n["altera_topologia"] is False
+    assert n["justificativa"]["tipo"] == "arbitragem_de_dominio"
+    # o texto que negava a anisotropia não pode voltar
+    assert "nao_e_registro_anisotropico" not in json.dumps(n, ensure_ascii=False)
+
+
+def test_registro_entre_catalogos_continua_isotropico():
+    """A nominalização anisotrópica não contaminou o registro entre fontes."""
+    r = CONFIG["perfis"]["SU-102"]["equivalencia_tms102"]["evidencia"][
+        "registro_isotropico"]
+    assert r["escala"] == pytest.approx(1.000054, abs=1e-6)
+    assert abs(r["rotacao_graus"]) < 0.1
+    n = CONFIG["perfis"]["SU-102"]["normalizacao_dimensional"]
+    assert n["usada_no_registro_entre_catalogos"] is False
+
+
+def test_su102_nao_esta_mais_aguardando_medicao():
+    """O estado de espera saiu; o de arbitragem entrou."""
+    p = CONFIG["perfis"]["SU-102"]
+    assert p["estado_geometrico"] == "CANDIDATO_GEOMETRICO_APROVADO"
+    assert p["estado_dimensional"]["status"] == \
+        "DIMENSAO_NOMINAL_APROVADA_POR_ARBITRAGEM_DE_DOMINIO"
+    assert not p["estado_dimensional"]["status"].startswith("AGUARDANDO_")
+    assert p["dimensao_externa"]["status"] == "RESOLVIDA_POR_MEDICAO_FISICA"
+    texto = json.dumps(p, ensure_ascii=False)
+    for morto in ("CANDIDATO_ADIMENSIONAL_APROVADO", "AGUARDANDO_MEDICAO_FISICA",
+                  "CANDIDATO_DIMENSIONAL_PENDENTE_DE_REPETICAO"):
+        assert morto not in texto, morto
+
+
+def test_su102_calibrador_tem_os_dois_eixos():
+    """Com 22,2 × 51 confirmados, a referência fina calibra os dois eixos."""
     ref = CONFIG["perfis"]["SU-102"]["contorno_referencia"]
     assert ref["tratamento"] == "separacao_por_espessura"
     assert ref["estado"] == "CONTORNO_REFERENCIA_OUTRO_PERFIL_DETECTADO"
     cal = CONFIG["perfis"]["SU-053"]
     assert cal["largura_mm"] == 22.2 and cal["altura_mm"] == 51.0
-    # calibrador completo não basta: a dimensão do SU-102 segue nula
-    su102 = CONFIG["perfis"]["SU-102"]
-    assert su102["largura_mm"] is None and su102["altura_mm"] is None
-    assert su102["estado_dimensional"]["status"].startswith("AGUARDANDO_")
 
 
-def test_perfil_sem_cota_nao_passa_pelo_driver():
-    """Perfil sem cota oficial é recusado nomeando o campo, não silenciosamente."""
+def test_su102_pode_ser_reproduzido_na_camada_de_curadoria():
+    """`promocao_oficial: ainda_nao_autorizada` NÃO bloqueia curadoria.
+    O driver só produz artefatos de curadoria; barrar aqui seria bloquear
+    trabalho legítimo sem proteger nada."""
     from curadoria.aquisicao import executar_lote1_e4b as ex
-    with pytest.raises(ex.PerfilIncompleto, match="altura_mm"):
-        ex.parametros("SU-102")
+    p = ex.parametros("SU-102")          # não pode levantar
+    assert p["largura_mm"] == 17.0 and p["altura_mm"] == 15.0
+    assert p["promocao_oficial"] == "ainda_nao_autorizada"
+
+
+def test_promocao_pendente_nao_bloqueia_os_demais_candidatos():
+    """Nenhum outro perfil ficou preso por causa do campo do SU-102."""
+    from curadoria.aquisicao import executar_lote1_e4b as ex
+    for codigo in ("SU-001", "SU-002", "SU-003", "SU-039", "SU-053"):
+        assert ex.parametros(codigo)["largura_mm"] is not None, codigo
+
+
+def test_su102_nao_pode_ser_gravado_em_dados():
+    """A promoção é barrada onde ela ocorreria: no exportador."""
+    from curadoria.aquisicao import exportar
+    resultado = {
+        "contorno_bruto": {"contorno_externo": [[0, 0], [1, 0], [1, 1]],
+                           "vazios_internos": []},
+        "contorno_comercial": {"contorno_externo": [[0, 0], [1, 0], [1, 1]],
+                               "vazios_internos": []},
+        "assinatura": {"vazios": 0, "probes_material": [[0.5, 0.5]],
+                       "probes_vazio": [], "probes_exterior_conectado": []},
+        "metricas": {"F1": 1.0}, "operacoes": [],
+        "dimensoes_mm": {"largura": 17.0, "altura": 15.0},
+    }
+    with pytest.raises(ValueError, match="proibida"):
+        exportar.gravar_artefatos_curadoria(
+            "SU-102", resultado, RAIZ / "dados" / "SU-102")
+
+
+def test_nenhum_geo_su102_oficial_em_dados():
+    """A curadoria fechou, mas nada foi promovido para dados/."""
+    assert not list((RAIZ / "dados").rglob("*SU-102*")), \
+        "nenhum artefato oficial do SU-102 pode existir em dados/"
+
+
+def test_su102_seis_artefatos_de_curadoria_existem_e_sao_coerentes():
+    """Os seis artefatos foram gerados na camada de curadoria, com a cota
+    nominal e o histórico dimensional preservado."""
+    base = RAIZ / "curadoria/contornos/SU-102"
+    esperados = ("contorno_bruto.json", "contorno_comercial.json",
+                 "assinatura_topologica.json", "metricas.json",
+                 "operacoes_limpeza.json", "contorno_comercial.svg")
+    for nome in esperados:
+        assert (base / nome).exists(), nome
+
+    m = json.loads((base / "metricas.json").read_text())
+    assert m["dimensoes_mm"] == {"largura": 17.0, "altura": 15.0}
+    assert m["gates_aprovados"] is True and not m["falhas"]
+    assert m["vazios_detectados"] == 0
+
+    proc = m["procedencia"]
+    # o histórico dimensional viaja junto do artefato
+    assert proc["fonte_dimensional_primaria"]["leitura_fisica_mm"] == [16.9, 15.0]
+    assert proc["normalizacao_dimensional"]["anisotropica"] is True
+    assert proc["gate_aspecto_fisico_bruto"]["resultado"] == "REPROVADO"
+    assert proc["gate_aspecto_nominal"]["resultado"] == "APROVADO"
+    assert proc["decisao_dimensional"]["tipo"].startswith(
+        "APROVADO_POR_ARBITRAGEM")
+
+
+def test_su102_artefatos_sao_reprodutiveis(tmp_path):
+    """Duas execuções independentes produzem os seis hashes idênticos."""
+    import hashlib
+    from curadoria.aquisicao import executar_lote1_e4b as ex
+    if not (RAIZ / "dados_exemplo/catalago-alcoa (1).pdf").exists():
+        pytest.skip("catálogo Alcoa ausente")
+    a, b = tmp_path / "a", tmp_path / "b"
+    ex.processar("SU-102", a)
+    ex.processar("SU-102", b)
+    for f in sorted(p.name for p in a.iterdir()):
+        ha = hashlib.sha256((a / f).read_bytes()).hexdigest()
+        hb = hashlib.sha256((b / f).read_bytes()).hexdigest()
+        assert ha == hb, f"{f} não é determinístico"
+        # e bate com o artefato versionado
+        assert ha == hashlib.sha256(
+            (RAIZ / "curadoria/contornos/SU-102" / f).read_bytes()).hexdigest(), f
+
+
+def test_perfil_ausente_do_config_nao_passa_pelo_driver():
+    """Perfil sem parâmetros é recusado nomeando o motivo, não silenciosamente."""
+    from curadoria.aquisicao import executar_lote1_e4b as ex
+    with pytest.raises(ex.PerfilIncompleto, match="ausente"):
+        ex.parametros("SU-INEXISTENTE")
+
+
+def test_microlote_e4b_fecha_com_oito_perfis():
+    """Fechamento da curadoria do microlote — não é promoção."""
+    ml = CONFIG["microlote_janela"]
+    assert ml["fechados_na_curadoria"] == 8
+    assert ml["aguardando_evidencia_externa"] == 0
+    assert "SU-102" in ml["perfis_fechados"]
+    assert len(ml["perfis_fechados"]) == 8
+    assert "NAO e promocao oficial" in ml["_nota_fechamento"]
 
 
 def test_su053_passa_no_driver_com_cota_confirmada():
@@ -1782,10 +1989,12 @@ def test_su102_congruente_mas_sem_equivalencia_completa():
     assert e["equivalencia_dimensional"] == "PENDENTE"
     assert e["equivalencia_funcional_local"] == "PENDENTE"
     assert e["decisao"] == "CONGRUENCIA_GLOBAL_SEM_EQUIVALENCIA_GEOMETRICA_COMPLETA"
-    # a forma foi aprovada; o que continua bloqueado é a escala
+    # A escala do SU-102 foi resolvida por medição física — mas isso NÃO
+    # resolve a equivalência com o TMS-102, que segue pendente: medir o
+    # SU-102 não mede o perfil do outro catálogo.
     su = CONFIG["perfis"]["SU-102"]
-    assert su["estado_geometrico"] == "CANDIDATO_ADIMENSIONAL_APROVADO"
-    assert su["largura_mm"] is None and su["altura_mm"] is None
+    assert su["estado_geometrico"] == "CANDIDATO_GEOMETRICO_APROVADO"
+    assert su["largura_mm"] == 17.0 and su["altura_mm"] == 15.0
 
 
 def test_gate_de_075_nao_foi_ampliado():
@@ -1907,9 +2116,11 @@ def test_su102_nenhuma_fonte_cota_o_envelope():
     assert len(fontes) >= 4
     for f in fontes:
         assert f["cota_envelope_total"] is False, f["fabricante"]
-    assert su["dimensao_externa"]["status"] == \
-        "REQUER_MEDICAO_FISICA_OU_DESENHO_TECNICO_COTADO"
-    assert su["largura_mm"] is None and su["altura_mm"] is None
+    # Continua verdade que nenhum catálogo cota o envelope: por isso a cota
+    # veio da medição física, e não de leitura de card.
+    assert su["dimensao_externa"]["status"] == "RESOLVIDA_POR_MEDICAO_FISICA"
+    assert su["fonte_dimensional_primaria"]["tipo"] == \
+        "medicao_fisica_repetida_com_nominalizacao"
 
 
 def test_su102_cotas_10_e_11_nao_medem_o_envelope():
@@ -1943,8 +2154,8 @@ def test_su102_gate_funcional_local_completo():
     assert c["congruencia_global"] == "APROVADA"
     assert c["congruencia_topologica"] == "APROVADA"
     assert c["congruencia_funcional_local"] == "APROVADA"
-    assert c["equivalencia_dimensional"] == "PENDENTE"
-    assert c["decisao"] == "AGUARDANDO_DIMENSAO_EXTERNA"
+    assert c["equivalencia_dimensional"] == "APROVADA"
+    assert c["decisao"] == "APTO_SUJEITO_A_AUTORIZACAO_DE_PROMOCAO"
     com_material = [v for v in c["evidencia_local"].values() if v != "SEM_MATERIAL"]
     assert len(com_material) >= 6
     for v in com_material:
@@ -1953,13 +2164,15 @@ def test_su102_gate_funcional_local_completo():
 
 
 def test_su102_nao_vira_geometria_oficial():
-    """Candidato compartilhado fica só na curadoria: forma aprovada, escala não."""
+    """Curadoria fechada não é promoção: a forma e a escala foram aprovadas,
+    mas nenhum GEO-* existe e a promoção segue dependendo de autorização."""
     su = CONFIG["perfis"]["SU-102"]
-    assert su["estado_geometrico"] == "CANDIDATO_ADIMENSIONAL_APROVADO"
-    assert "MEDICAO_FISICA" in su["estado_dimensional"]["status"]
+    assert su["estado_geometrico"] == "CANDIDATO_GEOMETRICO_APROVADO"
+    assert su["estado_dimensional"]["status"] == \
+        "DIMENSAO_NOMINAL_APROVADA_POR_ARBITRAGEM_DE_DOMINIO"
+    assert su["promocao_oficial"] == "ainda_nao_autorizada"
     texto = json.dumps(su, ensure_ascii=False)
     assert "GEO-SU-102" not in texto
-    assert "APROVADO_EM_CURADORIA" not in texto
 
 
 # ============================================================================

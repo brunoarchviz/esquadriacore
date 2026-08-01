@@ -83,6 +83,9 @@ def parametros(codigo: str, cfg=None) -> dict:
     faltando = [k for k in OBRIGATORIOS if p.get(k) is None]
     if faltando:
         raise PerfilIncompleto(f"{codigo}: campos ausentes no config: {faltando}")
+    # `promocao_oficial` NÃO é verificada aqui: este driver só produz artefatos
+    # de curadoria. A promoção oficial é barrada onde ela ocorreria — em
+    # exportar.gravar_artefatos_curadoria, que recusa dados/domain/contrato/docs.
     return p
 
 
@@ -125,8 +128,13 @@ def fonte_de_geometria(p: dict) -> dict:
     """
     f = p.get("fonte_geometrica_primaria")
     if not f:
+        # Um perfil pode precisar de separação por espessura no PRÓPRIO card,
+        # sem que a geometria venha de outro catálogo (SU-102: o card Alcoa
+        # desenha o SU-053 em linha fina como referência de aplicação).
         return {"fonte_pdf": p["fonte_pdf"], "pagina_pdf": p["pagina_pdf"],
-                "roi_norm": p["roi_norm"], "separacao_por_espessura": False,
+                "roi_norm": p["roi_norm"],
+                "separacao_por_espessura": p.get("separacao_por_espessura",
+                                                 False),
                 "codigo": None}
     return {"fonte_pdf": f.get("fonte_pdf", "dados_exemplo/Centenário.pdf"),
             "pagina_pdf": f["pagina_pdf"], "roi_norm": f["roi_norm"],
@@ -263,7 +271,9 @@ def _procedencia(codigo: str, p: dict, estrategia) -> dict:
                                  "roi_norm": g["roi_norm"]},
             "estrategia_aceita": estrategia}
     for papel in ("fonte_geometrica_primaria", "fonte_dimensional_primaria",
-                  "fonte_semantica_motivos", "fonte_evidencia_contaminacao"):
+                  "fonte_semantica_motivos", "fonte_evidencia_contaminacao",
+                  "normalizacao_dimensional", "gate_aspecto_fisico_bruto",
+                  "gate_aspecto_nominal", "decisao_dimensional"):
         if papel in p:
             proc[papel] = {k: v for k, v in p[papel].items()
                            if not k.startswith("_")}

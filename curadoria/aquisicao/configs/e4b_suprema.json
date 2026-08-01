@@ -576,9 +576,9 @@
         0.44,
         0.37
       ],
-      "largura_mm": null,
-      "altura_mm": null,
-      "vazios_esperados": null,
+      "largura_mm": 17.0,
+      "altura_mm": 15.0,
+      "vazios_esperados": 0,
       "cotas_catalogo_secundario": {
         "fonte": "Centenario",
         "codigo": "TMS-102",
@@ -749,15 +749,17 @@
         "conclusao": "NENHUMA das cotas mede a largura total. A soma 10+11 cobre 495 px, MAIS que os 416 px do traco cheio, porque a cota 10 comeca no perfil de referencia e nao no SU-102. Foi por isso que 21 mm superestimou."
       },
       "dimensao_externa": {
-        "status": "REQUER_MEDICAO_FISICA_OU_DESENHO_TECNICO_COTADO",
-        "_nota": "quatro catalogos investigados, nenhum cota o envelope externo. Nao inferir, nao somar cotas internas, nao arredondar medida raster."
+        "status": "RESOLVIDA_POR_MEDICAO_FISICA",
+        "largura_mm": 17.0,
+        "altura_mm": 15.0,
+        "_nota": "quatro catalogos investigados, nenhum cota o envelope externo. A cota veio da medicao fisica repetida do Bruno (4 leituras do eixo maior, 3 do menor), validada pelo aspecto das 3 fontes."
       },
       "candidato_compartilhamento": {
         "congruencia_global": "APROVADA",
         "congruencia_topologica": "APROVADA",
         "congruencia_funcional_local": "APROVADA",
-        "equivalencia_dimensional": "PENDENTE",
-        "decisao": "AGUARDANDO_DIMENSAO_EXTERNA",
+        "equivalencia_dimensional": "APROVADA",
+        "decisao": "APTO_SUJEITO_A_AUTORIZACAO_DE_PROMOCAO",
         "evidencia_local": {
           "terminacao sup-esq": "SEM_MATERIAL",
           "gancho superior": {
@@ -825,14 +827,179 @@
         },
         "_nota": "tres fontes independentes dao aspecto 1,1366 / 1,1374 / 1,1375 — dispersao 0,08%. As nove regioes do gate local passam com residuo p95 abaixo de 1,8 px. Falta so o envelope externo."
       },
-      "estado_geometrico": "CANDIDATO_ADIMENSIONAL_APROVADO",
+      "estado_geometrico": "CANDIDATO_GEOMETRICO_APROVADO",
       "estado_dimensional": {
-        "status": "AGUARDANDO_MEDICAO_FISICA_OU_DESENHO_TECNICO_COTADO",
-        "protocolo": "curadoria/insumos/protocolo_medicao_fisica_su102.md",
-        "aspecto_catalogos": 1.137,
-        "dispersao_entre_fontes_pct": 0.08,
-        "_nota": "uma unica medida seria matematicamente suficiente para derivar a outra pelo aspecto, mas NAO basta para homologacao: exigir largura e altura externas, tres medicoes de cada. O aspecto dos catalogos e validacao cruzada, nunca substituto da segunda medida."
-      }
+        "status": "DIMENSAO_NOMINAL_APROVADA_POR_ARBITRAGEM_DE_DOMINIO",
+        "fonte": "medicao_fisica_repetida_com_nominalizacao",
+        "validacao": "aspecto contra 3 catalogos independentes"
+      },
+      "fonte_dimensional_primaria": {
+        "tipo": "medicao_fisica_repetida_com_nominalizacao",
+        "operador": "Bruno",
+        "data": "2026-08-01",
+        "leitura_fisica_mm": [
+          16.9,
+          15.0
+        ],
+        "dimensao_nominal_mm": [
+          17.0,
+          15.0
+        ],
+        "eixo_maior_fisico_mm": 16.9,
+        "eixo_menor_fisico_mm": 15.0,
+        "instrumento": "paquimetro com vernier; contato pelas GARRAS EXTERNAS grandes",
+        "_nota": "Nenhum dos quatro catalogos investigados cota o envelope externo do SU-102. A dimensao vem da medicao fisica; os catalogos entram como validacao de forma e aspecto, NAO como fonte da cota."
+      },
+      "medicoes_fisicas": {
+        "eixo_maior_mm": 16.9,
+        "eixo_menor_mm": 15.0,
+        "eixo_maior": {
+          "imagens": [
+            "005_EIXO_A_MAX_1",
+            "006_EIXO_A_MAX_2",
+            "007_EIXO_A_MAX_3",
+            "008_EIXO_A_MAX_4"
+          ],
+          "repeticoes_validas": 4,
+          "valor_fisico_mm": 16.9,
+          "valor_nominal_mm": 17.0,
+          "status": "CONFIRMADO_POR_REPETICAO"
+        },
+        "eixo_menor": {
+          "imagens": [
+            "012_EIXO_MENOR_1",
+            "013_EIXO_MENOR_2",
+            "014_EIXO_MENOR_3"
+          ],
+          "repeticoes_validas": 3,
+          "valor_fisico_mm": 15.0,
+          "valor_nominal_mm": 15.0,
+          "status": "CONFIRMADO_POR_REPETICAO"
+        },
+        "posicoes_alternativas": {
+          "imagens": [
+            "009_EIXO_B_MAX_1",
+            "010_EIXO_B_MAX_2",
+            "011_EIXO_B_MAX_3"
+          ],
+          "papel": "evidencia complementar da secao e do encaixe",
+          "eixo_independente": false,
+          "_nota": "o perfil tem uma aba maior e outra menor para permitir o encaixe; por isso posicoes de contato distintas produzem medidas proximas, mas nao identicas."
+        },
+        "preliminares_nao_contabilizadas": {
+          "imagens": [
+            "001_16,9",
+            "002_15,5",
+            "003_16",
+            "004_15"
+          ],
+          "papel": "diagnostico preliminar; contato parcialmente encoberto",
+          "repeticoes_validas": 0
+        },
+        "_correcao_de_leitura": "Uma analise anterior classificou 005-014 como 'paquimetro aberto no ar'. ERRO DE LEITURA DO INSTRUMENTO: o que aparecia aberto eram as garras pequenas superiores (medicao interna), que ficam naturalmente abertas quando se mede pelo lado externo. As garras grandes inferiores estao em contato com as faces externas do perfil — verificado por ampliacao em 012, 013, 014 e 008. As medicoes sao validas e nao precisam ser repetidas."
+      },
+      "dimensoes_nominais": {
+        "eixo_maior_mm": 17.0,
+        "eixo_menor_mm": 15.0,
+        "arredondamento_nominal": {
+          "eixo_maior": {
+            "medido_mm": 16.9,
+            "nominal_mm": 17.0,
+            "justificativa": "tolerancia_pratica_sem_impacto",
+            "autoridade": "especialista de dominio (Bruno)"
+          },
+          "eixo_menor": {
+            "medido_mm": 15.0,
+            "nominal_mm": 15.0,
+            "justificativa": "leitura fisica e nominal coincidem"
+          }
+        },
+        "_nota": "o paquimetro NAO leu 17,0 mm. Leu 16,9 mm. 17,0 e a dimensao nominal adotada por arredondamento declarado."
+      },
+      "validacao_catalogo": {
+        "funcao": "validacao_de_forma_e_aspecto",
+        "dimensao_externa_diretamente_cotada": false,
+        "aspectos": [
+          1.1366,
+          1.1374,
+          1.1375
+        ],
+        "fontes_independentes": 3,
+        "_nota": "os catalogos validam forma e proporcao. Nenhum cota o envelope externo — ver fontes_dimensionais_investigadas."
+      },
+      "normalizacao_dimensional": {
+        "tipo": "NOMINALIZACAO_POS_CURADORIA_COM_FATORES_INDEPENDENTES",
+        "anisotropica": true,
+        "origem_fisica_mm": [
+          16.9,
+          15.0
+        ],
+        "destino_nominal_mm": [
+          17.0,
+          15.0
+        ],
+        "fator_x": 1.005917,
+        "fator_y": 1.0,
+        "aspecto_bruto_anterior_a_normalizacao": 1.126667,
+        "aspecto_alvo_nominal": 1.133333,
+        "aplicada_apos": [
+          "aquisicao_da_forma",
+          "registro_isotropico_entre_fontes",
+          "gate_de_aspecto_das_fontes"
+        ],
+        "finalidade": "ajustar_escala_fisica_para_dimensao_nominal",
+        "usada_no_registro_entre_catalogos": false,
+        "altera_topologia": false,
+        "justificativa": {
+          "tipo": "arbitragem_de_dominio",
+          "responsavel": "Bruno",
+          "impacto_funcional": "nenhum"
+        },
+        "_distincao": "registro geometrico entre fontes = ISOTROPICO (escala 1.000054, rotacao -0.03 graus). Nominalizacao dimensional final = ANISOTROPICA (fator_x 1.005917 != fator_y 1.0), explicitamente auditada. Sao duas transformacoes distintas."
+      },
+      "promocao_oficial": "ainda_nao_autorizada",
+      "gate_aspecto_fisico_bruto": {
+        "dimensoes_mm": [
+          16.9,
+          15.0
+        ],
+        "aspecto": 1.126667,
+        "erro_minimo_catalogos_pct": 0.874,
+        "erro_maximo_catalogos_pct": 0.952,
+        "limite_pct": 0.75,
+        "resultado": "REPROVADO",
+        "_nota": "registrado como de fato ocorreu. NAO foi substituido pelo resultado nominal."
+      },
+      "gate_aspecto_nominal": {
+        "dimensoes_mm": [
+          17.0,
+          15.0
+        ],
+        "aspecto": 1.133333,
+        "erro_minimo_catalogos_pct": 0.287,
+        "erro_maximo_catalogos_pct": 0.366,
+        "limite_pct": 0.75,
+        "resultado": "APROVADO"
+      },
+      "decisao_dimensional": {
+        "tipo": "APROVADO_POR_ARBITRAGEM_DE_DOMINIO_COM_NOMINALIZACAO",
+        "operador_medicao": "Bruno",
+        "especialista_dominio": "Bruno",
+        "leitura_fisica_mm": [
+          16.9,
+          15.0
+        ],
+        "dimensao_nominal_mm": [
+          17.0,
+          15.0
+        ],
+        "justificativa": "arredondamento_nominal_sem_impacto_funcional",
+        "validacao_cruzada": "aspecto_de_tres_catalogos",
+        "_nota": "NAO e APROVADO_AUTOMATICAMENTE_PELO_GATE_FISICO: o gate fisico bruto reprovou (0,952%). A aprovacao vem da arbitragem de dominio sobre a nominalizacao, com o gate preservado intacto."
+      },
+      "separacao_por_espessura": true,
+      "_nota_separacao": "o card Alcoa p.198 desenha o SU-053 em linha fina como referencia de aplicacao. A separacao por espessura ocorre no PROPRIO card, sem fonte_geometrica_primaria: a geometria do SU-102 vem do card dele mesmo.",
+      "_nota_vazios": "0 vazios ja registrado em equivalencia_tms102.evidencia (vazios_su102: 0) e confirmado na topologia do traco cheio."
     },
     "SU-040": {
       "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
@@ -2243,12 +2410,23 @@
       "SU-009",
       "SU-024"
     ],
-    "fechados_na_curadoria": 7,
-    "aguardando_evidencia_externa": 1,
+    "fechados_na_curadoria": 8,
+    "aguardando_evidencia_externa": 0,
     "pendencia_restante": {
       "perfil": "SU-102",
       "motivo": "escala_dimensional"
     },
-    "_nota_contagem": "SU-001, SU-002, SU-003, SU-039, SU-041 e SU-053 fecharam nesta sequencia; SU-040 ja estava como CANDIDATO_PREVIAMENTE_APROVADO. Sao 7 de 8. Nenhum promovido oficialmente."
+    "_nota_contagem": "SU-001, SU-002, SU-003, SU-039, SU-041 e SU-053 fecharam nesta sequencia; SU-040 ja estava como CANDIDATO_PREVIAMENTE_APROVADO. Sao 7 de 8. Nenhum promovido oficialmente.",
+    "perfis_fechados": [
+      "SU-001",
+      "SU-002",
+      "SU-003",
+      "SU-039",
+      "SU-040",
+      "SU-041",
+      "SU-053",
+      "SU-102"
+    ],
+    "_nota_fechamento": "fechamento da CURADORIA do microlote E.4B. NAO e promocao oficial para dados/: nenhum GEO-* foi criado."
   }
 }
