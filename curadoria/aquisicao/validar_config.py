@@ -193,6 +193,80 @@ def _valida_su041(cfg) -> list[str]:
     return e
 
 
+def _erro_ml(chave, motivo):
+    return f"microlote_janela: {chave} — {motivo}"
+
+
+def _valida_microlote_janela(cfg) -> list[str]:
+    """Travas de coerência do fechamento do microlote (2026-08-01).
+
+    Existem porque a auditoria do PR #3 encontrou o config afirmando 8 fechados
+    e, ao mesmo tempo, carregando `pendencia_restante` do SU-102 e uma nota
+    dizendo "7 de 8". Contagem, lista e pendência precisam contar a mesma
+    história — e fechar o SU-102 não fecha a equivalência com o TMS-102.
+    """
+    e = []
+    ml = cfg.get("microlote_janela")
+    if not ml:
+        return [_erro_ml("microlote_janela", "bloco ausente")]
+
+    fechados = ml.get("perfis_fechados") or []
+    total = ml.get("fechados_na_curadoria")
+
+    # 1. contagem bate com a lista
+    if total != len(fechados):
+        e.append(_erro_ml("fechados_na_curadoria",
+                          f"{total} não corresponde a len(perfis_fechados)="
+                          f"{len(fechados)}"))
+    # 2. sem duplicatas
+    if len(fechados) != len(set(fechados)):
+        dup = sorted({p for p in fechados if fechados.count(p) > 1})
+        e.append(_erro_ml("perfis_fechados", f"duplicatas: {dup}"))
+    # 3. com 8, todos os perfis do microlote têm de aparecer
+    if total == 8:
+        faltam = [p for p in (ml.get("perfis") or []) if p not in fechados]
+        if faltam:
+            e.append(_erro_ml("perfis_fechados",
+                              f"total é 8 mas faltam da lista: {faltam}"))
+    # 4. nada aguardando ⇒ nenhuma pendência restante
+    pend = ml.get("pendencia_restante")
+    if ml.get("aguardando_evidencia_externa") == 0 and pend:
+        e.append(_erro_ml("pendencia_restante",
+                          "aguardando_evidencia_externa é 0, mas há pendência "
+                          f"registrada: {pend}"))
+    # 5. um perfil não pode estar fechado e pendente ao mesmo tempo
+    if isinstance(pend, dict) and pend.get("perfil") in fechados:
+        e.append(_erro_ml("pendencia_restante.perfil",
+                          f"{pend['perfil']} está em perfis_fechados e como "
+                          "pendência simultaneamente"))
+    # 6. notas não podem contradizer a contagem
+    notas = " ".join(str(v) for k, v in ml.items() if k.startswith("_"))
+    if "SU-102" in fechados:
+        for frase in ("7 de 8", "escala_dimensional"):
+            if frase in notas:
+                e.append(_erro_ml("_nota_contagem",
+                                  f"SU-102 está fechado mas a nota ainda diz "
+                                  f"{frase!r}"))
+    # 7. fechar a curadoria não promove nada
+    if ml.get("promocao_oficial_realizada") is not False:
+        e.append(_erro_ml("promocao_oficial_realizada",
+                          "tem de ser explicitamente false — o fechamento da "
+                          "curadoria não é promoção oficial"))
+    # 8. medir o SU-102 não mede o TMS-102
+    su102 = cfg.get("perfis", {}).get("SU-102", {})
+    comp = su102.get("candidato_compartilhamento", {})
+    if comp.get("equivalencia_dimensional") == "APROVADA":
+        fontes = su102.get("fontes_dimensionais_investigadas", [])
+        tms = [f for f in fontes if f.get("codigo") == "TMS-102"]
+        independente = any(f.get("cota_envelope_total") for f in tms)
+        if not independente:
+            e.append(_erro_ml(
+                "SU-102.candidato_compartilhamento.equivalencia_dimensional",
+                "APROVADA sem dimensão externa independente do TMS-102: a "
+                "medição física pertence ao SU-102 medido"))
+    return e
+
+
 def validar(cfg=None) -> list[str]:
     """Devolve a lista de incoerências. Vazia = config íntegro."""
     cfg = cfg or json.loads(CONFIG.read_text())
@@ -213,6 +287,7 @@ def validar(cfg=None) -> list[str]:
             erros += _valida_fontes(cod, p)
             erros += _valida_motivos(cod, p)
     erros += _valida_su041(cfg)
+    erros += _valida_microlote_janela(cfg)
     return erros
 
 

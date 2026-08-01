@@ -2154,8 +2154,9 @@ def test_su102_gate_funcional_local_completo():
     assert c["congruencia_global"] == "APROVADA"
     assert c["congruencia_topologica"] == "APROVADA"
     assert c["congruencia_funcional_local"] == "APROVADA"
-    assert c["equivalencia_dimensional"] == "APROVADA"
-    assert c["decisao"] == "APTO_SUJEITO_A_AUTORIZACAO_DE_PROMOCAO"
+    # A forma casa; a dimensão do TMS-102 continua sem medição independente.
+    assert c["equivalencia_dimensional"] == "PENDENTE"
+    assert c["decisao"] == "AGUARDANDO_DIMENSAO_EXTERNA_DO_TMS102"
     com_material = [v for v in c["evidencia_local"].values() if v != "SEM_MATERIAL"]
     assert len(com_material) >= 6
     for v in com_material:
@@ -2283,6 +2284,121 @@ def test_validador_pega_estado_antigo_convivendo():
                                                    "justificativa": "x"}}}}
     e = validar(cfg)
     assert any("chave antiga convive" in x for x in e), e
+
+
+# ============================================================================
+# microlote_janela — travas da auditoria do PR #3
+# ============================================================================
+
+OITO = ["SU-001", "SU-002", "SU-003", "SU-039",
+        "SU-040", "SU-041", "SU-053", "SU-102"]
+
+
+def _ml(**over):
+    """Bloco microlote_janela íntegro, com sobrescritas pontuais."""
+    base = {"perfis": list(OITO), "perfis_fechados": list(OITO),
+            "fechados_na_curadoria": 8, "aguardando_evidencia_externa": 0,
+            "pendencia_restante": None, "promocao_oficial_realizada": False,
+            "_nota_contagem": "8 de 8 fechados na curadoria."}
+    base.update(over)
+    return {"microlote_janela": base}
+
+
+def test_validador_pega_oito_fechados_com_pendencia_restante():
+    from curadoria.aquisicao.validar_config import validar
+    e = validar(_ml(aguardando_evidencia_externa=0,
+                    pendencia_restante={"perfil": "SU-102",
+                                        "motivo": "escala_dimensional"}))
+    assert any("pendencia_restante" in x and "aguardando_evidencia_externa" in x
+               for x in e), e
+
+
+def test_validador_pega_nota_dizendo_sete_de_oito():
+    from curadoria.aquisicao.validar_config import validar
+    e = validar(_ml(_nota_contagem="Sao 7 de 8. Nenhum promovido."))
+    assert any("_nota_contagem" in x and "7 de 8" in x for x in e), e
+
+
+def test_validador_pega_contagem_diferente_da_lista():
+    from curadoria.aquisicao.validar_config import validar
+    e = validar(_ml(fechados_na_curadoria=8, perfis_fechados=OITO[:7]))
+    assert any("fechados_na_curadoria" in x and "não corresponde" in x
+               for x in e), e
+
+
+def test_validador_pega_perfil_fechado_e_pendente_ao_mesmo_tempo():
+    from curadoria.aquisicao.validar_config import validar
+    e = validar(_ml(aguardando_evidencia_externa=1,
+                    pendencia_restante={"perfil": "SU-102", "motivo": "x"}))
+    assert any("simultaneamente" in x for x in e), e
+
+
+def test_validador_pega_duplicata_em_perfis_fechados():
+    from curadoria.aquisicao.validar_config import validar
+    e = validar(_ml(perfis_fechados=OITO + ["SU-102"],
+                    fechados_na_curadoria=9))
+    assert any("duplicatas" in x for x in e), e
+
+
+def test_validador_pega_equivalencia_tms102_sem_medicao_independente():
+    """Medir o SU-102 não mede o TMS-102 — o erro real que a auditoria achou."""
+    from curadoria.aquisicao.validar_config import validar
+    cfg = _ml()
+    cfg["perfis"] = {"SU-102": {
+        "candidato_compartilhamento": {"equivalencia_dimensional": "APROVADA"},
+        # nenhuma fonte TMS-102 cota o envelope
+        "fontes_dimensionais_investigadas": [
+            {"codigo": "TMS-102", "cota_envelope_total": False}],
+    }}
+    e = validar(cfg)
+    assert any("equivalencia_dimensional" in x and "TMS-102" in x
+               for x in e), e
+
+
+def test_validador_pega_promocao_marcada_como_realizada():
+    from curadoria.aquisicao.validar_config import validar
+    e = validar(_ml(promocao_oficial_realizada=True))
+    assert any("promocao_oficial_realizada" in x for x in e), e
+
+
+def test_microlote_do_config_real_esta_integro():
+    """Estado atual do config, depois das correções da auditoria."""
+    from curadoria.aquisicao.validar_config import _valida_microlote_janela
+    assert _valida_microlote_janela(CONFIG) == []
+
+    ml = CONFIG["microlote_janela"]
+    assert ml["fechados_na_curadoria"] == 8
+    assert ml["aguardando_evidencia_externa"] == 0
+    assert ml["pendencia_restante"] is None
+    assert ml["promocao_oficial_realizada"] is False
+    assert sorted(ml["perfis_fechados"]) == sorted(OITO)
+
+
+def test_su102_fechado_nao_fecha_equivalencia_com_tms102():
+    """As duas afirmações ficam separadas: o SU-102 fechou; a equivalência não."""
+    su = CONFIG["perfis"]["SU-102"]
+    assert su["largura_mm"] == 17.0 and su["altura_mm"] == 15.0
+    comp = su["candidato_compartilhamento"]
+    assert comp["equivalencia_dimensional"] == "PENDENTE"
+    assert comp["decisao"] == "AGUARDANDO_DIMENSAO_EXTERNA_DO_TMS102"
+    assert "TMS-102" in comp["motivo_pendencia"]
+    # a congruência de forma continua aprovada — é só a dimensional que falta
+    assert comp["congruencia_global"] == "APROVADA"
+    assert comp["congruencia_topologica"] == "APROVADA"
+    assert comp["congruencia_funcional_local"] == "APROVADA"
+
+
+def test_estado_atual_e4b_reflete_o_estado_presente():
+    """Regressão pontual do handoff de estado — não é validador genérico de
+    documentação, só impede que este arquivo volte a descrever o passado."""
+    txt = (RAIZ / "curadoria/handoffs/e4b/estado_atual_e4b.md").read_text()
+    for presente in ("fechados_na_curadoria: 8",
+                     "aguardando_evidencia_externa: 0"):
+        assert presente in txt, presente
+    for obsoleto in ("5 de 8", "7 de 8", "sem upstream",
+                     "aguardando medição física", "223 passed",
+                     "BLOQUEADO_POR_ZONA_PENDENTE"):
+        assert obsoleto not in txt, f"frase obsoleta ainda presente: {obsoleto}"
 
 
 def test_validador_pega_cota_interna_virando_envelope():

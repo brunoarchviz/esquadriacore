@@ -758,8 +758,8 @@
         "congruencia_global": "APROVADA",
         "congruencia_topologica": "APROVADA",
         "congruencia_funcional_local": "APROVADA",
-        "equivalencia_dimensional": "APROVADA",
-        "decisao": "APTO_SUJEITO_A_AUTORIZACAO_DE_PROMOCAO",
+        "equivalencia_dimensional": "PENDENTE",
+        "decisao": "AGUARDANDO_DIMENSAO_EXTERNA_DO_TMS102",
         "evidencia_local": {
           "terminacao sup-esq": "SEM_MATERIAL",
           "gancho superior": {
@@ -825,7 +825,8 @@
           "erro_max_px": 2.484,
           "iou": 0.9319
         },
-        "_nota": "tres fontes independentes dao aspecto 1,1366 / 1,1374 / 1,1375 — dispersao 0,08%. As nove regioes do gate local passam com residuo p95 abaixo de 1,8 px. Falta so o envelope externo."
+        "_nota": "tres fontes independentes dao aspecto 1,1366 / 1,1374 / 1,1375 — dispersao 0,08%. As nove regioes do gate local passam com residuo p95 abaixo de 1,8 px. O SU-102 esta fechado dimensionalmente na curadoria; o que falta e o envelope externo do TMS-102, medido de forma independente. Sao duas afirmacoes distintas.",
+        "motivo_pendencia": "A medicao fisica de 17 x 15 mm pertence ao SU-102 medido. Ela nao comprova automaticamente o envelope externo do TMS-102."
       },
       "estado_geometrico": "CANDIDATO_GEOMETRICO_APROVADO",
       "estado_dimensional": {
@@ -2412,11 +2413,8 @@
     ],
     "fechados_na_curadoria": 8,
     "aguardando_evidencia_externa": 0,
-    "pendencia_restante": {
-      "perfil": "SU-102",
-      "motivo": "escala_dimensional"
-    },
-    "_nota_contagem": "SU-001, SU-002, SU-003, SU-039, SU-041 e SU-053 fecharam nesta sequencia; SU-040 ja estava como CANDIDATO_PREVIAMENTE_APROVADO. Sao 7 de 8. Nenhum promovido oficialmente.",
+    "pendencia_restante": null,
+    "_nota_contagem": "8 de 8 fechados na curadoria. Nenhum perfil promovido oficialmente.",
     "perfis_fechados": [
       "SU-001",
       "SU-002",
@@ -2427,6 +2425,7 @@
       "SU-053",
       "SU-102"
     ],
-    "_nota_fechamento": "fechamento da CURADORIA do microlote E.4B. NAO e promocao oficial para dados/: nenhum GEO-* foi criado."
+    "_nota_fechamento": "fechamento da CURADORIA do microlote E.4B. NAO e promocao oficial para dados/: nenhum GEO-* foi criado.",
+    "promocao_oficial_realizada": false
   }
 }
