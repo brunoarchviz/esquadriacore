@@ -589,14 +589,27 @@
         ],
         "_leitura": "verificado VISUALMENTE no card: a cota 11 e horizontal (topo) e a 12 e vertical (direita). O TMS-102 e desenhado com perfil de referencia em cinza claro, mesma convencao do card Alcoa."
       },
-      "dimensao_bounding_box": {
-        "status": "pendente_confirmacao",
+      "dimensao_bounding_box_catalogo": {
+        "status": "NAO_COTADO_DIRETAMENTE_NOS_CATALOGOS",
         "aspecto_medido": 1.1366,
         "bbox_camada_grossa_px": [
           416,
           366
         ],
-        "_conflito": "as cotas 11 e 12 nao descrevem o bounding box em NENHUMA das duas fontes: o TMS-102, que e o card onde elas estao desenhadas, erra 24,08% contra 11x12. Sao segmentos internos."
+        "resolucao_dimensional": {
+          "status": "RESOLVIDA",
+          "metodo": [
+            "medicao_fisica_repetida_do_SU-102",
+            "nominalizacao_por_arbitragem_de_dominio",
+            "transferencia_ao_TMS-102_por_identidade_de_produto"
+          ],
+          "dimensao_nominal_mm": [
+            17.0,
+            15.0
+          ]
+        },
+        "observacao": "As cotas 10, 11 e 12 sao segmentos internos e nao cotam o envelope. Isso NAO representa pendencia dimensional: a dimensao externa foi resolvida pela medicao fisica e se aplica ao TMS-102 porque ambos sao o mesmo perfil.",
+        "_conflito_historico": "as cotas 11 e 12 nao descrevem o bounding box em NENHUMA das duas fontes: o TMS-102, que e o card onde elas estao desenhadas, erra 24,08% contra 11x12. Sao segmentos internos."
       },
       "equivalencia_tms102": {
         "equivalencia_global": "PASSA",

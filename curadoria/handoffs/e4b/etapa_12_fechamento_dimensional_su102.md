@@ -154,7 +154,19 @@ perfis: [SU-001, SU-002, SU-003, SU-039, SU-040, SU-041, SU-053, SU-102]
 Significa **curadoria concluída**. Não significa promoção oficial, merge em
 `main`, tag ou release.
 
-## 10. Governança
+## 10. Commits desta etapa
+
+```
+d6a6009  feat(curadoria): conclui escala dimensional do SU-102
+f3a2924  docs(curadoria): registra fechamento dimensional do E.4B
+5537e1e  fix(curadoria): alinha estado final e equivalencia do E.4B
+cc365be  Merge pull request #3
+```
+
+Registrados aqui, no handoff histórico, e não no documento de estado atual —
+hashes e branches são transitórios.
+
+## 11. Governança
 
 `dados/`, `domain/`, `contrato/`, `docs/`, `VERSION`, `CHANGELOG.md`:
 inalterados. Nenhum `GEO-SU-102`.

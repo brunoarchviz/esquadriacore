@@ -1,24 +1,9 @@
 # EsquadriaCore — estado atual do E.4B
 
-Resumo curto do **estado presente**. O histórico por etapa está em
+Resumo curto do **estado durável** da curadoria do E.4B. Não registra branch,
+PR nem hashes de commit — esses são transitórios e ficariam obsoletos logo após
+cada merge. O histórico por etapa, com os commits, está em
 `curadoria/handoffs/e4b/etapa_*.md`.
-
----
-
-## Branch e PR
-
-```yaml
-branch:   sprint-e4-composicao-correr-suprema
-upstream: origin/sprint-e4-composicao-correr-suprema
-pr:       3
-```
-
-Commits que fecharam a etapa 12:
-
-```
-d6a6009  feat(curadoria): conclui escala dimensional do SU-102
-f3a2924  docs(curadoria): registra fechamento dimensional do E.4B
-```
 
 ---
 
@@ -138,10 +123,9 @@ rotação −0,03°, isto é, o mesmo desenho na mesma escala.
 ## Suíte
 
 ```
-184 testes direcionados verdes
-246 testes completos verdes — execução 1
-246 testes completos verdes — execução 2
-EXIT_CODE=0 nas três
+204 testes direcionados verdes
+266 testes completos verdes
+EXIT_CODE=0 nas duas execuções
 ```
 
 ---

@@ -1676,7 +1676,7 @@ def test_su102_nao_usa_dimensao_de_perfil_vizinho():
     assert p["cotas_catalogo_secundario"]["valores_mm"] == [11.0, 12.0]
     assert "13,8" in p["_arbitragem_dimensional"]
     assert p["largura_mm"] != 13.8 and p["altura_mm"] != 13.8
-    assert p["dimensao_bounding_box"]["status"] == "pendente_confirmacao"
+    assert "dimensao_bounding_box" not in p, "chave antiga renomeada"
 
 
 def test_su102_dimensao_vem_da_medicao_fisica_nao_do_catalogo():
@@ -2477,6 +2477,75 @@ def test_estado_atual_e4b_reflete_o_estado_presente():
     # a identidade entre os dois códigos tem de estar declarada
     assert "identidade_de_perfil:    CONFIRMADA" in txt
     assert "equivalencia_dimensional: APROVADA" in txt
+
+
+def test_estado_atual_nao_carrega_dado_transitorio():
+    """Branch, PR e hash ficam obsoletos no merge seguinte — o documento de
+    estado durável não deve carregá-los. O histórico vive nos etapa_*.md."""
+    txt = (RAIZ / "curadoria/handoffs/e4b/estado_atual_e4b.md").read_text()
+    for transitorio in ("sprint-e4-composicao-correr-suprema",
+                        "origin/sprint-e4-composicao-correr-suprema",
+                        "pr: 3", "pr:       3",
+                        "d6a6009", "f3a2924", "cc365be"):
+        assert transitorio not in txt, \
+            f"dado transitório no estado atual: {transitorio}"
+
+
+def test_estado_atual_registra_a_suite_desta_rodada():
+    txt = (RAIZ / "curadoria/handoffs/e4b/estado_atual_e4b.md").read_text()
+    assert "204 testes direcionados" in txt
+    assert "266 testes completos" in txt
+    for antigo in ("184 testes", "246 testes", "200 testes", "262 testes"):
+        assert antigo not in txt, f"número de suíte antigo: {antigo}"
+
+
+def test_su102_bounding_box_nao_e_pendencia_dimensional():
+    """O catálogo não cota o envelope — isso é verdade e continua registrado.
+    Mas não é pendência: a dimensão foi resolvida por medição física."""
+    p = CONFIG["perfis"]["SU-102"]
+    assert "dimensao_bounding_box" not in p, "chave antiga não pode voltar"
+
+    b = p["dimensao_bounding_box_catalogo"]
+    assert b["status"] == "NAO_COTADO_DIRETAMENTE_NOS_CATALOGOS"
+    assert b["aspecto_medido"] == 1.1366
+    assert b["bbox_camada_grossa_px"] == [416, 366]
+
+    r = b["resolucao_dimensional"]
+    assert r["status"] == "RESOLVIDA"
+    assert r["dimensao_nominal_mm"] == [17.0, 15.0]
+    assert "medicao_fisica_repetida_do_SU-102" in r["metodo"]
+    assert "transferencia_ao_TMS-102_por_identidade_de_produto" in r["metodo"]
+    # as duas afirmações ficam distinguidas
+    assert "NAO representa pendencia dimensional" in b["observacao"]
+
+
+def test_su102_sem_estado_dimensional_pendente_em_lugar_nenhum():
+    """Varre os campos de estado do SU-102 — nenhum pode ficar em espera.
+
+    Percorre só chaves que carregam estado (status/estado/equivalencia/
+    decisao), para não confundir com texto livre nem com palavras que apenas
+    contêm a substring (INDEPENDENTES contém PENDENTE)."""
+    CHAVES = ("status", "estado", "equivalencia", "decisao", "resultado")
+    PARADO = ("PENDENTE", "AGUARDANDO", "pendente_confirmacao")
+
+    achados = []
+
+    def varrer(o, caminho=""):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if k.startswith("_"):          # notas explicativas e histórico
+                    continue
+                sub = f"{caminho}.{k}"
+                if isinstance(v, str) and any(c in k.lower() for c in CHAVES):
+                    if any(v.startswith(x) or v == x for x in PARADO):
+                        achados.append((sub, v))
+                varrer(v, sub)
+        elif isinstance(o, list):
+            for i, v in enumerate(o):
+                varrer(v, f"{caminho}[{i}]")
+
+    varrer(CONFIG["perfis"]["SU-102"])
+    assert not achados, f"estado dimensional parado no SU-102: {achados}"
 
 
 def test_validador_pega_cota_interna_virando_envelope():
