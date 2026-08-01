@@ -73,29 +73,57 @@ alguém atualizar a lista.
 
 ---
 
-## Pendência 2 — SU-102
+## Pendência 2 — SU-102 — **RESOLVIDA em 2026-08-01**
 
-Forma inteiramente caracterizada; falta só a escala.
+Forma já estava inteiramente caracterizada; faltava só a escala. **Fechada por
+medição física.**
 
 ```
 três catálogos independentes  : aspecto 1,1366 / 1,1374 / 1,1375
 dispersão                     : 0,08 %
 topologia                     : 0 vazios em todos
-orientação                    : idêntica, rotação zero
-escala relativa entre fontes  : 1,00005
+escala relativa entre fontes  : 1,00005  (registro ISOTRÓPICO)
 gate funcional local          : aprovado em todas as regiões com material
 ```
 
-**Nenhum dos quatro catálogos investigados cota o envelope externo.** As cotas 10, 11 e 12
-são segmentos internos — a 10 nem começa no SU-102, parte do perfil de referência SU-053
-desenhado no mesmo card.
+**Nenhum dos quatro catálogos cota o envelope externo** — isso continua verdade.
+A cota veio da medição física do Bruno, e os catálogos entraram como validação
+de forma e aspecto.
 
-Protocolo pronto em `curadoria/insumos/protocolo_medicao_fisica_su102.md`: paquímetro de
-0,01 mm, largura e altura externas máximas, três leituras de cada, mais de uma seção,
-evidência fotográfica. Critério de aceitação: erro de aspecto ≤ 0,75 % contra 1,137.
+```
+leitura física    : 16,9 x 15,0 mm   (4 repetições eixo maior, 3 eixo menor)
+dimensão nominal  : 17,0 x 15,0 mm   (arredondamento declarado, sem impacto funcional)
 
-Uma medida sozinha bastaria matematicamente — mas não para homologação, porque não teria
-como ser conferida.
+gate físico bruto : aspecto 1,1267, erro até 0,952 %  ->  REPROVA
+gate nominal      : aspecto 1,1333, erro até 0,366 %  ->  PASSA
+decisão           : arbitragem de domínio com nominalização
+                    (NÃO é aprovação automática pelo gate)
+```
+
+A nominalização é **anisotrópica** e declarada (`fator_x 1,005917 ≠ fator_y 1,0`).
+Ela não é usada no registro entre catálogos, que segue isotrópico.
+
+Artefatos de curadoria em `curadoria/contornos/SU-102/` — seis, reprodutíveis,
+F1 = 1,0, 0 vazios. `promocao_oficial: ainda_nao_autorizada`, nenhum `GEO-SU-102`.
+
+Detalhes em `etapa_12_fechamento_dimensional_su102.md`, incluindo duas correções
+metodológicas minhas registradas ali (leitura errada das garras do paquímetro e
+guard de promoção em escopo errado no driver).
+
+**Equivalência com o TMS-102 continua pendente**: medir o SU-102 não mede o
+perfil do outro catálogo.
+
+---
+
+## Microlote E.4B
+
+```yaml
+fechados_na_curadoria: 8
+aguardando_evidencia_externa: 0
+perfis: [SU-001, SU-002, SU-003, SU-039, SU-040, SU-041, SU-053, SU-102]
+```
+
+Curadoria concluída. **Não** é promoção oficial, merge em `main`, tag ou release.
 
 ---
 
@@ -112,5 +140,5 @@ Zero falhas, zero pulados. Execução posterior aos commits C e D.
 
 ## O que não reabrir
 
-SU-001, SU-002, SU-003, SU-039 e SU-053 estão fechados. As duas frentes vivas são
-**a arbitragem da zona do SU-041** e **a medição física do SU-102**.
+SU-001, SU-002, SU-003, SU-039, SU-053 e agora **SU-102** estão fechados na
+curadoria. A frente viva restante é **a arbitragem da zona do SU-041**.
