@@ -1,24 +1,9 @@
 # EsquadriaCore — estado atual do E.4B
 
-Resumo curto do **estado presente**. O histórico por etapa está em
+Resumo curto do **estado durável** da curadoria do E.4B. Não registra branch,
+PR nem hashes de commit — esses são transitórios e ficariam obsoletos logo após
+cada merge. O histórico por etapa, com os commits, está em
 `curadoria/handoffs/e4b/etapa_*.md`.
-
----
-
-## Branch e PR
-
-```yaml
-branch:   sprint-e4-composicao-correr-suprema
-upstream: origin/sprint-e4-composicao-correr-suprema
-pr:       3
-```
-
-Commits que fecharam a etapa 12:
-
-```
-d6a6009  feat(curadoria): conclui escala dimensional do SU-102
-f3a2924  docs(curadoria): registra fechamento dimensional do E.4B
-```
 
 ---
 
@@ -102,43 +87,53 @@ Artefatos em `curadoria/contornos/SU-102/` — seis, reprodutíveis, F1 = 1,0,
 
 ---
 
-## TMS-102 — a pendência que resta
+## SU-102 × TMS-102 — mesmo perfil físico
+
+O especialista de domínio (Bruno) confirmou em 2026-08-01 que **SU-102 e
+TMS-102 são o mesmo perfil físico** — mesma extrusão, códigos diferentes entre
+catálogos. Não é semelhança geométrica nem compatibilidade de família de
+mercado (ADR-004): é identidade de produto.
 
 ```yaml
-TMS-102:
-  equivalencia_dimensional_com_SU102: PENDENTE
-  decisao: AGUARDANDO_DIMENSAO_EXTERNA_DO_TMS102
+SU-102_TMS-102:
+  identidade_de_perfil:    CONFIRMADA
+  equivalencia_geometrica: APROVADA
+  equivalencia_topologica: APROVADA
+  equivalencia_funcional:  APROVADA
+  equivalencia_dimensional: APROVADA
+  dimensao_nominal_mm: [17.0, 15.0]
+  fundamento_dimensional: medicao_fisica_do_mesmo_perfil
 ```
 
-Duas afirmações distintas, que não devem ser confundidas:
+A procedência da cota fica explícita e não deve ser abreviada:
 
 ```text
-SU-102 fechado dimensionalmente na curadoria   = SIM
-SU-102 e TMS-102 dimensionalmente equivalentes = AINDA NÃO PROVADO
+medição física realizada no perfil SU-102
+identidade SU-102 = TMS-102 confirmada pelo especialista de domínio
+dimensão transferida por identidade de produto
 ```
 
-Medir fisicamente o SU-102 não mede o perfil do outro catálogo. A congruência
-global, topológica e funcional local está aprovada; falta o envelope externo do
-TMS-102, obtido de forma independente.
+O TMS-102 **não** foi medido separadamente, e o config registra isso
+(`tms102_medido_separadamente: false`). A identidade é coerente com a evidência
+já registrada: o registro isotrópico entre as duas fontes dá escala 1,000054 e
+rotação −0,03°, isto é, o mesmo desenho na mesma escala.
 
 ---
 
 ## Suíte
 
 ```
-184 testes direcionados verdes
-246 testes completos verdes — execução 1
-246 testes completos verdes — execução 2
-EXIT_CODE=0 nas três
+204 testes direcionados verdes
+266 testes completos verdes
+EXIT_CODE=0 nas duas execuções
 ```
 
 ---
 
 ## O que não reabrir
 
-Os oito perfis estão fechados na curadoria. A frente restante é **a
-equivalência dimensional entre SU-102 e TMS-102**, que depende de medir o
-TMS-102 — não de remedir o SU-102.
+Os oito perfis estão fechados na curadoria e não há pendência dimensional entre
+SU-102 e TMS-102.
 
-Este estado conclui a curadoria. **Não** é promoção oficial, merge em `main`,
-tag ou release.
+Este estado conclui a curadoria. **Não** é promoção oficial dos candidatos para
+`dados/` — essa continua sendo uma etapa futura e separada.

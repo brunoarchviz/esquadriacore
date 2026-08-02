@@ -589,21 +589,34 @@
         ],
         "_leitura": "verificado VISUALMENTE no card: a cota 11 e horizontal (topo) e a 12 e vertical (direita). O TMS-102 e desenhado com perfil de referencia em cinza claro, mesma convencao do card Alcoa."
       },
-      "dimensao_bounding_box": {
-        "status": "pendente_confirmacao",
+      "dimensao_bounding_box_catalogo": {
+        "status": "NAO_COTADO_DIRETAMENTE_NOS_CATALOGOS",
         "aspecto_medido": 1.1366,
         "bbox_camada_grossa_px": [
           416,
           366
         ],
-        "_conflito": "as cotas 11 e 12 nao descrevem o bounding box em NENHUMA das duas fontes: o TMS-102, que e o card onde elas estao desenhadas, erra 24,08% contra 11x12. Sao segmentos internos."
+        "resolucao_dimensional": {
+          "status": "RESOLVIDA",
+          "metodo": [
+            "medicao_fisica_repetida_do_SU-102",
+            "nominalizacao_por_arbitragem_de_dominio",
+            "transferencia_ao_TMS-102_por_identidade_de_produto"
+          ],
+          "dimensao_nominal_mm": [
+            17.0,
+            15.0
+          ]
+        },
+        "observacao": "As cotas 10, 11 e 12 sao segmentos internos e nao cotam o envelope. Isso NAO representa pendencia dimensional: a dimensao externa foi resolvida pela medicao fisica e se aplica ao TMS-102 porque ambos sao o mesmo perfil.",
+        "_conflito_historico": "as cotas 11 e 12 nao descrevem o bounding box em NENHUMA das duas fontes: o TMS-102, que e o card onde elas estao desenhadas, erra 24,08% contra 11x12. Sao segmentos internos."
       },
       "equivalencia_tms102": {
         "equivalencia_global": "PASSA",
         "equivalencia_topologica": "PASSA",
-        "equivalencia_dimensional": "PENDENTE",
-        "equivalencia_funcional_local": "PENDENTE",
-        "decisao": "CONGRUENCIA_GLOBAL_SEM_EQUIVALENCIA_GEOMETRICA_COMPLETA",
+        "equivalencia_dimensional": "APROVADA",
+        "equivalencia_funcional_local": "PASSA",
+        "decisao": "EQUIVALENCIA_GEOMETRICA_COMPLETA_POR_IDENTIDADE_DE_PERFIL",
         "evidencia": {
           "aspecto_su102": 1.1366,
           "aspecto_tms102": 1.1374,
@@ -619,7 +632,7 @@
           "vazios_su102": 0,
           "vazios_tms102": 0
         },
-        "_nota": "escala 1,00005 e rotacao -0,03 graus significam que os dois catalogos publicam o MESMO desenho na mesma escala. Isso comprova congruencia global e topologica, mas NAO comprova a dimensao externa: nenhuma das fontes cota o bounding box. IoU isolado nao autoriza compartilhar geometria — falta o gate funcional local por regiao (ganchos, pe, encaixes, terminacoes)."
+        "_nota": "escala 1,00005 e rotacao -0,03 graus significam que os dois catalogos publicam o MESMO desenho na mesma escala — coerente com a identidade de produto declarada pelo especialista. O gate funcional local por regiao foi concluido (ver candidato_compartilhamento.evidencia_local: nove regioes EQUIVALENTE). A dimensao externa vem da medicao fisica do SU-102 e se aplica por identidade."
       },
       "calibracao_isotropica_pela_referencia_fina": {
         "metodo": "ICP com escala unica (Procrustes isotropico)",
@@ -758,8 +771,8 @@
         "congruencia_global": "APROVADA",
         "congruencia_topologica": "APROVADA",
         "congruencia_funcional_local": "APROVADA",
-        "equivalencia_dimensional": "PENDENTE",
-        "decisao": "AGUARDANDO_DIMENSAO_EXTERNA_DO_TMS102",
+        "equivalencia_dimensional": "APROVADA",
+        "decisao": "EQUIVALENCIA_DIMENSIONAL_CONFIRMADA_POR_IDENTIDADE_DE_PERFIL",
         "evidencia_local": {
           "terminacao sup-esq": "SEM_MATERIAL",
           "gancho superior": {
@@ -825,8 +838,26 @@
           "erro_max_px": 2.484,
           "iou": 0.9319
         },
-        "_nota": "tres fontes independentes dao aspecto 1,1366 / 1,1374 / 1,1375 — dispersao 0,08%. As nove regioes do gate local passam com residuo p95 abaixo de 1,8 px. O SU-102 esta fechado dimensionalmente na curadoria; o que falta e o envelope externo do TMS-102, medido de forma independente. Sao duas afirmacoes distintas.",
-        "motivo_pendencia": "A medicao fisica de 17 x 15 mm pertence ao SU-102 medido. Ela nao comprova automaticamente o envelope externo do TMS-102."
+        "_nota": "tres fontes independentes dao aspecto 1,1366 / 1,1374 / 1,1375 — dispersao 0,08%. As nove regioes do gate local passam com residuo p95 abaixo de 1,8 px. A dimensao externa vem da medicao fisica do SU-102 e se aplica ao TMS-102 porque sao o mesmo perfil fisico.",
+        "fundamento": {
+          "tipo": "confirmacao_do_especialista_de_dominio",
+          "responsavel": "Bruno",
+          "declaracao": "SU-102_E_TMS-102_SAO_O_MESMO_PERFIL_FISICO"
+        },
+        "aplicacao_dimensional": {
+          "medicao_fisica_origem": "SU-102",
+          "leitura_fisica_mm": [
+            16.9,
+            15.0
+          ],
+          "dimensao_nominal_mm": [
+            17.0,
+            15.0
+          ],
+          "aplicavel_ao_TMS-102": true,
+          "tms102_medido_separadamente": false,
+          "_nota": "a medicao fisica foi realizada no perfil SU-102. A dimensao vale para o TMS-102 por IDENTIDADE DE PRODUTO, nao por medicao independente do TMS-102. Nao afirmar que o TMS-102 foi medido."
+        }
       },
       "estado_geometrico": "CANDIDATO_GEOMETRICO_APROVADO",
       "estado_dimensional": {
@@ -1000,7 +1031,19 @@
       },
       "separacao_por_espessura": true,
       "_nota_separacao": "o card Alcoa p.198 desenha o SU-053 em linha fina como referencia de aplicacao. A separacao por espessura ocorre no PROPRIO card, sem fonte_geometrica_primaria: a geometria do SU-102 vem do card dele mesmo.",
-      "_nota_vazios": "0 vazios ja registrado em equivalencia_tms102.evidencia (vazios_su102: 0) e confirmado na topologia do traco cheio."
+      "_nota_vazios": "0 vazios ja registrado em equivalencia_tms102.evidencia (vazios_su102: 0) e confirmado na topologia do traco cheio.",
+      "identidade_de_perfil": {
+        "confirmada": true,
+        "confirmada_por": "especialista_de_dominio",
+        "responsavel": "Bruno",
+        "data": "2026-08-01",
+        "declaracao": "SU-102_E_TMS-102_SAO_O_MESMO_PERFIL_FISICO",
+        "codigos_equivalentes": [
+          "SU-102",
+          "TMS-102"
+        ],
+        "_nota": "mesma extrusao/produto, codigos diferentes entre catalogos. Nao e semelhanca geometrica nem compatibilidade de familia de mercado (ADR-004): e identidade de produto declarada pelo especialista. Coerente com a evidencia ja registrada — o registro isotropico entre as duas fontes da escala 1,000054 e rotacao -0,03 graus, isto e, o MESMO desenho na mesma escala."
+      }
     },
     "SU-040": {
       "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
