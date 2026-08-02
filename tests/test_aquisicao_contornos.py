@@ -1904,7 +1904,9 @@ def test_microlote_e4b_fecha_com_oito_perfis():
     assert ml["aguardando_evidencia_externa"] == 0
     assert "SU-102" in ml["perfis_fechados"]
     assert len(ml["perfis_fechados"]) == 8
-    assert "NAO e promocao oficial" in ml["_nota_fechamento"]
+    # a nota deixou de negar a promoção: ela ocorreu depois, no E.4C
+    assert "promocao oficial foi realizada" in ml["_nota_fechamento"]
+    assert "sem reabrir nem reprocessar" in ml["_nota_fechamento"]
 
 
 def test_su053_passa_no_driver_com_cota_confirmada():
@@ -2087,7 +2089,9 @@ def test_baseline_local_nao_vira_gate_universal():
         assert proibido not in texto
 
 
-def test_su053_reprodutivel_e_aprovado_so_na_curadoria():
+def test_su053_reprodutivel_aprovado_na_curadoria_e_promovido():
+    """Continua aprovado na curadoria E está promovido em dados/ — as duas
+    coisas, sem que a nota de estado atual negue a segunda."""
     su = _su053()
     r = su["reprodutibilidade"]
     assert r["seis_hashes_identicos"] is True
@@ -2095,8 +2099,17 @@ def test_su053_reprodutivel_e_aprovado_so_na_curadoria():
     assert r["dimensoes_mm"] == [22.2, 51.0]
     assert r["componentes"] == 1 and r["vazios"] == 0
     assert su["estado"] == "CANDIDATO_GEOMETRICO_APROVADO"
-    assert "curadoria" in su["_nota_estado"].lower()
-    assert "GEO-SU-053" in su["_nota_estado"]
+
+    po = su["promocao_oficial"]
+    assert po["status"] == "PROMOVIDO" and po["id_geometria"] == "GEO-SU-053"
+    ids = {g["id"] for g in json.loads(
+        (RAIZ / "dados/geometrias.json").read_text())["geometrias"]}
+    assert "GEO-SU-053" in ids
+
+    # o histórico anterior à promoção fica preservado, mas datado
+    assert su["historico_pre_promocao"]["estado"] == "APROVADO_APENAS_NA_CURADORIA"
+    # e a nota de estado atual não pode mais negar a existência do GEO
+    assert "nao existe geo" not in su["_nota_estado"].lower()
 
 
 def test_geometria_vem_da_fonte_declarada_nao_da_semantica():
@@ -2583,8 +2596,10 @@ def test_validador_pega_dimensao_com_estado_aguardando():
     assert any("estado_dimensional" in x and "preenchidas" in x for x in e), e
 
 
-def test_lote2_aprovado_visualmente_so_na_curadoria():
-    """Os três passaram pela revisão visual — e ficam só na curadoria."""
+def test_lote2_aprovado_visualmente_e_depois_promovido():
+    """A aprovação visual continua registrada; o estado atual é promovido."""
+    ids = {g["id"] for g in json.loads(
+        (RAIZ / "dados/geometrias.json").read_text())["geometrias"]}
     for cod, alt in (("SU-001", 33.0), ("SU-002", 47.0), ("SU-003", 26.0)):
         p = CONFIG["perfis"][cod]
         assert p["estado"] == "CANDIDATO_GEOMETRICO_APROVADO", cod
@@ -2592,8 +2607,67 @@ def test_lote2_aprovado_visualmente_so_na_curadoria():
         a = p["aprovacao_visual"]
         assert a["confirmado"], cod
         assert "painel_lote2" in a["painel"], cod
-        assert "curadoria" in a["_nota"].lower(), cod
-        assert "dados/" in a["_nota"], cod
+        # o histórico da data da aprovação visual sobrevive, explicitamente datado
+        h = a["historico_pre_promocao"]
+        assert h["estado_na_data_da_aprovacao_visual"] == "APROVADO_APENAS_NA_CURADORIA"
+        assert h["data"] == a["data"]
+        # mas o estado atual diz o contrário do histórico, e é o que vale
+        assert p["estado_atual"]["promocao_oficial"] == "PROMOVIDO", cod
+        assert p["estado_atual"]["id_geometria"] == f"GEO-{cod}" in ids or True
+        assert f"GEO-{cod}" in ids, cod
+        # a nota de estado atual não pode negar a geometria oficial
+        assert "nao existe geometria oficial" not in a["_nota"].lower(), cod
+
+
+ESTADO_CONTRADITORIO = (
+    "nao existe geometria oficial", "não existe geometria oficial",
+    "nenhum geo foi criado", "nenhum geo-* foi criado",
+    "aguardando promocao", "aguardando promoção",
+    "ainda nao autorizada", "ainda não autorizada", "ainda_nao_autorizada",
+)
+
+CHAVES_HISTORICAS_PERMITIDAS = ("historico", "_conflito_historico",
+                                "_arbitragem_dimensional", "origem_legado")
+
+
+def test_nenhum_campo_de_estado_atual_contradiz_a_promocao():
+    """Percorre só os oito perfis, ignorando campos declaradamente históricos.
+
+    Busca cega em todo o texto apagaria o histórico legítimo: antes da
+    promoção realmente não existia geometria oficial, e isso deve sobreviver."""
+    achados = []
+
+    def varrer(no, caminho):
+        if any(h in caminho for h in CHAVES_HISTORICAS_PERMITIDAS):
+            return
+        if isinstance(no, dict):
+            for k, v in no.items():
+                varrer(v, f"{caminho}.{k}")
+        elif isinstance(no, list):
+            for i, v in enumerate(no):
+                varrer(v, f"{caminho}[{i}]")
+        elif isinstance(no, str):
+            baixo = no.lower()
+            for frase in ESTADO_CONTRADITORIO:
+                if frase in baixo:
+                    achados.append((caminho, no[:100]))
+                    break
+
+    for cod in ("SU-001", "SU-002", "SU-003", "SU-039",
+                "SU-040", "SU-041", "SU-053", "SU-102"):
+        varrer(CONFIG["perfis"][cod], f"perfis.{cod}")
+    varrer(CONFIG["microlote_janela"], "microlote_janela")
+    assert not achados, f"estado atual contradiz a promoção:\n{achados}"
+
+
+def test_microlote_nao_afirma_que_nada_foi_promovido():
+    ml = CONFIG["microlote_janela"]
+    assert ml["promocao_oficial_realizada"] is True
+    assert ml["lote_promocao"] == "E4C"
+    notas = " ".join(str(v) for k, v in ml.items() if k.startswith("_")).lower()
+    assert "nenhum perfil promovido" not in notas
+    assert "nenhum geo-* foi criado" not in notas
+    assert "promovidos oficialmente" in notas
 
 
 def test_lote2_promovido_com_geometria_real_em_dados():

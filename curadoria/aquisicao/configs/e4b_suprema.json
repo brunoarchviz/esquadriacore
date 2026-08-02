@@ -556,7 +556,7 @@
         }
       },
       "_nota_baseline": "evidencia ESPECIFICA do SU-053. NAO declara IoU minimo universal nem diferenca de area maxima universal: nao ha amostra para regra geral. Serve para a proxima execucao reproduzir deterministicamente.",
-      "_nota_estado": "APROVADO SO NA CURADORIA. Nao existe GEO-SU-053 nos dados oficiais e nao ha associacao oficial entre fabricantes: a gravacao oficial aguarda o fechamento das oito geometrias do microlote.",
+      "_nota_estado": "Aprovado na curadoria (E.4B) e promovido oficialmente no E.4C: GEO-SU-053 existe em dados/ com associacao ALCOA-SU-053. O historico anterior a promocao esta em historico_pre_promocao.",
       "reprodutibilidade": {
         "seis_hashes_identicos": true,
         "jsons_semanticamente_equivalentes": true,
@@ -578,6 +578,10 @@
         "lote": "E4C",
         "perfil_id_oficial": "ALCOA-SU-053",
         "origem_dimensional": "COTA_DE_CATALOGO"
+      },
+      "historico_pre_promocao": {
+        "estado": "APROVADO_APENAS_NA_CURADORIA",
+        "observacao": "Ate o fechamento das oito geometrias do microlote nao existia GEO-SU-053 nos dados oficiais nem associacao oficial. Isso e HISTORICO: a gravacao ocorreu na Sprint E.4C."
       }
     },
     "SU-102": {
@@ -1424,7 +1428,12 @@
         "painel": "curadoria/composicao/painel_lote2_su001_su002_su003.png",
         "confirmado": "dois trilhos preservados; ganchos inferiores preservados; travessa superior completa; montantes externos completos; nenhuma contaminacao grafica",
         "diferenca_bruto_comercial": "somente ajustes controlados de simplificacao das bordas; sem perda de componentes e sem mudanca topologica",
-        "_nota": "aprovado SO na camada de curadoria; nao existe geometria oficial em dados/"
+        "_nota": "aprovado na camada de curadoria; a diferenca bruto x comercial foi conferida visualmente no painel do lote 2",
+        "historico_pre_promocao": {
+          "estado_na_data_da_aprovacao_visual": "APROVADO_APENAS_NA_CURADORIA",
+          "data": "2026-07-28",
+          "observacao": "Na data da aprovacao visual ainda nao existia geometria oficial em dados/. Isso e HISTORICO: a promocao ocorreu depois, na Sprint E.4C."
+        }
       },
       "promocao_oficial": {
         "status": "PROMOVIDO",
@@ -1432,6 +1441,11 @@
         "lote": "E4C",
         "perfil_id_oficial": "ALCOA-SU-001",
         "origem_dimensional": "COTA_DE_CATALOGO"
+      },
+      "estado_atual": {
+        "promocao_oficial": "PROMOVIDO",
+        "lote": "E4C",
+        "id_geometria": "GEO-SU-001"
       }
     },
     "SU-002": {
@@ -1532,7 +1546,12 @@
         "painel": "curadoria/composicao/painel_lote2_su001_su002_su003.png",
         "confirmado": "dois trilhos superiores completos; ganchos preservados; base e extremidades completas; 71 mm = envelope externo; 35 mm = vao interno entre trilhos; nenhuma perda funcional no contorno comercial",
         "diferenca_bruto_comercial": "somente ajustes controlados de simplificacao das bordas; sem perda de componentes e sem mudanca topologica",
-        "_nota": "aprovado SO na camada de curadoria; nao existe geometria oficial em dados/"
+        "_nota": "aprovado na camada de curadoria; a diferenca bruto x comercial foi conferida visualmente no painel do lote 2",
+        "historico_pre_promocao": {
+          "estado_na_data_da_aprovacao_visual": "APROVADO_APENAS_NA_CURADORIA",
+          "data": "2026-07-28",
+          "observacao": "Na data da aprovacao visual ainda nao existia geometria oficial em dados/. Isso e HISTORICO: a promocao ocorreu depois, na Sprint E.4C."
+        }
       },
       "promocao_oficial": {
         "status": "PROMOVIDO",
@@ -1540,6 +1559,11 @@
         "lote": "E4C",
         "perfil_id_oficial": "ALCOA-SU-002",
         "origem_dimensional": "COTA_DE_CATALOGO"
+      },
+      "estado_atual": {
+        "promocao_oficial": "PROMOVIDO",
+        "lote": "E4C",
+        "id_geometria": "GEO-SU-002"
       }
     },
     "SU-003": {
@@ -1583,7 +1607,12 @@
         "painel": "curadoria/composicao/painel_lote2_su001_su002_su003.png",
         "confirmado": "alma horizontal preservada; paredes laterais preservadas; duas aletas inclinadas preservadas; mata-junta completo; 83 pontos compativeis com a simplicidade da secao",
         "diferenca_bruto_comercial": "somente ajustes controlados de simplificacao das bordas; sem perda de componentes e sem mudanca topologica",
-        "_nota": "aprovado SO na camada de curadoria; nao existe geometria oficial em dados/"
+        "_nota": "aprovado na camada de curadoria; a diferenca bruto x comercial foi conferida visualmente no painel do lote 2",
+        "historico_pre_promocao": {
+          "estado_na_data_da_aprovacao_visual": "APROVADO_APENAS_NA_CURADORIA",
+          "data": "2026-07-28",
+          "observacao": "Na data da aprovacao visual ainda nao existia geometria oficial em dados/. Isso e HISTORICO: a promocao ocorreu depois, na Sprint E.4C."
+        }
       },
       "promocao_oficial": {
         "status": "PROMOVIDO",
@@ -1591,6 +1620,11 @@
         "lote": "E4C",
         "perfil_id_oficial": "ALCOA-SU-003",
         "origem_dimensional": "COTA_DE_CATALOGO"
+      },
+      "estado_atual": {
+        "promocao_oficial": "PROMOVIDO",
+        "lote": "E4C",
+        "id_geometria": "GEO-SU-003"
       }
     }
   },
@@ -2517,7 +2551,7 @@
     "fechados_na_curadoria": 8,
     "aguardando_evidencia_externa": 0,
     "pendencia_restante": null,
-    "_nota_contagem": "8 de 8 fechados na curadoria. Nenhum perfil promovido oficialmente.",
+    "_nota_contagem": "8 de 8 perfis fechados na curadoria (E.4B) e 8 de 8 promovidos oficialmente para dados/ na Sprint E.4C.",
     "perfis_fechados": [
       "SU-001",
       "SU-002",
@@ -2528,7 +2562,7 @@
       "SU-053",
       "SU-102"
     ],
-    "_nota_fechamento": "fechamento da CURADORIA do microlote E.4B. NAO e promocao oficial para dados/: nenhum GEO-* foi criado.",
+    "_nota_fechamento": "A curadoria foi encerrada no E.4B. A promocao oficial foi realizada depois, no E.4C, sem reabrir nem reprocessar os contornos: os artefatos aprovados foram copiados ponto a ponto.",
     "promocao_oficial_realizada": true,
     "lote_promocao": "E4C",
     "_nota_promocao": "8 de 8 promovidos para dados/ na sprint E.4C. Manifesto em curadoria/promocoes/e4c/manifesto_promocao_e4b.json."

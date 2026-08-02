@@ -8,17 +8,33 @@ from pathlib import Path
 
 from .carregar import RAIZ
 
-VERSAO_MANIFESTO = "1.0"
+VERSAO_MANIFESTO = "1.1"
 CAMINHO_MANIFESTO = RAIZ / "curadoria/promocoes/e4c/manifesto_promocao_e4b.json"
 
+# Base da sprint: merge do PR #4 na main, onde o E.4B foi encerrado.
+COMMIT_BASE_MAIN = "e356ba2c34b3c04711d97cbf576f3737be974af3"
 
-def _commit_base() -> str:
+DESCRICAO_CURADORIA_FONTE = ("E.4B concluído e correção de identidade "
+                             "SU-102 × TMS-102 integrada.")
+
+_HEX40 = 40
+
+
+def _git(*args) -> str:
     try:
-        return subprocess.run(["git", "rev-parse", "HEAD"], cwd=RAIZ,
-                              capture_output=True, text=True, timeout=10
-                              ).stdout.strip() or "desconhecido"
+        return subprocess.run(["git", *args], cwd=RAIZ, capture_output=True,
+                              text=True, timeout=10).stdout.strip()
     except Exception:
-        return "desconhecido"
+        return ""
+
+
+def _commit_pre_promocao() -> str:
+    """HEAD imediatamente anterior à gravação em dados/.
+
+    Não registramos o hash do commit que CONTÉM o manifesto — isso seria
+    autorreferência impossível de satisfazer."""
+    h = _git("rev-parse", "HEAD")
+    return h if len(h) == _HEX40 else COMMIT_BASE_MAIN
 
 
 def _rel(caminho) -> str:
@@ -31,7 +47,8 @@ def _rel(caminho) -> str:
 
 def construir_manifesto(simulacao, hash_antes: dict, hash_depois: dict,
                         config: dict, resultado_idempotencia: str,
-                        resultado_rollback: str, lote: str = "E4B") -> dict:
+                        resultado_rollback: str, lote: str = "E4B",
+                        reconstruido: bool = False) -> dict:
     plano = simulacao.plano
     su102 = config["perfis"]["SU-102"]
 
@@ -41,7 +58,7 @@ def construir_manifesto(simulacao, hash_antes: dict, hash_depois: dict,
             "codigo_perfil": c.codigo_perfil,
             "id_geometria": c.id_geometria,
             "dimensao_nominal_mm": list(c.dimensao_nominal_mm),
-            "pontos_contorno_externo": c.quantidade_componentes,
+            "pontos_contorno_externo": c.quantidade_pontos_contorno_externo,
             "quantidade_vazios": c.quantidade_vazios,
             "nivel_contorno": c.nivel_contorno,
             "origem_dimensional": ("MEDICAO_FISICA_COM_NOMINALIZACAO_POR_DOMINIO"
@@ -60,8 +77,10 @@ def construir_manifesto(simulacao, hash_antes: dict, hash_depois: dict,
         "versao_manifesto": VERSAO_MANIFESTO,
         "estado": "PROMOVIDO",
         "data_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "commit_base": _commit_base(),
-        "commit_curadoria": "E.4B — microlote fechado com 8 perfis",
+        "commit_base_main": COMMIT_BASE_MAIN,
+        "commit_pre_promocao": _commit_pre_promocao(),
+        "commit_curadoria_fonte": COMMIT_BASE_MAIN,
+        "descricao_curadoria_fonte": DESCRICAO_CURADORIA_FONTE,
         "sprint": "E.4C",
 
         "perfis": [c.codigo_perfil for c in plano.candidatos],
@@ -113,6 +132,17 @@ def construir_manifesto(simulacao, hash_antes: dict, hash_depois: dict,
         },
 
         "avisos": list(simulacao.avisos),
+        "reconstruido_apos_gravacao": reconstruido,
+        "mecanismo_transacional": {
+            "substituicao_atomica_por_arquivo": True,
+            "commit_atomico_conjunto": False,
+            "journal_persistente": True,
+            "rollback_compensatorio_para_excecoes": True,
+            "recuperacao_apos_encerramento_abrupto": True,
+            "_nota": ("dois os.replace sequenciais NAO sao commit atomico "
+                      "conjunto; o journal persistente cobre a janela entre "
+                      "eles para o caso em que o processo morre."),
+        },
         "resultado": "PROMOVIDO",
     }
 
