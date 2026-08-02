@@ -58,7 +58,13 @@ def _r(regra, encontrado, esperado, arquivo, perfil="-"):
 
 def verificar_integridade_promocao_e4b(config: dict, geometrias: dict,
                                        associacoes: dict, manifesto: dict,
-                                       candidatos=()) -> ResultadoValidacao:
+                                       candidatos=(),
+                                       raiz: Path | None = None) -> ResultadoValidacao:
+    """`raiz` permite verificar uma árvore isolada em vez do repositório vivo.
+
+    Sem isso, um teste integral em `tmp_path` compararia o manifesto da árvore
+    isolada com os arquivos do repositório — e passaria por acidente."""
+    raiz = Path(raiz) if raiz else RAIZ
     r = ResultadoValidacao.aprovado()
     CFG, DADOS_G = "curadoria/aquisicao/configs/e4b_suprema.json", "dados/geometrias.json"
     DADOS_A = "dados/perfil_geometria.json"
@@ -70,7 +76,12 @@ def verificar_integridade_promocao_e4b(config: dict, geometrias: dict,
         r = r.somar(_r("promocao_oficial_realizada não é true",
                        ml.get("promocao_oficial_realizada"), True, CFG))
     for c in PERFIS_E4B:
-        po = (config.get("perfis", {}).get(c, {}).get("promocao_oficial") or {})
+        # No config pré-promoção `promocao_oficial` é a STRING
+        # "ainda_nao_autorizada". Isso tem de virar reprovação descrita, não
+        # AttributeError: o verificador precisa funcionar nos dois estados.
+        po = config.get("perfis", {}).get(c, {}).get("promocao_oficial")
+        if not isinstance(po, dict):
+            po = {"_valor_nao_estruturado": po} if po else {}
         if po.get("status") != "PROMOVIDO":
             r = r.somar(_r("perfil sem status PROMOVIDO", po.get("status"),
                            "PROMOVIDO", CFG, c))
@@ -201,8 +212,8 @@ def verificar_integridade_promocao_e4b(config: dict, geometrias: dict,
     # hash e contagem do manifesto contra os arquivos que estão no disco AGORA
     # hash_depois TAMBÉM tem de bater com o arquivo que está no disco agora.
     # hash_antes NÃO é comparado com o disco — é fato histórico.
-    for rel, real in ((evento.REL_GEOMETRIAS, RAIZ / evento.REL_GEOMETRIAS),
-                      (evento.REL_ASSOCIACOES, RAIZ / evento.REL_ASSOCIACOES)):
+    for rel, real in ((evento.REL_GEOMETRIAS, raiz / evento.REL_GEOMETRIAS),
+                      (evento.REL_ASSOCIACOES, raiz / evento.REL_ASSOCIACOES)):
         esperado = (manifesto.get("hash_depois") or {}).get(rel)
         if esperado and Path(real).exists() and esperado != hash_arquivo(real):
             r = r.somar(_r("hash_depois do manifesto não bate com o arquivo atual",

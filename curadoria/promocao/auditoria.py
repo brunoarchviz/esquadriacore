@@ -112,12 +112,18 @@ def construir_manifesto(simulacao, config: dict,
             "commit_atomico_conjunto": False,
             "journal_persistente": True,
             "journal_cobre_config_e_manifesto": True,
+            "hash_final_esperado_dos_quatro_papeis": True,
+            "config_gravado_pela_transacao": True,
+            "rollback_unico_pelo_journal": True,
             "rollback_compensatorio_para_excecoes": True,
             "recuperacao_apos_encerramento_abrupto": True,
+            "retomada_orientada_por_estado": True,
+            "concluida_validada_antes_da_limpeza": True,
             "preflight_antes_de_restaurar": True,
             "_nota": ("dois os.replace sequenciais NAO sao commit atomico "
                       "conjunto; o journal persiste ate a finalizacao auditavel "
-                      "(manifesto + config + verificacao unificada)."),
+                      "(manifesto + config + verificacao unificada) e e a unica "
+                      "autoridade de rollback depois de criado."),
         },
         "capacidade_reconstrucao_manifesto": {
             "testada": True,

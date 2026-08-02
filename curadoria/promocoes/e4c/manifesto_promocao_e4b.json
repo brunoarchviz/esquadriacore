@@ -249,10 +249,15 @@
     "commit_atomico_conjunto": false,
     "journal_persistente": true,
     "journal_cobre_config_e_manifesto": true,
+    "hash_final_esperado_dos_quatro_papeis": true,
+    "config_gravado_pela_transacao": true,
+    "rollback_unico_pelo_journal": true,
     "rollback_compensatorio_para_excecoes": true,
     "recuperacao_apos_encerramento_abrupto": true,
+    "retomada_orientada_por_estado": true,
+    "concluida_validada_antes_da_limpeza": true,
     "preflight_antes_de_restaurar": true,
-    "_nota": "dois os.replace sequenciais NAO sao commit atomico conjunto; o journal persiste ate a finalizacao auditavel (manifesto + config + verificacao unificada)."
+    "_nota": "dois os.replace sequenciais NAO sao commit atomico conjunto; o journal persiste ate a finalizacao auditavel (manifesto + config + verificacao unificada) e e a unica autoridade de rollback depois de criado."
   },
   "capacidade_reconstrucao_manifesto": {
     "testada": true,
@@ -260,15 +265,6 @@
     "_nota": "o manifesto pode ser recriado a partir do recibo do journal sem alterar os fatos do evento original."
   },
   "reconstruido_apos_gravacao": false,
-  "avisos": [
-    "id_ja_promovido_identico: GEO-SU-001",
-    "id_ja_promovido_identico: GEO-SU-002",
-    "id_ja_promovido_identico: GEO-SU-003",
-    "id_ja_promovido_identico: GEO-SU-039",
-    "id_ja_promovido_identico: GEO-SU-040",
-    "id_ja_promovido_identico: GEO-SU-041",
-    "id_ja_promovido_identico: GEO-SU-053",
-    "id_ja_promovido_identico: GEO-SU-102"
-  ],
+  "avisos": [],
   "resultado": "PROMOVIDO"
 }
