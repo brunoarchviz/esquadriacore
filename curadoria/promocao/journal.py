@@ -16,13 +16,27 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import tempfile
 from pathlib import Path
 
+from . import evento
 from .carregar import hash_arquivo
 
-VERSAO_JOURNAL = 2
+VERSAO_JOURNAL = 3
+
+# Os QUATRO artefatos da transação. Não é uma lista aberta: um journal com
+# papéis a mais ou a menos não descreve esta promoção e não pode guiar
+# recuperação nenhuma.
+PAPEIS = ("geometrias", "associacoes", "config", "manifesto")
+
+# Campos que o recibo do evento tem de carregar. Sem eles a retomada não
+# consegue provar que está terminando a promoção que começou.
+CAMPOS_RECIBO = ("commit_base_main", "commit_pre_promocao",
+                 "commit_curadoria_fonte", "hash_antes", "hash_esperado_depois",
+                 "quantidade_antes", "quantidade_depois", "ids_criados",
+                 "associacoes_criadas")
 
 # Marcos da transação, em ordem.
 PREPARADA = "PREPARADA"
@@ -107,6 +121,14 @@ def preparar(destinos: dict, hashes_esperados: dict, recibo: dict,
     pode não existir ainda: `existia_antes=False` significa que o rollback é
     REMOVER o arquivo, não restaurar backup inexistente."""
     raiz = Path(raiz)
+    if tuple(sorted(destinos)) != tuple(sorted(PAPEIS)):
+        raise ValueError(f"destinos têm de ser exatamente {PAPEIS}, "
+                         f"recebidos {tuple(sorted(destinos))}")
+    faltando = [p for p in PAPEIS if not hashes_esperados.get(p)]
+    if faltando:
+        raise ValueError(
+            f"sem hash final esperado para {faltando} — o journal conheceria o "
+            f"caminho sem conseguir confirmar o conteúdo final")
     dir_dados = Path(destinos["geometrias"]).parent
     arquivos = {}
     for papel, destino in destinos.items():
@@ -144,7 +166,50 @@ def avancar(caminho: Path, estado: str) -> None:
     _gravar_journal(j, d)
 
 
-def ler(caminho: Path) -> dict | None:
+_HEX64 = re.compile(r"[0-9a-f]{64}")
+
+
+def validar_estrutura(d: dict, raiz: Path | None = None) -> list[str]:
+    """Problemas estruturais do journal. Lista vazia = utilizável.
+
+    Um journal é instrução de escrita: se ele apontar para fora da árvore ou
+    não souber o conteúdo final esperado de algum dos quatro papéis, a
+    recuperação passa a ser um chute."""
+    problemas = []
+    arquivos = d.get("arquivos") or {}
+    if tuple(sorted(arquivos)) != tuple(sorted(PAPEIS)):
+        problemas.append(f"papéis {tuple(sorted(arquivos))} != {PAPEIS}")
+    for papel, info in arquivos.items():
+        destino = str(info.get("destino") or "")
+        if not destino:
+            problemas.append(f"{papel}: sem destino")
+            continue
+        if Path(destino).is_absolute():
+            problemas.append(f"{papel}: destino absoluto ({destino})")
+        if ".." in Path(destino).parts:
+            problemas.append(f"{papel}: destino com '..' ({destino})")
+        if raiz is not None and not problemas:
+            alvo = (Path(raiz) / destino).resolve()
+            if not str(alvo).startswith(str(Path(raiz).resolve())):
+                problemas.append(f"{papel}: destino fora da raiz ({destino})")
+        for campo in ("hash_antes", "hash_esperado_depois"):
+            v = info.get(campo)
+            if v is not None and not _HEX64.fullmatch(str(v)):
+                problemas.append(f"{papel}: {campo} não é sha256 hex")
+        if not info.get("hash_esperado_depois"):
+            problemas.append(f"{papel}: sem hash final esperado")
+        if info.get("existia_antes") and not info.get("hash_antes"):
+            problemas.append(f"{papel}: existia antes e não tem hash_antes")
+    recibo = d.get("evento_promocao") or {}
+    faltando = [c for c in CAMPOS_RECIBO if not recibo.get(c)]
+    if faltando:
+        problemas.append(f"recibo do evento incompleto: {faltando}")
+    if d.get("estado") not in ORDEM:
+        problemas.append(f"estado fora da máquina de estados: {d.get('estado')!r}")
+    return problemas
+
+
+def ler(caminho: Path, raiz: Path | None = None) -> dict | None:
     j = Path(caminho)
     if not j.exists():
         return None
@@ -158,6 +223,10 @@ def ler(caminho: Path) -> dict | None:
             f"versao={d.get('versao')!r}, chaves={sorted(d)}")
     if d.get("estado") not in ORDEM:
         raise JournalCorrompido(f"estado desconhecido em {j}: {d.get('estado')!r}")
+    problemas = validar_estrutura(d, raiz)
+    if problemas:
+        raise JournalCorrompido(
+            f"journal inválido em {j}:\n  " + "\n  ".join(problemas))
     return d
 
 
@@ -173,24 +242,74 @@ def pendente(dir_dados: Path, lote: str = "E4B") -> dict | None:
 
 
 def limpar(dir_dados: Path, raiz: Path, lote: str = "E4B") -> None:
-    """Remove journal e backups. Só depois de concluído ou recuperado."""
+    """Remove journal e backups. Só depois de concluído ou recuperado.
+
+    Os backups não vivem todos em `dados/` — config e manifesto ficam em
+    `curadoria/aquisicao/configs/` e `curadoria/promocoes/e4c/`. Sincronizar
+    apenas `dados/` deixaria as remoções dos outros diretórios sem garantia de
+    durabilidade: depois de uma queda, backups já "apagados" poderiam
+    reaparecer e bloquear a próxima promoção."""
     dir_dados, raiz = Path(dir_dados), Path(raiz)
-    d = ler(caminho_journal(dir_dados, lote))
-    if d is not None:
-        for info in d["arquivos"].values():
+    j = caminho_journal(dir_dados, lote)
+    diretorios = {dir_dados}
+    if j.exists():
+        try:
+            d = json.loads(j.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            d = None
+        for info in ((d or {}).get("arquivos") or {}).values():
             if info.get("backup"):
                 bak = raiz / info["backup"]
                 if bak.exists():
                     bak.unlink()
-    j = caminho_journal(dir_dados, lote)
+                    diretorios.add(bak.parent)
     if j.exists():
         j.unlink()
-    sincronizar_diretorio(dir_dados)
+    for p in sorted(diretorios):
+        if Path(p).is_dir():
+            sincronizar_diretorio(p)
 
 
 # ---------------------------------------------------------------------------
 # Recuperação: preflight completo antes de QUALQUER mutação
 # ---------------------------------------------------------------------------
+
+def divergencias_do_recibo(d: dict) -> list[str]:
+    """O recibo do journal contra os fatos canônicos de `evento.py`.
+
+    Um journal cujo recibo não descreve ESTA promoção não pode guiar a
+    retomada: terminaria uma transação diferente da que começou."""
+    rec = d.get("evento_promocao") or {}
+    canonico = evento.recibo_evento()
+    return [f"recibo: {campo} divergente do evento canônico "
+            f"({rec.get(campo)!r} != {canonico[campo]!r})"
+            for campo in CAMPOS_RECIBO if rec.get(campo) != canonico[campo]]
+
+
+def hashes_incompativeis_com_o_estado(d: dict, raiz: Path) -> list[str]:
+    """Todo destino tem de estar OU no conteúdo anterior OU no final esperado.
+
+    Qualquer terceiro valor é edição externa durante a janela da transação: a
+    recuperação não pode passar por cima dela."""
+    raiz = Path(raiz)
+    fora = []
+    for papel, info in d["arquivos"].items():
+        destino = raiz / info["destino"]
+        if not info.get("existia_antes"):
+            # Não existia antes: o rollback é REMOVER. Qualquer conteúdo que
+            # esteja lá é descartável, inclusive gravação parcial.
+            continue
+        if not destino.exists():
+            fora.append(f"{papel}: destino desapareceu ({info['destino']})")
+            continue
+        h = hash_arquivo(destino)
+        aceitos = {info.get("hash_antes"), info.get("hash_esperado_depois")}
+        if h not in aceitos:
+            fora.append(
+                f"{papel}: conteúdo atual não é nem o anterior nem o esperado "
+                f"({h[:16]}) — alteração externa durante a transação")
+    return fora
+
 
 def preflight(d: dict, raiz: Path) -> list[str]:
     """Confere tudo antes de tocar em um único destino.
@@ -198,7 +317,9 @@ def preflight(d: dict, raiz: Path) -> list[str]:
     Restaurar um arquivo e só então descobrir que o backup do outro sumiu
     deixaria o estado pior do que estava."""
     raiz = Path(raiz)
-    problemas = []
+    problemas = validar_estrutura(d, raiz)
+    problemas += divergencias_do_recibo(d)
+    problemas += hashes_incompativeis_com_o_estado(d, raiz)
     for papel, info in d["arquivos"].items():
         destino = raiz / info["destino"]
         if ".." in info["destino"] or Path(info["destino"]).is_absolute():
@@ -223,7 +344,7 @@ def preflight(d: dict, raiz: Path) -> list[str]:
 def recuperar(dir_dados: Path, raiz: Path, lote: str = "E4B") -> dict:
     """Desfaz a transação. Preflight primeiro; zero mutação se ele reprovar."""
     dir_dados, raiz = Path(dir_dados), Path(raiz)
-    d = ler(caminho_journal(dir_dados, lote))
+    d = ler(caminho_journal(dir_dados, lote), raiz)
     if d is None:
         return {"acao": "nada_a_recuperar", "restaurados": [], "removidos": [],
                 "ok": True}
@@ -244,11 +365,14 @@ def recuperar(dir_dados: Path, raiz: Path, lote: str = "E4B") -> dict:
                 removidos.append(papel)
             continue
         bak = raiz / info["backup"]
-        if hash_arquivo(destino) != info["hash_antes"] if destino.exists() else True:
+        precisa = (not destino.exists()
+                   or hash_arquivo(destino) != info["hash_antes"])
+        if precisa:
             escrever_atomico(destino, bak.read_text(encoding="utf-8"))
             restaurados.append(papel)
     for p in {(raiz / i["destino"]).parent for i in d["arquivos"].values()}:
-        sincronizar_diretorio(p)
+        if Path(p).is_dir():     # o manifesto pode nunca ter tido diretório
+            sincronizar_diretorio(p)
 
     divergentes = [p for p, i in d["arquivos"].items()
                    if i["existia_antes"]

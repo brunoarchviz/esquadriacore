@@ -10,7 +10,11 @@ from pathlib import Path
 
 import pytest
 
-from curadoria.promocao import auditoria, carregar, construir, transacao
+from curadoria.promocao import (auditoria, carregar, construir, evento,
+                                finalizacao, integridade, journal, transacao)
+from curadoria.promocao.config_promovido import (ConfigInesperado,
+                                                 construir_config_promovido_e4b)
+from curadoria.promocao.transacao import InterrupcaoSimulada
 from curadoria.promocao.carregar import (CAMINHO_ASSOCIACOES, CAMINHO_CONFIG,
                                          CAMINHO_GEOMETRIAS, PromocaoErro,
                                          calcular_hash_canonico, hash_arquivo)
@@ -370,15 +374,65 @@ def test_ordem_dos_candidatos_nao_altera_o_resultado(candidatos, oficiais_antes)
 # Transação: escrita atômica e rollback
 # ===========================================================================
 
+REL_CONFIG = "curadoria/aquisicao/configs/e4b_suprema.json"
+REL_MANIFESTO = "curadoria/promocoes/e4c/manifesto_promocao_e4b.json"
+
+
+class ArvoreIsolada:
+    """Árvore de trabalho no estado PRÉ-promoção, materializada do git.
+
+    Não é derivada do estado promovido removendo campos: é o conteúdo exato do
+    commit anterior à gravação. Derivar esconderia justamente o que a auditoria
+    encontrou — um config que a transação nunca escreveu."""
+
+    def __init__(self, raiz: Path):
+        self.raiz = raiz
+        self.geometrias = raiz / "dados/geometrias.json"
+        self.associacoes = raiz / "dados/perfil_geometria.json"
+        self.config = raiz / REL_CONFIG
+        self.manifesto = raiz / REL_MANIFESTO
+
+    @property
+    def dir_dados(self):
+        return self.geometrias.parent
+
+    def carregar(self):
+        return (carregar.carregar_config_e4b(self.config),
+                carregar.carregar_geometrias_oficiais(self.geometrias),
+                carregar.carregar_associacoes_oficiais(self.associacoes))
+
+    def verificador(self, cands):
+        def verificar():
+            cfg, geo, assoc = self.carregar()
+            man = json.loads(self.manifesto.read_text(encoding="utf-8"))
+            return integridade.verificar_integridade_promocao_e4b(
+                cfg, geo, assoc, man, cands, raiz=self.raiz)
+        return verificar
+
+
 @pytest.fixture
-def copias(tmp_path, oficiais_antes):
-    """Cópias no estado PRÉ-promoção, para que a transação tenha o que gravar."""
-    geo, assoc = oficiais_antes
-    g = tmp_path / "geometrias.json"
-    a = tmp_path / "perfil_geometria.json"
-    g.write_text(json.dumps(geo, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    a.write_text(json.dumps(assoc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    return g, a
+def arvore(tmp_path):
+    import subprocess
+    raiz = tmp_path / "arvore"
+    arv = ArvoreIsolada(raiz)
+    for rel in ("dados/geometrias.json", "dados/perfil_geometria.json", REL_CONFIG):
+        alvo = raiz / rel
+        alvo.parent.mkdir(parents=True, exist_ok=True)
+        out = subprocess.run(["git", "show", f"{evento.COMMIT_PRE_PROMOCAO}:{rel}"],
+                             cwd=RAIZ, capture_output=True)
+        assert out.returncode == 0, out.stderr.decode()[:400]
+        alvo.write_bytes(out.stdout)
+    # o estado inicial tem de ser mesmo o do evento — senão o teste integral
+    # provaria outra coisa
+    assert hash_arquivo(arv.geometrias) == evento.HASH_ANTES[evento.REL_GEOMETRIAS]
+    assert hash_arquivo(arv.associacoes) == evento.HASH_ANTES[evento.REL_ASSOCIACOES]
+    assert not arv.manifesto.exists()
+    return arv
+
+
+@pytest.fixture
+def copias(arvore):
+    return arvore.geometrias, arvore.associacoes
 
 
 def _sim_para(copias, candidatos):
@@ -389,10 +443,37 @@ def _sim_para(copias, candidatos):
     return plano, transacao.simular_promocao(plano, geo, assoc)
 
 
-def test_grava_os_dois_arquivos_em_sucesso(copias, candidatos):
-    g, a = copias
-    plano, sim = _sim_para(copias, candidatos)
-    estado, h0, h1 = transacao.aplicar_promocao_transacional(plano, g, a, sim, raiz=g.parent)
+def _documentos(arvore, candidatos):
+    cfg, geo, assoc = arvore.carregar()
+    plano = _plano(candidatos, geo, assoc)
+    sim = transacao.simular_promocao(plano, geo, assoc)
+    docs = finalizacao.planejar_documentos(
+        sim, cfg, candidatos, arvore.geometrias, arvore.associacoes,
+        arvore.config)
+    return plano, sim, docs
+
+
+def _aplicar(arvore, candidatos, **kw):
+    """Transação completa dos QUATRO artefatos sobre a árvore isolada."""
+    plano, sim, docs = _documentos(arvore, candidatos)
+    finalizar = kw.pop("finalizar", None)
+    if finalizar is None:
+        def finalizar(j):
+            finalizacao.retomar_finalizacao(
+                j, arvore.raiz, docs, arvore.verificador(candidatos),
+                interrupcao=InterrupcaoSimulada,
+                falha_injetada=kw.get("falha_injetada", ""),
+                interromper_em=kw.get("interromper_em", ""))
+    return transacao.aplicar_promocao_transacional(
+        plano, arvore.geometrias, arvore.associacoes, sim, docs,
+        caminho_config=arvore.config, caminho_manifesto=arvore.manifesto,
+        finalizar=finalizar, raiz=arvore.raiz, **kw)
+
+
+def test_grava_os_dois_arquivos_em_sucesso(arvore, candidatos):
+    g, a = arvore.geometrias, arvore.associacoes
+    _, sim, _ = _documentos(arvore, candidatos)
+    estado, h0, h1 = _aplicar(arvore, candidatos)
     assert estado.aplicado and not estado.rollback_executado
     assert h1 != h0
     assert len(json.loads(g.read_text())["geometrias"]) == sim.geometrias_depois
@@ -402,32 +483,27 @@ def test_grava_os_dois_arquivos_em_sucesso(copias, candidatos):
 @pytest.mark.parametrize("ponto", ["apos_primeiro_temporario",
                                    "entre_os_dois_replaces",
                                    "na_validacao_pos_gravacao"])
-def test_falha_em_qualquer_ponto_restaura_os_dois_arquivos(copias, candidatos, ponto):
-    g, a = copias
+def test_falha_em_qualquer_ponto_restaura_os_dois_arquivos(arvore, candidatos, ponto):
+    g, a = arvore.geometrias, arvore.associacoes
     h0 = (hash_arquivo(g), hash_arquivo(a))
-    plano, sim = _sim_para(copias, candidatos)
-    estado, _, _ = transacao.aplicar_promocao_transacional(
-        plano, g, a, sim, raiz=g.parent, falha_injetada=ponto)
-    assert not estado.aplicado and estado.rollback_executado
+    estado, _, _ = _aplicar(arvore, candidatos, falha_injetada=ponto)
+    assert not estado.aplicado
     assert (hash_arquivo(g), hash_arquivo(a)) == h0, "rollback não restaurou tudo"
     json.loads(g.read_text())          # não pode ficar JSON parcial
     json.loads(a.read_text())
 
 
-def test_temporarios_nao_permanecem_apos_sucesso(copias, candidatos):
-    g, a = copias
-    plano, sim = _sim_para(copias, candidatos)
-    transacao.aplicar_promocao_transacional(plano, g, a, sim, raiz=g.parent)
-    restos = [p.name for p in g.parent.iterdir() if p.suffix == ".tmp"]
+def test_temporarios_nao_permanecem_apos_sucesso(arvore, candidatos):
+    _aplicar(arvore, candidatos)
+    restos = [p.name for p in arvore.dir_dados.iterdir() if p.suffix == ".tmp"]
     assert restos == []
 
 
-def test_promocao_repetida_e_idempotente(copias, candidatos):
-    g, a = copias
-    plano, sim = _sim_para(copias, candidatos)
-    transacao.aplicar_promocao_transacional(plano, g, a, sim, raiz=g.parent)
+def test_promocao_repetida_e_idempotente(arvore, candidatos):
+    g, a = arvore.geometrias, arvore.associacoes
+    _aplicar(arvore, candidatos)
     h1 = (hash_arquivo(g), hash_arquivo(a))
-    plano2, sim2 = _sim_para(copias, candidatos)
+    plano2, sim2 = _sim_para((g, a), candidatos)
     assert sim2.ids_criados == () and sim2.associacoes_criadas == ()
     assert (hash_arquivo(g), hash_arquivo(a)) == h1
 
@@ -644,22 +720,18 @@ def test_dados_oficiais_mantem_indentacao_de_origem():
 # Journal e recuperação após encerramento abrupto
 # ===========================================================================
 
-from curadoria.promocao import evento, integridade, journal   # noqa: E402
-from curadoria.promocao.transacao import InterrupcaoSimulada  # noqa: E402
-
-
 def _dir(copias):
     return copias[0].parent
 
 
-def test_sucesso_normal_nao_deixa_journal_nem_backup(copias, candidatos):
-    g, a = copias
-    plano, sim = _sim_para(copias, candidatos)
-    estado, _, _ = transacao.aplicar_promocao_transacional(plano, g, a, sim, raiz=g.parent)
+def test_sucesso_normal_nao_deixa_journal_nem_backup(arvore, candidatos):
+    estado, _, _ = _aplicar(arvore, candidatos)
     assert estado.aplicado
-    assert journal.pendente(_dir(copias)) is None
-    restos = [p.name for p in g.parent.iterdir() if p.name.startswith(".")]
+    assert journal.pendente(arvore.dir_dados) is None
+    restos = [p.name for p in arvore.dir_dados.iterdir() if p.name.startswith(".")]
     assert restos == [], f"sobras: {restos}"
+    assert not journal.caminho_backup(arvore.config).exists()
+    assert not journal.caminho_backup(arvore.manifesto).exists()
 
 
 @pytest.mark.parametrize("ponto,estado_esperado", [
@@ -667,50 +739,43 @@ def test_sucesso_normal_nao_deixa_journal_nem_backup(copias, candidatos):
     ("apos_primeiro_replace", journal.GEOMETRIAS_SUBSTITUIDAS),
     ("apos_ambos_replaces", journal.AMBOS_SUBSTITUIDOS),
 ])
-def test_interrupcao_abrupta_deixa_journal_recuperavel(copias, candidatos,
+def test_interrupcao_abrupta_deixa_journal_recuperavel(arvore, candidatos,
                                                        ponto, estado_esperado):
     """Simula SIGKILL: sai sem rollback, como um processo morto faria."""
-    g, a = copias
+    g, a = arvore.geometrias, arvore.associacoes
     h0 = (hash_arquivo(g), hash_arquivo(a))
-    plano, sim = _sim_para(copias, candidatos)
     with pytest.raises(InterrupcaoSimulada):
-        transacao.aplicar_promocao_transacional(plano, g, a, sim,
-                                                raiz=g.parent, interromper_em=ponto)
-    pend = journal.pendente(_dir(copias))
+        _aplicar(arvore, candidatos, interromper_em=ponto)
+    pend = journal.pendente(arvore.dir_dados)
     assert pend is not None and pend["estado"] == estado_esperado
 
     # nova "execução" encontra o journal e recupera
-    rel = journal.recuperar(_dir(copias), _dir(copias))
+    rel = journal.recuperar(arvore.dir_dados, arvore.raiz)
     assert rel["ok"] and rel["acao"] == "restaurado"
     assert (hash_arquivo(g), hash_arquivo(a)) == h0, "não voltou ao original"
-    assert journal.pendente(_dir(copias)) is None
+    assert journal.pendente(arvore.dir_dados) is None
     json.loads(g.read_text()); json.loads(a.read_text())
 
 
 def test_interrupcao_apos_primeiro_replace_deixa_destinos_dessincronizados(
-        copias, candidatos):
+        arvore, candidatos):
     """Prova que a janela existe de verdade — é o que o journal cobre."""
-    g, a = copias
+    g, a = arvore.geometrias, arvore.associacoes
     h0g = hash_arquivo(g)
-    plano, sim = _sim_para(copias, candidatos)
+    _, sim, _ = _documentos(arvore, candidatos)
     with pytest.raises(InterrupcaoSimulada):
-        transacao.aplicar_promocao_transacional(
-            plano, g, a, sim, raiz=g.parent, interromper_em="apos_primeiro_replace")
+        _aplicar(arvore, candidatos, interromper_em="apos_primeiro_replace")
     assert hash_arquivo(g) != h0g, "geometrias deveria ter sido substituída"
     assert len(json.loads(a.read_text())["associacoes"]) == sim.associacoes_antes
-    journal.recuperar(_dir(copias), _dir(copias))
+    journal.recuperar(arvore.dir_dados, arvore.raiz)
 
 
-def test_promover_recusa_enquanto_houver_journal_pendente(copias, candidatos):
-    g, a = copias
-    plano, sim = _sim_para(copias, candidatos)
+def test_promover_recusa_enquanto_houver_journal_pendente(arvore, candidatos):
     with pytest.raises(InterrupcaoSimulada):
-        transacao.aplicar_promocao_transacional(plano, g, a, sim,
-                                                raiz=g.parent,
-                                                interromper_em="apos_journal")
+        _aplicar(arvore, candidatos, interromper_em="apos_journal")
     with pytest.raises(RuntimeError, match="não concluída"):
-        transacao.aplicar_promocao_transacional(plano, g, a, sim, raiz=g.parent)
-    journal.recuperar(_dir(copias), _dir(copias))
+        _aplicar(arvore, candidatos)
+    journal.recuperar(arvore.dir_dados, arvore.raiz)
 
 
 def test_journal_corrompido_e_recusado_sem_apagar(copias):
@@ -732,17 +797,15 @@ def test_journal_de_versao_desconhecida_e_recusado(copias):
 
 @pytest.mark.parametrize("faltando", ["geometrias", "associacoes"])
 def test_preflight_bloqueia_sem_restaurar_nada_quando_falta_backup(
-        copias, candidatos, faltando):
+        arvore, candidatos, faltando):
     """Prova de NÃO-restauração parcial.
 
     Restaurar um arquivo e só então descobrir que o backup do outro sumiu
     deixaria o estado pior do que estava. O preflight roda antes de qualquer
     mutação; se reprova, zero destinos são tocados."""
-    g, a = copias
-    plano, sim = _sim_para(copias, candidatos)
+    g, a = arvore.geometrias, arvore.associacoes
     with pytest.raises(InterrupcaoSimulada):
-        transacao.aplicar_promocao_transacional(
-            plano, g, a, sim, raiz=g.parent, interromper_em="apos_ambos_replaces")
+        _aplicar(arvore, candidatos, interromper_em="apos_ambos_replaces")
 
     # ambos os destinos estão NOVOS neste ponto
     novos = (hash_arquivo(g), hash_arquivo(a))
@@ -752,25 +815,25 @@ def test_preflight_bloqueia_sem_restaurar_nada_quando_falta_backup(
     bak_outro = journal.caminho_backup(outro)
 
     with pytest.raises(journal.RecuperacaoBloqueada, match="backup ausente"):
-        journal.recuperar(_dir(copias), _dir(copias))
+        journal.recuperar(arvore.dir_dados, arvore.raiz)
 
     # nada foi restaurado — nem o arquivo cujo backup ainda existe
     assert (hash_arquivo(g), hash_arquivo(a)) == novos, \
         "houve restauração parcial"
-    assert journal.caminho_journal(_dir(copias)).exists(), "journal sumiu"
+    assert journal.caminho_journal(arvore.dir_dados).exists(), "journal sumiu"
     assert bak_outro.exists(), "backup existente foi removido"
+    assert journal.caminho_backup(arvore.config).exists(), \
+        "backup do config foi removido apesar do preflight reprovar"
 
 
-def test_preflight_bloqueia_backup_com_hash_divergente(copias, candidatos):
-    g, a = copias
-    plano, sim = _sim_para(copias, candidatos)
+def test_preflight_bloqueia_backup_com_hash_divergente(arvore, candidatos):
+    g, a = arvore.geometrias, arvore.associacoes
     with pytest.raises(InterrupcaoSimulada):
-        transacao.aplicar_promocao_transacional(
-            plano, g, a, sim, raiz=g.parent, interromper_em="apos_ambos_replaces")
+        _aplicar(arvore, candidatos, interromper_em="apos_ambos_replaces")
     novos = (hash_arquivo(g), hash_arquivo(a))
     journal.caminho_backup(g).write_text('{"geometrias": []}', encoding="utf-8")
     with pytest.raises(journal.RecuperacaoBloqueada, match="hash divergente"):
-        journal.recuperar(_dir(copias), _dir(copias))
+        journal.recuperar(arvore.dir_dados, arvore.raiz)
     assert (hash_arquivo(g), hash_arquivo(a)) == novos
 
 
@@ -915,85 +978,94 @@ def test_campo_de_pontos_tem_nome_honesto(candidatos):
 # Journal CONCLUIDA abandonado e finalização retomável
 # ===========================================================================
 
-def test_journal_concluida_abandonado_nao_e_ignorado(copias, candidatos):
+def test_journal_concluida_abandonado_nao_e_ignorado(arvore, candidatos):
     """Morte entre CONCLUIDA e a limpeza deixaria backups órfãos no disco.
     `pendente()` não pode fingir que está tudo bem."""
-    g, a = copias
-    plano, sim = _sim_para(copias, candidatos)
+    g = arvore.geometrias
     with pytest.raises(InterrupcaoSimulada):
-        transacao.aplicar_promocao_transacional(
-            plano, g, a, sim, raiz=g.parent, interromper_em="apos_concluida")
-    pend = journal.pendente(_dir(copias))
+        _aplicar(arvore, candidatos, interromper_em="apos_concluida")
+    pend = journal.pendente(arvore.dir_dados)
     assert pend is not None and pend["estado"] == journal.CONCLUIDA
-    journal.limpar(_dir(copias), _dir(copias))
-    assert journal.pendente(_dir(copias)) is None
+    journal.limpar(arvore.dir_dados, arvore.raiz)
+    assert journal.pendente(arvore.dir_dados) is None
     assert not journal.caminho_backup(g).exists()
 
 
-def test_interrupcao_apos_dados_validos_mantem_dados_novos(copias, candidatos):
+def test_interrupcao_apos_dados_validos_mantem_dados_novos(arvore, candidatos):
     """A partir de DADOS_VALIDOS a estratégia é retomar, não desfazer: os dados
     já foram validados e desfazê-los perderia trabalho verificado."""
-    g, a = copias
-    plano, sim = _sim_para(copias, candidatos)
+    g = arvore.geometrias
+    _, sim, _ = _documentos(arvore, candidatos)
     with pytest.raises(InterrupcaoSimulada):
-        transacao.aplicar_promocao_transacional(
-            plano, g, a, sim, raiz=g.parent, interromper_em="apos_dados_validos")
-    pend = journal.pendente(_dir(copias))
+        _aplicar(arvore, candidatos, interromper_em="apos_dados_validos")
+    pend = journal.pendente(arvore.dir_dados)
     assert pend["estado"] == journal.DADOS_VALIDOS
     assert pend["estado"] in journal.ESTADOS_FINALIZAVEIS
     assert pend["estado"] not in journal.ESTADOS_ROLLBACK
     assert len(json.loads(g.read_text())["geometrias"]) == sim.geometrias_depois
-    journal.limpar(_dir(copias), _dir(copias))
+    journal.limpar(arvore.dir_dados, arvore.raiz)
 
 
-def test_journal_carrega_recibo_suficiente_para_o_manifesto(copias, candidatos):
+def test_journal_carrega_recibo_suficiente_para_o_manifesto(arvore, candidatos):
     """hash_antes, quantidade_antes e ids_criados NÃO podem ser inferidos
     depois da gravação — por isso viajam no journal."""
-    g, a = copias
-    plano, sim = _sim_para(copias, candidatos)
     with pytest.raises(InterrupcaoSimulada):
-        transacao.aplicar_promocao_transacional(
-            plano, g, a, sim, raiz=g.parent, interromper_em="apos_dados_validos")
-    rec = journal.pendente(_dir(copias))["evento_promocao"]
+        _aplicar(arvore, candidatos, interromper_em="apos_dados_validos")
+    rec = journal.pendente(arvore.dir_dados)["evento_promocao"]
     assert rec["quantidade_antes"] == {"geometrias": 46, "associacoes": 245}
     assert rec["quantidade_depois"] == {"geometrias": 54, "associacoes": 253}
     assert len(rec["ids_criados"]) == 8
     assert len(rec["associacoes_criadas"]) == 8
     assert rec["commit_pre_promocao"] == evento.COMMIT_PRE_PROMOCAO
     assert rec["hash_antes"] != rec["hash_esperado_depois"]
-    journal.limpar(_dir(copias), _dir(copias))
+    journal.limpar(arvore.dir_dados, arvore.raiz)
 
 
-def test_journal_registra_config_e_manifesto(copias, candidatos, tmp_path):
+def test_journal_registra_config_e_manifesto(arvore, candidatos):
     """A finalização auditável tem de estar sob o mesmo journal."""
-    g, a = copias
-    cfg_falso = tmp_path / "cfg.json"
-    cfg_falso.write_text("{}", encoding="utf-8")
-    man_falso = tmp_path / "manifesto.json"      # NÃO existe ainda
-    plano, sim = _sim_para(copias, candidatos)
     with pytest.raises(InterrupcaoSimulada):
-        transacao.aplicar_promocao_transacional(
-            plano, g, a, sim, raiz=g.parent, caminho_config=cfg_falso,
-            caminho_manifesto=man_falso, interromper_em="apos_journal")
-    arq = journal.pendente(_dir(copias))["arquivos"]
+        _aplicar(arvore, candidatos, interromper_em="apos_journal")
+    arq = journal.pendente(arvore.dir_dados)["arquivos"]
     assert set(arq) == {"geometrias", "associacoes", "config", "manifesto"}
     assert arq["config"]["existia_antes"] is True
     assert arq["manifesto"]["existia_antes"] is False
     assert arq["manifesto"]["backup"] is None
-    journal.recuperar(_dir(copias), _dir(copias))
+    journal.recuperar(arvore.dir_dados, arvore.raiz)
 
 
-def test_rollback_remove_manifesto_que_nao_existia(copias, candidatos, tmp_path):
-    """Sem backup para restaurar: rollback = remover o arquivo criado."""
-    g, a = copias
-    man = tmp_path / "manifesto_novo.json"
-    plano, sim = _sim_para(copias, candidatos)
+def test_journal_tem_hash_final_dos_quatro_papeis(arvore, candidatos):
+    """Sem hash final para config e manifesto, o journal conheceria os quatro
+    caminhos sem conseguir confirmar o conteúdo final de nenhum dos dois."""
+    _, _, docs = _documentos(arvore, candidatos)
     with pytest.raises(InterrupcaoSimulada):
-        transacao.aplicar_promocao_transacional(
-            plano, g, a, sim, raiz=g.parent, caminho_manifesto=man,
-            interromper_em="apos_primeiro_replace")
+        _aplicar(arvore, candidatos, interromper_em="apos_journal")
+    arq = journal.pendente(arvore.dir_dados)["arquivos"]
+    for papel in journal.PAPEIS:
+        h = arq[papel]["hash_esperado_depois"]
+        assert h and len(h) == 64, papel
+        assert h == docs.hashes[papel], papel
+    journal.recuperar(arvore.dir_dados, arvore.raiz)
+
+
+def test_journal_sem_hash_final_de_config_e_recusado(arvore, candidatos):
+    _, _, docs = _documentos(arvore, candidatos)
+    parciais = dict(docs.hashes)
+    parciais["config"] = None
+    with pytest.raises(ValueError, match="hash final esperado"):
+        journal.preparar(
+            {"geometrias": arvore.geometrias, "associacoes": arvore.associacoes,
+             "config": arvore.config, "manifesto": arvore.manifesto},
+            parciais, evento.recibo_evento(), arvore.raiz)
+
+
+def test_rollback_remove_manifesto_que_nao_existia(arvore, candidatos):
+    """Sem backup para restaurar: rollback = remover o arquivo criado."""
+    man = arvore.manifesto
+    with pytest.raises(InterrupcaoSimulada):
+        _aplicar(arvore, candidatos, interromper_em="apos_primeiro_replace")
+    man.parent.mkdir(parents=True, exist_ok=True)
     man.write_text('{"parcial": true}', encoding="utf-8")   # criado no meio
-    rel = journal.recuperar(_dir(copias), _dir(copias))
+    rel = journal.recuperar(arvore.dir_dados, arvore.raiz)
     assert "manifesto" in rel["removidos"]
     assert not man.exists()
 
@@ -1072,3 +1144,456 @@ def test_hash_antes_igual_a_depois_e_detectado(quatro_camadas):
     m2["hash_antes"] = copy.deepcopy(m2["hash_depois"])
     r = integridade.verificar_integridade_promocao_e4b(cfg, geo, assoc, m2)
     assert not r.ok and any("hash_antes" in f["regra"] for f in r.falhas)
+
+
+# ===========================================================================
+# Transformação do config: o que a promoção realmente escreve
+# ===========================================================================
+
+@pytest.fixture
+def config_pre(arvore):
+    """Config no estado PRÉ-promoção, vindo do git — não derivado do promovido."""
+    cfg = carregar.carregar_config_e4b(arvore.config)
+    assert cfg["microlote_janela"]["promocao_oficial_realizada"] is False
+    for p in PERFIS_E4B:
+        po = cfg["perfis"][p].get("promocao_oficial")
+        assert not (isinstance(po, dict) and po.get("status") == "PROMOVIDO"), p
+    return cfg
+
+
+def test_config_pre_promocao_reprova_a_verificacao_unificada(
+        config_pre, oficiais, candidatos, manifesto_real):
+    """Sem esta prova, o teste integral não significaria nada: se o config
+    pré-promoção já passasse, a ausência de gravação ficaria invisível."""
+    geo, assoc = oficiais
+    r = integridade.verificar_integridade_promocao_e4b(
+        config_pre, geo, assoc, manifesto_real, candidatos)
+    assert not r.ok
+    assert any("promocao_oficial_realizada" in f["regra"] for f in r.falhas)
+
+
+def test_transformacao_promove_os_oito_perfis(config_pre, candidatos):
+    novo = construir_config_promovido_e4b(config_pre, candidatos)
+    ml = novo["microlote_janela"]
+    assert ml["promocao_oficial_realizada"] is True
+    assert ml["lote_promocao"] == "E4C"
+    assert ml["pendencia_restante"] is None
+    assert ml["fechados_na_curadoria"] == 8
+    assert ml["aguardando_evidencia_externa"] == 0
+    for p in PERFIS_E4B:
+        po = novo["perfis"][p]["promocao_oficial"]
+        assert po["status"] == "PROMOVIDO"
+        assert po["id_geometria"] == f"GEO-{p}"
+        assert po["perfil_id_oficial"] == carregar.perfil_id_oficial(p)
+        assert po["lote"] == "E4C"
+
+
+def test_transformacao_nao_altera_o_config_recebido(config_pre, candidatos):
+    antes = calcular_hash_canonico(config_pre)
+    construir_config_promovido_e4b(config_pre, candidatos)
+    assert calcular_hash_canonico(config_pre) == antes
+
+
+def test_transformacao_e_idempotente(config_pre, candidatos):
+    um = construir_config_promovido_e4b(config_pre, candidatos)
+    dois = construir_config_promovido_e4b(um, candidatos)
+    assert calcular_hash_canonico(um) == calcular_hash_canonico(dois)
+
+
+def test_transformacao_reproduz_o_config_publicado(config_pre, candidatos):
+    """A prova mais forte: partindo do estado pré-promoção, a função gera
+    exatamente o arquivo que está publicado — byte a byte."""
+    gerado = json.dumps(construir_config_promovido_e4b(config_pre, candidatos),
+                        ensure_ascii=False, indent=2) + "\n"
+    assert gerado == CAMINHO_CONFIG.read_text(encoding="utf-8")
+
+
+def test_transformacao_preserva_o_historico_datado(config_pre, candidatos):
+    novo = construir_config_promovido_e4b(config_pre, candidatos)
+    h = novo["perfis"]["SU-053"]["historico_pre_promocao"]
+    assert h["estado"] == "APROVADO_APENAS_NA_CURADORIA"
+    assert "HISTORICO" in h["observacao"]
+    for p in ("SU-001", "SU-002", "SU-003"):
+        hv = novo["perfis"][p]["aprovacao_visual"]["historico_pre_promocao"]
+        assert hv["data"] == "2026-07-28"
+
+
+def test_transformacao_apaga_a_contradicao_de_estado_atual(config_pre, candidatos):
+    novo = construir_config_promovido_e4b(config_pre, candidatos)
+    assert integridade.verificar_integridade_promocao_e4b(
+        novo, *oficiais_do_repo(), manifesto_do_repo(), ()).ok
+
+
+def oficiais_do_repo():
+    return (carregar.carregar_geometrias_oficiais(CAMINHO_GEOMETRIAS),
+            carregar.carregar_associacoes_oficiais(CAMINHO_ASSOCIACOES))
+
+
+def manifesto_do_repo():
+    return json.loads(auditoria.CAMINHO_MANIFESTO.read_text(encoding="utf-8"))
+
+
+def test_transformacao_preserva_a_arbitragem_do_su102(config_pre, candidatos):
+    novo = construir_config_promovido_e4b(config_pre, candidatos)
+    p = novo["perfis"]["SU-102"]
+    assert p["gate_aspecto_fisico_bruto"]["dimensoes_mm"] == [16.9, 15.0]
+    assert p["gate_aspecto_fisico_bruto"]["resultado"] == "REPROVADO"
+    assert p["gate_aspecto_nominal"]["resultado"] == "APROVADO"
+    po = p["promocao_oficial"]
+    assert po["dimensao_nominal_mm"] == [17.0, 15.0]
+    assert po["origem_dimensional"] == "MEDICAO_FISICA_COM_NOMINALIZACAO_POR_DOMINIO"
+    assert po["identidade_tms102"] == "CONFIRMADA"
+    assert po["geo_tms102_criado"] is False
+
+
+def test_transformacao_recusa_nota_desconhecida(config_pre, candidatos):
+    """Não sobrescreve texto que ninguém revisou."""
+    c2 = copy.deepcopy(config_pre)
+    c2["microlote_janela"]["_nota_contagem"] = "outra coisa qualquer"
+    with pytest.raises(ConfigInesperado, match="texto inesperado"):
+        construir_config_promovido_e4b(c2, candidatos)
+
+
+# ===========================================================================
+# Teste integral: 46/245 e config NÃO promovido -> 54/253 e config promovido
+# ===========================================================================
+
+def test_promocao_integral_a_partir_do_estado_pre_promocao(arvore, candidatos):
+    """O estado vivo da branch já está promovido e esconderia a ausência de
+    gravação do config. Aqui a transação parte do estado real do evento."""
+    cfg0 = carregar.carregar_config_e4b(arvore.config)
+    geo0 = carregar.carregar_geometrias_oficiais(arvore.geometrias)
+    assoc0 = carregar.carregar_associacoes_oficiais(arvore.associacoes)
+    assert len(geo0["geometrias"]) == 46
+    assert len(assoc0["associacoes"]) == 245
+    assert cfg0["microlote_janela"]["promocao_oficial_realizada"] is False
+    assert not arvore.manifesto.exists()
+
+    estado, _, _ = _aplicar(arvore, candidatos)
+    assert estado.aplicado and not estado.rollback_executado
+
+    cfg, geo, assoc = arvore.carregar()
+    assert len(geo["geometrias"]) == 54
+    assert len(assoc["associacoes"]) == 253
+    assert cfg["microlote_janela"]["promocao_oficial_realizada"] is True
+    for p in PERFIS_E4B:
+        assert cfg["perfis"][p]["promocao_oficial"]["status"] == "PROMOVIDO"
+
+    man = json.loads(arvore.manifesto.read_text(encoding="utf-8"))
+    assert man["quantidade_antes"] == {"geometrias": 46, "associacoes": 245}
+    assert man["quantidade_depois"] == {"geometrias": 54, "associacoes": 253}
+    assert man["reconstruido_apos_gravacao"] is False
+
+    unif = integridade.verificar_integridade_promocao_e4b(
+        cfg, geo, assoc, man, candidatos, raiz=arvore.raiz)
+    assert unif.ok, unif.descrever()
+
+    assert journal.pendente(arvore.dir_dados) is None
+    assert not journal.caminho_backup(arvore.config).exists()
+    assert not journal.caminho_backup(arvore.geometrias).exists()
+
+
+def test_promocao_integral_reproduz_os_hashes_do_evento(arvore, candidatos):
+    """A árvore isolada sai byte a byte igual ao que foi publicado."""
+    _aplicar(arvore, candidatos)
+    assert hash_arquivo(arvore.geometrias) == \
+        evento.HASH_DEPOIS[evento.REL_GEOMETRIAS]
+    assert hash_arquivo(arvore.associacoes) == \
+        evento.HASH_DEPOIS[evento.REL_ASSOCIACOES]
+    assert arvore.config.read_text(encoding="utf-8") == \
+        CAMINHO_CONFIG.read_text(encoding="utf-8")
+
+
+def test_segunda_execucao_integral_nao_muda_nada(arvore, candidatos):
+    _aplicar(arvore, candidatos)
+    quatro = (arvore.geometrias, arvore.associacoes, arvore.config,
+              arvore.manifesto)
+    h1 = tuple(hash_arquivo(p) for p in quatro)
+    cfg, geo, assoc = arvore.carregar()
+    plano2 = _plano(candidatos, geo, assoc)
+    sim2 = transacao.simular_promocao(plano2, geo, assoc)
+    assert sim2.ids_criados == () and sim2.associacoes_criadas == ()
+    docs2 = finalizacao.planejar_documentos(
+        sim2, cfg, candidatos, arvore.geometrias, arvore.associacoes,
+        arvore.config)
+    assert docs2.config == arvore.config.read_text(encoding="utf-8")
+    assert tuple(hash_arquivo(p) for p in quatro) == h1
+
+
+# ===========================================================================
+# Falhas DURANTE a finalização auditável
+# ===========================================================================
+
+PONTOS_DE_FALHA_NA_FINALIZACAO = [
+    "depois_de_gravar_manifesto",
+    "depois_de_gravar_config",
+    "durante_verificacao_unificada",
+    "depois_de_validacao_unificada",
+]
+
+
+@pytest.mark.parametrize("ponto", PONTOS_DE_FALHA_NA_FINALIZACAO)
+def test_falha_na_finalizacao_restaura_os_quatro_artefatos(arvore, candidatos, ponto):
+    """Exceção depois do journal não pode restaurar só `dados/`.
+
+    Era exatamente esse o buraco: o manifesto novo ficava no disco, o config
+    ficava no estado que estivesse, e o journal — a única autoridade capaz de
+    desfazer os quatro — era apagado em seguida."""
+    h0 = {p: hash_arquivo(p) for p in (arvore.geometrias, arvore.associacoes,
+                                       arvore.config)}
+    assert not arvore.manifesto.exists()
+
+    estado, _, _ = _aplicar(arvore, candidatos, falha_injetada=ponto)
+    assert not estado.aplicado and estado.rollback_executado
+
+    for caminho, h in h0.items():
+        assert hash_arquivo(caminho) == h, f"{caminho.name} não voltou ao original"
+    assert not arvore.manifesto.exists(), \
+        "manifesto que não existia antes continuou no disco"
+    cfg = carregar.carregar_config_e4b(arvore.config)
+    assert cfg["microlote_janela"]["promocao_oficial_realizada"] is False
+    assert journal.pendente(arvore.dir_dados) is None
+    assert not journal.caminho_backup(arvore.config).exists()
+    assert not journal.caminho_backup(arvore.geometrias).exists()
+
+
+def test_manifesto_inexistente_e_removido_quando_a_verificacao_falha(arvore, candidatos):
+    """O caso obrigatório: manifesto não existia, é gravado, a verificação
+    unificada falha depois. Ele tem de sumir e todo o resto voltar."""
+    h0 = {p: hash_arquivo(p) for p in (arvore.geometrias, arvore.associacoes,
+                                       arvore.config)}
+    plano, sim, docs = _documentos(arvore, candidatos)
+
+    def verificador_que_reprova():
+        from curadoria.promocao.modelos import ResultadoValidacao
+        assert arvore.manifesto.exists(), "o manifesto deveria ter sido gravado"
+        return ResultadoValidacao.reprovado(
+            "-", "reprovação forçada", "x", "y", "teste")
+
+    def finalizar(j):
+        finalizacao.retomar_finalizacao(j, arvore.raiz, docs,
+                                        verificador_que_reprova)
+
+    estado, _, _ = transacao.aplicar_promocao_transacional(
+        plano, arvore.geometrias, arvore.associacoes, sim, docs,
+        caminho_config=arvore.config, caminho_manifesto=arvore.manifesto,
+        finalizar=finalizar, raiz=arvore.raiz)
+    assert not estado.aplicado and estado.rollback_executado
+    assert not arvore.manifesto.exists()
+    for caminho, h in h0.items():
+        assert hash_arquivo(caminho) == h
+
+
+def test_rollback_falho_preserva_journal_e_backups(arvore, candidatos):
+    """Se o rollback não puder ser confirmado, nada é limpo."""
+    with pytest.raises(InterrupcaoSimulada):
+        _aplicar(arvore, candidatos, interromper_em="apos_ambos_replaces")
+    journal.caminho_backup(arvore.config).unlink()
+    with pytest.raises(journal.RecuperacaoBloqueada):
+        journal.recuperar(arvore.dir_dados, arvore.raiz)
+    assert journal.caminho_journal(arvore.dir_dados).exists()
+    assert journal.caminho_backup(arvore.geometrias).exists()
+
+
+# ===========================================================================
+# Crash em TODOS os marcos + recuperação orientada por estado
+# ===========================================================================
+
+MARCOS_DE_CRASH = [
+    ("apos_journal", journal.PREPARADA),
+    ("apos_primeiro_replace", journal.GEOMETRIAS_SUBSTITUIDAS),
+    ("apos_ambos_replaces", journal.AMBOS_SUBSTITUIDOS),
+    ("apos_dados_validos", journal.DADOS_VALIDOS),
+    ("depois_de_gravar_manifesto", journal.MANIFESTO_GRAVADO),
+    ("depois_de_gravar_config", journal.CONFIG_FINALIZADO),
+    ("depois_de_validacao_unificada", journal.VALIDACAO_UNIFICADA),
+    ("apos_concluida", journal.CONCLUIDA),
+]
+
+
+def _recuperar(arvore, candidatos):
+    """Nova execução: reconstrói os documentos e retoma pelo journal."""
+    d = journal.ler(journal.caminho_journal(arvore.dir_dados), arvore.raiz)
+    if d["estado"] in journal.ESTADOS_ROLLBACK:
+        return journal.recuperar(arvore.dir_dados, arvore.raiz)
+    cfg, geo, assoc = arvore.carregar()
+    if len(geo["geometrias"]) > 46:          # dados já promovidos
+        ids = {c.id_geometria for c in candidatos}
+        perfis = {carregar.perfil_id_oficial(c.codigo_perfil) for c in candidatos}
+        geo = dict(geo, geometrias=[x for x in geo["geometrias"]
+                                    if x["id"] not in ids])
+        assoc = dict(assoc, associacoes=[x for x in assoc["associacoes"]
+                                         if x["perfil_id"] not in perfis])
+    sim = transacao.simular_promocao(_plano(candidatos, geo, assoc), geo, assoc)
+    docs = finalizacao.planejar_documentos(
+        sim, cfg, candidatos, arvore.geometrias, arvore.associacoes, arvore.config)
+    return finalizacao.retomar_finalizacao(
+        journal.caminho_journal(arvore.dir_dados), arvore.raiz, docs,
+        arvore.verificador(candidatos))
+
+
+@pytest.mark.parametrize("ponto,estado", MARCOS_DE_CRASH)
+def test_crash_em_cada_marco_e_recuperado(arvore, candidatos, ponto, estado):
+    """Encerramento abrupto: sai sem `except`, como um processo morto."""
+    h0 = {p: hash_arquivo(p) for p in (arvore.geometrias, arvore.associacoes,
+                                       arvore.config)}
+    with pytest.raises(InterrupcaoSimulada):
+        _aplicar(arvore, candidatos, interromper_em=ponto)
+    pend = journal.pendente(arvore.dir_dados)
+    assert pend is not None and pend["estado"] == estado
+
+    _recuperar(arvore, candidatos)
+
+    if estado in journal.ESTADOS_ROLLBACK:
+        for caminho, h in h0.items():
+            assert hash_arquivo(caminho) == h, f"{caminho.name}: rollback incompleto"
+        assert not arvore.manifesto.exists()
+    else:
+        cfg, geo, assoc = arvore.carregar()
+        assert len(geo["geometrias"]) == 54
+        assert len(assoc["associacoes"]) == 253
+        assert cfg["microlote_janela"]["promocao_oficial_realizada"] is True
+        man = json.loads(arvore.manifesto.read_text(encoding="utf-8"))
+        assert man["quantidade_antes"] == {"geometrias": 46, "associacoes": 245}
+        assert integridade.verificar_integridade_promocao_e4b(
+            cfg, geo, assoc, man, candidatos, raiz=arvore.raiz).ok
+
+    assert journal.pendente(arvore.dir_dados) is None
+    for alvo in (arvore.geometrias, arvore.associacoes, arvore.config,
+                 arvore.manifesto):
+        assert not journal.caminho_backup(alvo).exists(), alvo.name
+
+
+def test_crash_apos_dados_validos_grava_o_config_na_retomada(arvore, candidatos):
+    """O bug original em uma linha: `CONFIG_FINALIZADO` era só um rótulo."""
+    with pytest.raises(InterrupcaoSimulada):
+        _aplicar(arvore, candidatos, interromper_em="apos_dados_validos")
+    assert carregar.carregar_config_e4b(
+        arvore.config)["microlote_janela"]["promocao_oficial_realizada"] is False
+    rel = _recuperar(arvore, candidatos)
+    assert "config gravado" in rel.passos
+    assert carregar.carregar_config_e4b(
+        arvore.config)["microlote_janela"]["promocao_oficial_realizada"] is True
+
+
+def test_retomada_passa_pelos_marcos_na_ordem(arvore, candidatos):
+    with pytest.raises(InterrupcaoSimulada):
+        _aplicar(arvore, candidatos, interromper_em="apos_dados_validos")
+    rel = _recuperar(arvore, candidatos)
+    assert rel.estado_encontrado == journal.DADOS_VALIDOS
+    assert rel.passos == ("manifesto gravado", "config gravado",
+                          "verificação unificada aprovada", "CONCLUIDA",
+                          "journal e backups removidos")
+
+
+def test_retomada_de_manifesto_gravado_nao_regrava_o_manifesto(arvore, candidatos):
+    with pytest.raises(InterrupcaoSimulada):
+        _aplicar(arvore, candidatos, interromper_em="depois_de_gravar_manifesto")
+    rel = _recuperar(arvore, candidatos)
+    assert "manifesto gravado" not in rel.passos
+    assert "config gravado" in rel.passos
+
+
+def test_concluida_nao_e_limpo_sem_conferir(arvore, candidatos):
+    """`CONCLUIDA` abandonado: os quatro hashes e a verificação unificada são
+    conferidos ANTES da limpeza. Limpar às cegas confiaria num rótulo."""
+    config_pre_texto = arvore.config.read_text(encoding="utf-8")
+    with pytest.raises(InterrupcaoSimulada):
+        _aplicar(arvore, candidatos, interromper_em="apos_concluida")
+    # o rótulo diz CONCLUIDA, mas o config no disco voltou a ser o anterior
+    arvore.config.write_text(config_pre_texto, encoding="utf-8")
+    with pytest.raises(finalizacao.FinalizacaoBloqueada, match="config"):
+        _recuperar(arvore, candidatos)
+    assert journal.caminho_journal(arvore.dir_dados).exists(), \
+        "journal foi limpo apesar da divergência"
+    assert journal.caminho_backup(arvore.config).exists()
+
+
+def test_retomada_bloqueia_se_o_recibo_do_journal_divergir(arvore, candidatos):
+    """Um journal cujo recibo não descreve esta promoção terminaria outra."""
+    with pytest.raises(InterrupcaoSimulada):
+        _aplicar(arvore, candidatos, interromper_em="apos_dados_validos")
+    j = journal.caminho_journal(arvore.dir_dados)
+    d = json.loads(j.read_text(encoding="utf-8"))
+    d["evento_promocao"]["quantidade_antes"] = {"geometrias": 54, "associacoes": 253}
+    j.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    h_config = hash_arquivo(arvore.config)
+    with pytest.raises(finalizacao.FinalizacaoBloqueada, match="recibo"):
+        _recuperar(arvore, candidatos)
+    assert hash_arquivo(arvore.config) == h_config, "config foi tocado"
+    assert not arvore.manifesto.exists()
+    assert j.exists()
+
+
+def test_retomada_bloqueia_se_o_documento_reconstruido_divergir(arvore, candidatos):
+    """A retomada não grava um config diferente do que o journal prometeu."""
+    with pytest.raises(InterrupcaoSimulada):
+        _aplicar(arvore, candidatos, interromper_em="apos_dados_validos")
+    _, _, docs = _documentos(arvore, candidatos)
+    from dataclasses import replace as _replace
+    adulterado = _replace(docs, config=docs.config + " ")
+    with pytest.raises(finalizacao.FinalizacaoBloqueada, match="divergem"):
+        finalizacao.retomar_finalizacao(
+            journal.caminho_journal(arvore.dir_dados), arvore.raiz, adulterado,
+            arvore.verificador(candidatos))
+    assert not arvore.manifesto.exists()
+    assert journal.caminho_journal(arvore.dir_dados).exists()
+
+
+# ===========================================================================
+# Estrutura do journal
+# ===========================================================================
+
+def _journal_valido(arvore, candidatos):
+    with pytest.raises(InterrupcaoSimulada):
+        _aplicar(arvore, candidatos, interromper_em="apos_journal")
+    j = journal.caminho_journal(arvore.dir_dados)
+    return j, json.loads(j.read_text(encoding="utf-8"))
+
+
+@pytest.mark.parametrize("mutacao", [
+    "papel_a_menos", "papel_a_mais", "destino_absoluto", "destino_com_pai",
+    "hash_curto", "sem_hash_final_do_config", "recibo_incompleto",
+])
+def test_journal_invalido_e_recusado(arvore, candidatos, mutacao):
+    j, d = _journal_valido(arvore, candidatos)
+    if mutacao == "papel_a_menos":
+        d["arquivos"].pop("config")
+    elif mutacao == "papel_a_mais":
+        d["arquivos"]["extra"] = dict(d["arquivos"]["config"])
+    elif mutacao == "destino_absoluto":
+        d["arquivos"]["config"]["destino"] = "/etc/passwd"
+    elif mutacao == "destino_com_pai":
+        d["arquivos"]["config"]["destino"] = "../../fora.json"
+    elif mutacao == "hash_curto":
+        d["arquivos"]["geometrias"]["hash_esperado_depois"] = "abc"
+    elif mutacao == "sem_hash_final_do_config":
+        d["arquivos"]["config"]["hash_esperado_depois"] = None
+    elif mutacao == "recibo_incompleto":
+        d["evento_promocao"].pop("commit_pre_promocao")
+    j.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    with pytest.raises(journal.JournalCorrompido):
+        journal.ler(j, arvore.raiz)
+    assert j.exists(), "journal inválido não pode ser apagado silenciosamente"
+
+
+def test_journal_recusa_alteracao_externa_durante_a_transacao(arvore, candidatos):
+    """Conteúdo que não é nem o anterior nem o esperado = edição de fora."""
+    with pytest.raises(InterrupcaoSimulada):
+        _aplicar(arvore, candidatos, interromper_em="apos_ambos_replaces")
+    arvore.config.write_text('{"perfis": {}, "editado_por_fora": true}\n',
+                             encoding="utf-8")
+    with pytest.raises(journal.RecuperacaoBloqueada, match="alteração externa"):
+        journal.recuperar(arvore.dir_dados, arvore.raiz)
+    assert journal.caminho_journal(arvore.dir_dados).exists()
+
+
+def test_limpeza_remove_backups_dos_tres_diretorios(arvore, candidatos):
+    """Os backups não vivem todos em `dados/`."""
+    with pytest.raises(InterrupcaoSimulada):
+        _aplicar(arvore, candidatos, interromper_em="apos_journal")
+    assert journal.caminho_backup(arvore.config).exists()
+    assert journal.caminho_backup(arvore.geometrias).exists()
+    journal.recuperar(arvore.dir_dados, arvore.raiz)
+    for alvo in (arvore.geometrias, arvore.associacoes, arvore.config):
+        assert not journal.caminho_backup(alvo).exists(), alvo.name

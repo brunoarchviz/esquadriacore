@@ -101,7 +101,15 @@ Fluxo: carrega → valida os oito → simula em memória → confere idempotênc
 grava temporários **no mesmo filesystem** → relê os temporários → **grava e
 sincroniza o journal** → `os.replace` no primeiro destino → avança o journal →
 `os.replace` no segundo → avança o journal → relê os destinos → valida
-pós-gravação → grava manifesto → conclui e limpa o journal.
+pós-gravação → **grava o manifesto** → avança → **grava o config** → avança →
+verificação unificada das quatro camadas relidas do disco → conclui e limpa o
+journal.
+
+Os **quatro** documentos são construídos em memória e hasheados **antes** do
+primeiro `os.replace`, e os quatro hashes finais vão para o journal. O config
+sai de uma transformação pura e idempotente
+(`curadoria/promocao/config_promovido.py`); o manifesto sai dos fatos canônicos
+de `evento.py`.
 
 ### O que é e o que não é atômico
 
@@ -154,14 +162,26 @@ estão promovidos, a auditoria não existe e nada no disco permite retomar.
 ### Estratégia de recuperação por estado
 
 ```text
-até AMBOS_SUBSTITUIDOS      desfazer (estratégia A)
-de DADOS_VALIDOS em diante  retomar a finalização (estratégia B)
-CONCLUIDA                   apenas limpar
+até AMBOS_SUBSTITUIDOS      desfazer os QUATRO artefatos (estratégia A)
+de DADOS_VALIDOS em diante  retomar a finalização marco a marco (estratégia B)
+CONCLUIDA                   conferir os quatro hashes e a verificação
+                            unificada ANTES de limpar
 ```
 
 A partir de `DADOS_VALIDOS` os dados já passaram na validação pós-gravação;
 desfazê-los perderia trabalho verificado sem ganho de segurança. As duas
 estratégias nunca se misturam silenciosamente — o comando informa qual adotou.
+
+A retomada é orientada **pelo estado encontrado**, não uniforme: de
+`DADOS_VALIDOS` ela grava manifesto e config; de `MANIFESTO_GRAVADO` grava só o
+config; de `CONFIG_FINALIZADO` só verifica. Cada marco só avança **depois** que
+a gravação correspondente aconteceu e bateu com o hash prometido pelo journal.
+`CONCLUIDA` nunca é limpo às cegas: um rótulo não é evidência.
+
+Rollback e retomada são **um só mecanismo**. Depois que o journal existe, ele é
+a única autoridade para desfazer — restaurar apenas os dois arquivos de `dados/`
+por um caminho paralelo deixaria manifesto e config novos no disco enquanto
+`dados/` voltava, exatamente a incoerência que a transação promete não produzir.
 
 ### Recibo do evento no journal
 
@@ -186,18 +206,35 @@ vazio, hashes inalterados, oito IDs reconhecidos como já promovidos.
 ### Rollback e recuperação
 
 Rollback compensatório (exceção vista pelo processo) coberto por regressão com
-falha **injetada** em três pontos: depois do primeiro temporário, entre os dois
-`os.replace`, e na validação pós-gravação.
+falha **injetada** em sete pontos: depois do primeiro temporário, entre os dois
+`os.replace`, na validação pós-gravação, depois de gravar o manifesto, depois
+de gravar o config, durante a verificação unificada e depois dela. Em cada
+caso a regressão confere os **quatro** artefatos: geometrias, associações e
+config voltam ao hash anterior, e o manifesto — que não existia — é removido.
 
 Recuperação após encerramento abrupto coberta por regressão que sai **sem**
-rollback — como um processo morto faria — em três pontos: após preparar o
-journal, após o primeiro `replace` e após ambos. Cada caso confere que o
-journal sobreviveu no estado certo, que `recuperar` devolve os hashes
-originais, e que nada fica pendente depois.
+rollback — como um processo morto faria — nos **oito** marcos da máquina de
+estados, de `PREPARADA` a `CONCLUIDA`. Cada caso confere que o journal
+sobreviveu no estado certo, que a recuperação faz a coisa certa para aquele
+estado (desfazer antes de `DADOS_VALIDOS`, retomar dali em diante), e que nada
+fica pendente depois.
+
+Há ainda um **teste integral** partindo do estado real do evento: árvore
+isolada com 46 geometrias, 245 associações, config com
+`promocao_oficial_realizada: false` e manifesto ausente, materializada do commit
+`53fcfac`. Ele é obrigatório porque o estado vivo da branch já está promovido e
+esconderia a ausência de gravação do config. Ao final: 54/253, config promovido,
+manifesto canônico `46 → 54`, verificação unificada aprovada, zero journal e
+zero backups — e a árvore isolada reproduz **byte a byte** os hashes publicados
+do evento.
 
 Também cobertos: journal corrompido e de versão desconhecida (recusados **sem**
-serem apagados), backup ausente (recuperação impossível, journal preservado
-para inspeção) e ausência de sobras após o sucesso normal.
+serem apagados), journal estruturalmente inválido (papel a mais ou a menos,
+destino absoluto ou com `..`, hash malformado, hash final ausente, recibo
+incompleto), backup ausente (recuperação impossível, journal preservado para
+inspeção), alteração externa de um destino durante a janela da transação
+(recuperação bloqueada), recibo divergente dos fatos canônicos (retomada
+bloqueada, zero arquivos alterados) e ausência de sobras após o sucesso normal.
 
 ### O manifesto descreve o evento, não o disco
 
@@ -221,8 +258,10 @@ nunca é aceito como promoção.
 ### Finalização auditável
 
 `dados/` promovido com manifesto ausente **não** é tratado como "nada a fazer":
-a CLI detecta e reconstrói o manifesto, marcando-o `reconstruido_apos_gravacao`.
-Sem isso, gravação e auditoria ficariam permanentemente dessincronizadas.
+a CLI detecta e reconstrói fisicamente o arquivo, mas preserva
+`reconstruido_apos_gravacao: false` porque esse campo pertence ao evento
+canônico, não à operação de recuperação. Sem essa reconstrução, gravação e
+auditoria ficariam permanentemente dessincronizadas.
 
 ---
 

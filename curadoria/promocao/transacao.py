@@ -12,7 +12,6 @@ from __future__ import annotations
 import copy
 import json
 import os
-import shutil
 import tempfile
 from pathlib import Path
 
@@ -143,15 +142,6 @@ def gerar_resumo_diff(sim: ResultadoSimulacao) -> str:
 # Escrita atômica
 # ---------------------------------------------------------------------------
 
-def criar_backup_temporario(caminhos, diretorio_temporario: Path) -> dict:
-    backups = {}
-    for c in caminhos:
-        destino = Path(diretorio_temporario) / (Path(c).name + ".bak")
-        shutil.copy2(c, destino)
-        backups[Path(c)] = destino
-    return backups
-
-
 def detectar_indentacao(caminho: Path, padrao: int = 1) -> int:
     """Indentação já usada pelo arquivo oficial.
 
@@ -169,20 +159,29 @@ def detectar_indentacao(caminho: Path, padrao: int = 1) -> int:
     return padrao
 
 
-def escrever_json_temporario(destino: Path, conteudo: object,
-                             indent: int | None = None) -> Path:
-    """Grava ao lado do destino (mesmo filesystem) para permitir os.replace."""
+def escrever_texto_temporario(destino: Path, texto: str) -> Path:
+    """Grava ao lado do destino (mesmo filesystem) para permitir os.replace.
+
+    Recebe TEXTO já serializado: é o mesmo byte a byte cujo hash foi prometido
+    ao journal. Reserializar aqui abriria a chance de gravar conteúdo diferente
+    do que o journal diz esperar."""
     destino = Path(destino)
-    if indent is None:
-        indent = detectar_indentacao(destino)
     fd, tmp = tempfile.mkstemp(dir=destino.parent, prefix=destino.name + ".",
                                suffix=".tmp")
     os.close(fd)
     tmp = Path(tmp)
-    tmp.write_text(json.dumps(conteudo, ensure_ascii=False, indent=indent) + "\n",
-                   encoding="utf-8")
+    tmp.write_text(texto, encoding="utf-8")
     sincronizar_arquivo(tmp)
     return tmp
+
+
+def escrever_json_temporario(destino: Path, conteudo: object,
+                             indent: int | None = None) -> Path:
+    destino = Path(destino)
+    if indent is None:
+        indent = detectar_indentacao(destino)
+    return escrever_texto_temporario(
+        destino, json.dumps(conteudo, ensure_ascii=False, indent=indent) + "\n")
 
 
 def sincronizar_arquivo(caminho: Path) -> None:
@@ -192,11 +191,6 @@ def sincronizar_arquivo(caminho: Path) -> None:
 
 def substituir_atomico(temporario: Path, destino: Path) -> None:
     os.replace(temporario, destino)
-
-
-def restaurar_backup(backups: dict) -> None:
-    for destino, bak in backups.items():
-        shutil.copy2(bak, destino)
 
 
 def validar_pos_gravacao(caminho_geo: Path, caminho_assoc: Path,
@@ -239,117 +233,124 @@ class InterrupcaoSimulada(RuntimeError):
 
 def aplicar_promocao_transacional(plano: PlanoPromocao, caminho_geo: Path,
                                   caminho_assoc: Path, simulacao: ResultadoSimulacao,
-                                  finalizar=None,
-                                  caminho_config: Path | None = None,
-                                  caminho_manifesto: Path | None = None,
+                                  documentos,
+                                  caminho_config: Path,
+                                  caminho_manifesto: Path,
+                                  finalizar,
                                   raiz: Path | None = None,
                                   falha_injetada: str = "",
                                   interromper_em: str = "",
                                   lote: str = "E4B") -> tuple[EstadoTransacao, dict, dict]:
-    """Grava dados, manifesto e config sob um único journal.
+    """Grava os QUATRO artefatos sob um único journal.
 
-    O journal só é limpo depois da finalização auditável inteira — dados
-    gravados e validados, manifesto gravado, config finalizado e verificação
-    unificada aprovada. Limpar antes deixaria uma janela em que os dados estão
-    promovidos e a auditoria não existe, sem nada no disco para retomar.
+    `documentos` traz os quatro já serializados e com os hashes finais — todos
+    calculados ANTES do primeiro `os.replace`, para que o journal possa
+    prometer o conteúdo final de cada um dos quatro papéis, e não só o dos dois
+    arquivos de `dados/`.
 
-    `finalizar(estado_journal)` é o callback que grava manifesto e config e roda
-    a verificação unificada; recebe o marco atual para poder ser retomado.
+    O journal só é limpo depois da finalização auditável inteira. Limpar antes
+    deixaria uma janela em que os dados estão promovidos e a auditoria não
+    existe, sem nada no disco para retomar.
+
+    Rollback: enquanto o journal não existe, nenhum destino foi tocado e basta
+    apagar os temporários. Depois que ele existe, o journal é a ÚNICA
+    autoridade para desfazer — restaurar dois arquivos por um mecanismo
+    paralelo deixaria manifesto e config novos no disco enquanto `dados/`
+    voltava, que é exatamente a incoerência que a transação promete não
+    produzir.
 
     `falha_injetada` exercita o rollback compensatório; `interromper_em` simula
     encerramento abrupto — sai sem rollback, deixando o journal."""
     caminho_geo, caminho_assoc = Path(caminho_geo), Path(caminho_assoc)
+    caminho_config, caminho_manifesto = Path(caminho_config), Path(caminho_manifesto)
     raiz = Path(raiz) if raiz else caminho_geo.parents[1]
     dir_dados = caminho_geo.parent
     hash_antes = {str(caminho_geo): hash_arquivo(caminho_geo),
                   str(caminho_assoc): hash_arquivo(caminho_assoc)}
 
-    if journal.pendente(dir_dados, lote):
-        pend = journal.pendente(dir_dados, lote)
+    pend = journal.pendente(dir_dados, lote)
+    if pend:
         raise RuntimeError(
             f"transação anterior não concluída (estado {pend['estado']}). "
             f"Rode `recuperar --lote {lote}` antes de promover.")
 
-    with tempfile.TemporaryDirectory() as td:
-        backups = criar_backup_temporario([caminho_geo, caminho_assoc], Path(td))
-        tmp_geo = tmp_assoc = None
-        j = None
-        try:
-            tmp_geo = escrever_json_temporario(caminho_geo, simulacao.geometrias_depois_doc)
-            if falha_injetada == "apos_primeiro_temporario":
-                raise RuntimeError("falha injetada: após o primeiro temporário")
-            tmp_assoc = escrever_json_temporario(caminho_assoc, simulacao.associacoes_depois_doc)
-            for x in (tmp_geo, tmp_assoc):
-                json.loads(x.read_text(encoding="utf-8"))
-
-            destinos = {"geometrias": caminho_geo, "associacoes": caminho_assoc}
-            if caminho_config:
-                destinos["config"] = Path(caminho_config)
-            if caminho_manifesto:
-                destinos["manifesto"] = Path(caminho_manifesto)
-
-            j = journal.preparar(
-                destinos,
-                {"geometrias": hash_arquivo(tmp_geo),
-                 "associacoes": hash_arquivo(tmp_assoc)},
-                evento.recibo_evento(), raiz, lote)
-            if interromper_em == "apos_journal":
-                raise InterrupcaoSimulada("interrompido após preparar o journal")
-
-            substituir_atomico(tmp_geo, caminho_geo)
-            tmp_geo = None
-            journal.avancar(j, journal.GEOMETRIAS_SUBSTITUIDAS)
-            if interromper_em == "apos_primeiro_replace":
-                raise InterrupcaoSimulada("interrompido após o 1º replace")
-            if falha_injetada == "entre_os_dois_replaces":
-                raise RuntimeError("falha injetada: entre os dois replaces")
-
-            substituir_atomico(tmp_assoc, caminho_assoc)
-            tmp_assoc = None
-            journal.avancar(j, journal.AMBOS_SUBSTITUIDOS)
-            if interromper_em == "apos_ambos_replaces":
-                raise InterrupcaoSimulada("interrompido após os dois replaces")
-
-            if falha_injetada == "na_validacao_pos_gravacao":
-                raise RuntimeError("falha injetada: na validação pós-gravação")
-            val = validar_pos_gravacao(caminho_geo, caminho_assoc, plano)
-            if not val.ok:
-                raise RuntimeError("validação pós-gravação reprovou:\n"
-                                   + val.descrever())
-            journal.avancar(j, journal.DADOS_VALIDOS)
-            if interromper_em == "apos_dados_validos":
-                raise InterrupcaoSimulada("interrompido após validar os dados")
-
-            hash_depois = {str(caminho_geo): hash_arquivo(caminho_geo),
-                           str(caminho_assoc): hash_arquivo(caminho_assoc)}
-
-            # finalização auditável AINDA sob o journal
-            if finalizar is not None:
-                finalizar(j)
-            journal.avancar(j, journal.CONCLUIDA)
-            if interromper_em == "apos_concluida":
-                raise InterrupcaoSimulada("interrompido após CONCLUIDA")
-            journal.limpar(dir_dados, raiz, lote)
-            return (EstadoTransacao(backups={}, aplicado=True,
-                                    rollback_executado=False),
-                    hash_antes, hash_depois)
-
-        except InterrupcaoSimulada:
-            raise                      # sem rollback: é o estado que `recuperar` espera
-
-        except Exception as e:
-            restaurar_backup(backups)
-            for x in (tmp_geo, tmp_assoc):
-                if x is not None and Path(x).exists():
-                    Path(x).unlink()
-            depois = {str(caminho_geo): hash_arquivo(caminho_geo),
-                      str(caminho_assoc): hash_arquivo(caminho_assoc)}
-            if depois != hash_antes:
+    hashes_finais = documentos.hashes
+    tmp_geo = tmp_assoc = None
+    j = None
+    try:
+        tmp_geo = escrever_texto_temporario(caminho_geo, documentos.geometrias)
+        if falha_injetada == "apos_primeiro_temporario":
+            raise RuntimeError("falha injetada: após o primeiro temporário")
+        tmp_assoc = escrever_texto_temporario(caminho_assoc, documentos.associacoes)
+        for x in (tmp_geo, tmp_assoc):
+            json.loads(x.read_text(encoding="utf-8"))
+        for papel, tmp in (("geometrias", tmp_geo), ("associacoes", tmp_assoc)):
+            if hash_arquivo(tmp) != hashes_finais[papel]:
                 raise RuntimeError(
-                    f"ROLLBACK INCOMPLETO — hashes não voltaram ao original.\n"
-                    f"antes={hash_antes}\ndepois={depois}\ncausa={e}") from e
-            if j is not None:
-                journal.limpar(dir_dados, raiz, lote)
+                    f"{papel}: temporário não corresponde ao hash planejado")
+
+        destinos = {"geometrias": caminho_geo, "associacoes": caminho_assoc,
+                    "config": caminho_config, "manifesto": caminho_manifesto}
+        j = journal.preparar(destinos, hashes_finais, evento.recibo_evento(),
+                             raiz, lote)
+        if interromper_em == "apos_journal":
+            raise InterrupcaoSimulada("interrompido após preparar o journal")
+
+        substituir_atomico(tmp_geo, caminho_geo)
+        tmp_geo = None
+        journal.avancar(j, journal.GEOMETRIAS_SUBSTITUIDAS)
+        if interromper_em == "apos_primeiro_replace":
+            raise InterrupcaoSimulada("interrompido após o 1º replace")
+        if falha_injetada == "entre_os_dois_replaces":
+            raise RuntimeError("falha injetada: entre os dois replaces")
+
+        substituir_atomico(tmp_assoc, caminho_assoc)
+        tmp_assoc = None
+        journal.avancar(j, journal.AMBOS_SUBSTITUIDOS)
+        if interromper_em == "apos_ambos_replaces":
+            raise InterrupcaoSimulada("interrompido após os dois replaces")
+
+        if falha_injetada == "na_validacao_pos_gravacao":
+            raise RuntimeError("falha injetada: na validação pós-gravação")
+        val = validar_pos_gravacao(caminho_geo, caminho_assoc, plano)
+        if not val.ok:
+            raise RuntimeError("validação pós-gravação reprovou:\n"
+                               + val.descrever())
+        journal.avancar(j, journal.DADOS_VALIDOS)
+        if interromper_em == "apos_dados_validos":
+            raise InterrupcaoSimulada("interrompido após validar os dados")
+
+        hash_depois = {str(caminho_geo): hash_arquivo(caminho_geo),
+                       str(caminho_assoc): hash_arquivo(caminho_assoc)}
+
+        # Finalização auditável AINDA sob o journal: grava manifesto e config,
+        # roda a verificação unificada, avança até CONCLUIDA e limpa.
+        finalizar(j)
+        return (EstadoTransacao(backups={}, aplicado=True,
+                                rollback_executado=False),
+                hash_antes, hash_depois)
+
+    except InterrupcaoSimulada:
+        raise                      # sem rollback: é o estado que `recuperar` espera
+
+    except Exception as e:
+        for x in (tmp_geo, tmp_assoc):
+            if x is not None and Path(x).exists():
+                Path(x).unlink()
+        if j is None:
+            # Nada foi substituído ainda: não há o que desfazer.
             return (EstadoTransacao(backups={}, aplicado=False,
-                                    rollback_executado=True, detalhe=str(e)),
-                    hash_antes, depois)
+                                    rollback_executado=False, detalhe=str(e)),
+                    hash_antes, dict(hash_antes))
+        # Journal existe: ele é a única autoridade. Se o rollback falhar,
+        # journal e backups ficam no disco para inspeção.
+        journal.recuperar(dir_dados, raiz, lote)
+        depois = {str(caminho_geo): hash_arquivo(caminho_geo),
+                  str(caminho_assoc): hash_arquivo(caminho_assoc)}
+        if depois != hash_antes:
+            raise RuntimeError(
+                f"ROLLBACK INCOMPLETO — hashes não voltaram ao original.\n"
+                f"antes={hash_antes}\ndepois={depois}\ncausa={e}") from e
+        return (EstadoTransacao(backups={}, aplicado=False,
+                                rollback_executado=True, detalhe=str(e)),
+                hash_antes, depois)
