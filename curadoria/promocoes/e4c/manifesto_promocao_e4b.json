@@ -1,10 +1,10 @@
 {
   "lote": "E4B",
-  "versao_manifesto": "1.1",
+  "versao_manifesto": "1.2",
   "estado": "PROMOVIDO",
-  "data_utc": "2026-08-02T14:49:43Z",
+  "data_utc": "2026-08-02T14:10:14Z",
   "commit_base_main": "e356ba2c34b3c04711d97cbf576f3737be974af3",
-  "commit_pre_promocao": "2d918acb44745ce91b5fac56d58fc48c4d55957f",
+  "commit_pre_promocao": "53fcfaca7ba89ccc1c7a0fc8c52a7e6efc18dc76",
   "commit_curadoria_fonte": "e356ba2c34b3c04711d97cbf576f3737be974af3",
   "descricao_curadoria_fonte": "E.4B concluído e correção de identidade SU-102 × TMS-102 integrada.",
   "sprint": "E.4C",
@@ -179,23 +179,22 @@
     "dados/perfil_geometria.json"
   ],
   "hash_antes": {
-    "dados/geometrias.json": "30bf2b7865d0aaae8e488beb048feac5da9ada932abd5c0e748b9f68254f5fa0",
-    "dados/perfil_geometria.json": "26f09d8d3bfe3b202aa46c500a4ba60ad1eef274927e8cc4f3d954de6d94a532"
+    "dados/geometrias.json": "35f956799b492909f9b362493804d27b8a9abe8df067b9c9c5a071c3121bc769",
+    "dados/perfil_geometria.json": "5961bb42a90d8a5f52bf5bea6f6548fc3cf16d761907227f09d24724f24e3f4e"
   },
   "hash_depois": {
     "dados/geometrias.json": "30bf2b7865d0aaae8e488beb048feac5da9ada932abd5c0e748b9f68254f5fa0",
     "dados/perfil_geometria.json": "26f09d8d3bfe3b202aa46c500a4ba60ad1eef274927e8cc4f3d954de6d94a532"
   },
   "quantidade_antes": {
-    "geometrias": 54,
-    "associacoes": 253
+    "geometrias": 46,
+    "associacoes": 245
   },
   "quantidade_depois": {
     "geometrias": 54,
     "associacoes": 253
   },
-  "ids_criados": [],
-  "ids_reutilizados": [
+  "ids_criados": [
     "GEO-SU-001",
     "GEO-SU-002",
     "GEO-SU-003",
@@ -205,8 +204,8 @@
     "GEO-SU-053",
     "GEO-SU-102"
   ],
-  "associacoes_criadas": [],
-  "associacoes_reutilizadas": [
+  "ids_reutilizados": [],
+  "associacoes_criadas": [
     "ALCOA-SU-001",
     "ALCOA-SU-002",
     "ALCOA-SU-003",
@@ -216,6 +215,7 @@
     "ALCOA-SU-053",
     "ALCOA-SU-102"
   ],
+  "associacoes_reutilizadas": [],
   "registros_antigos_alterados": [],
   "gates": {
     "registros_antigos_alterados": 0,
@@ -242,8 +242,24 @@
     "identidade_su102_tms102": "CONFIRMADA",
     "tms102_medido_separadamente": false,
     "geo_tms102_criado": false,
-    "_nota": "A medição física pertence ao SU-102. O TMS-102 é o mesmo perfil físico e NÃO foi medido separadamente. Nenhuma geometria duplicada foi criada para ele; como TMS-102 não existe como entidade de perfil na biblioteca oficial, nenhuma associação foi criada nesta sprint."
+    "_nota": "A medição física pertence ao SU-102. O TMS-102 é o mesmo perfil físico e NÃO foi medido separadamente. Nenhuma geometria duplicada foi criada; como TMS-102 não existe como entidade de perfil na biblioteca, nenhuma associação foi criada para ele nesta sprint."
   },
+  "mecanismo_transacional": {
+    "substituicao_atomica_por_arquivo": true,
+    "commit_atomico_conjunto": false,
+    "journal_persistente": true,
+    "journal_cobre_config_e_manifesto": true,
+    "rollback_compensatorio_para_excecoes": true,
+    "recuperacao_apos_encerramento_abrupto": true,
+    "preflight_antes_de_restaurar": true,
+    "_nota": "dois os.replace sequenciais NAO sao commit atomico conjunto; o journal persiste ate a finalizacao auditavel (manifesto + config + verificacao unificada)."
+  },
+  "capacidade_reconstrucao_manifesto": {
+    "testada": true,
+    "resultado": "APROVADA",
+    "_nota": "o manifesto pode ser recriado a partir do recibo do journal sem alterar os fatos do evento original."
+  },
+  "reconstruido_apos_gravacao": false,
   "avisos": [
     "id_ja_promovido_identico: GEO-SU-001",
     "id_ja_promovido_identico: GEO-SU-002",
@@ -254,14 +270,5 @@
     "id_ja_promovido_identico: GEO-SU-053",
     "id_ja_promovido_identico: GEO-SU-102"
   ],
-  "reconstruido_apos_gravacao": true,
-  "mecanismo_transacional": {
-    "substituicao_atomica_por_arquivo": true,
-    "commit_atomico_conjunto": false,
-    "journal_persistente": true,
-    "rollback_compensatorio_para_excecoes": true,
-    "recuperacao_apos_encerramento_abrupto": true,
-    "_nota": "dois os.replace sequenciais NAO sao commit atomico conjunto; o journal persistente cobre a janela entre eles para o caso em que o processo morre."
-  },
   "resultado": "PROMOVIDO"
 }

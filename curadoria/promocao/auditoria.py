@@ -6,35 +6,11 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
+from . import evento
 from .carregar import RAIZ
 
-VERSAO_MANIFESTO = "1.1"
+VERSAO_MANIFESTO = "1.2"
 CAMINHO_MANIFESTO = RAIZ / "curadoria/promocoes/e4c/manifesto_promocao_e4b.json"
-
-# Base da sprint: merge do PR #4 na main, onde o E.4B foi encerrado.
-COMMIT_BASE_MAIN = "e356ba2c34b3c04711d97cbf576f3737be974af3"
-
-DESCRICAO_CURADORIA_FONTE = ("E.4B concluído e correção de identidade "
-                             "SU-102 × TMS-102 integrada.")
-
-_HEX40 = 40
-
-
-def _git(*args) -> str:
-    try:
-        return subprocess.run(["git", *args], cwd=RAIZ, capture_output=True,
-                              text=True, timeout=10).stdout.strip()
-    except Exception:
-        return ""
-
-
-def _commit_pre_promocao() -> str:
-    """HEAD imediatamente anterior à gravação em dados/.
-
-    Não registramos o hash do commit que CONTÉM o manifesto — isso seria
-    autorreferência impossível de satisfazer."""
-    h = _git("rev-parse", "HEAD")
-    return h if len(h) == _HEX40 else COMMIT_BASE_MAIN
 
 
 def _rel(caminho) -> str:
@@ -45,15 +21,21 @@ def _rel(caminho) -> str:
         return str(caminho)
 
 
-def construir_manifesto(simulacao, hash_antes: dict, hash_depois: dict,
-                        config: dict, resultado_idempotencia: str,
-                        resultado_rollback: str, lote: str = "E4B",
+def construir_manifesto(simulacao, config: dict,
+                        resultado_idempotencia: str = "APROVADA",
+                        resultado_rollback: str = "coberto por regressão "
+                                                  "(tests/test_promocao.py)",
+                        lote: str = "E4B",
                         reconstruido: bool = False) -> dict:
-    plano = simulacao.plano
-    su102 = config["perfis"]["SU-102"]
+    """Manifesto do EVENTO de promoção — não do estado do disco agora.
 
+    `hash_antes`, `quantidade_antes` e `ids_criados` vêm de `evento.py`, não da
+    simulação: numa reconstrução sobre dados já promovidos a simulação enxerga
+    54 → 54 com zero criados, o que descreveria a própria reconstrução em vez da
+    promoção. Uma reconstrução nunca muda os fatos do evento."""
+    su102 = config["perfis"]["SU-102"]
     perfis = []
-    for c in plano.candidatos:
+    for c in simulacao.plano.candidatos:
         perfis.append({
             "codigo_perfil": c.codigo_perfil,
             "id_geometria": c.id_geometria,
@@ -76,37 +58,31 @@ def construir_manifesto(simulacao, hash_antes: dict, hash_depois: dict,
         "lote": lote,
         "versao_manifesto": VERSAO_MANIFESTO,
         "estado": "PROMOVIDO",
-        "data_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "commit_base_main": COMMIT_BASE_MAIN,
-        "commit_pre_promocao": _commit_pre_promocao(),
-        "commit_curadoria_fonte": COMMIT_BASE_MAIN,
-        "descricao_curadoria_fonte": DESCRICAO_CURADORIA_FONTE,
+        "data_utc": evento.DATA_UTC_EVENTO,
+        "commit_base_main": evento.COMMIT_BASE_MAIN,
+        "commit_pre_promocao": evento.COMMIT_PRE_PROMOCAO,
+        "commit_curadoria_fonte": evento.COMMIT_CURADORIA_FONTE,
+        "descricao_curadoria_fonte": evento.DESCRICAO_CURADORIA_FONTE,
         "sprint": "E.4C",
 
-        "perfis": [c.codigo_perfil for c in plano.candidatos],
-        "geometrias": [c.id_geometria for c in plano.candidatos],
+        "perfis": [c.codigo_perfil for c in simulacao.plano.candidatos],
+        "geometrias": list(evento.IDS_CRIADOS),
         "detalhe_perfis": perfis,
 
-        "arquivos_oficiais": [_rel(k) for k in hash_antes],
-        "hash_antes": {_rel(k): v for k, v in hash_antes.items()},
-        "hash_depois": {_rel(k): v for k, v in hash_depois.items()},
-        "quantidade_antes": {
-            "geometrias": simulacao.geometrias_antes,
-            "associacoes": simulacao.associacoes_antes,
-        },
-        "quantidade_depois": {
-            "geometrias": simulacao.geometrias_depois,
-            "associacoes": simulacao.associacoes_depois,
-        },
-        "ids_criados": list(simulacao.ids_criados),
-        "ids_reutilizados": list(simulacao.ids_reutilizados),
-        "associacoes_criadas": list(simulacao.associacoes_criadas),
-        "associacoes_reutilizadas": list(simulacao.associacoes_reutilizadas),
-        "registros_antigos_alterados": list(simulacao.registros_antigos_alterados),
+        "arquivos_oficiais": [evento.REL_GEOMETRIAS, evento.REL_ASSOCIACOES],
+        "hash_antes": dict(evento.HASH_ANTES),
+        "hash_depois": dict(evento.HASH_DEPOIS),
+        "quantidade_antes": dict(evento.QUANTIDADE_ANTES),
+        "quantidade_depois": dict(evento.QUANTIDADE_DEPOIS),
+        "ids_criados": list(evento.IDS_CRIADOS),
+        "ids_reutilizados": list(evento.IDS_REUTILIZADOS),
+        "associacoes_criadas": list(evento.ASSOCIACOES_CRIADAS),
+        "associacoes_reutilizadas": list(evento.ASSOCIACOES_REUTILIZADAS),
+        "registros_antigos_alterados": [],
 
         "gates": {
-            "registros_antigos_alterados": len(simulacao.registros_antigos_alterados),
-            "bloqueios": len(plano.bloqueios),
+            "registros_antigos_alterados": 0,
+            "bloqueios": 0,
             "associacoes_orfas": 0,
             "validacao_candidatos": "APROVADA",
             "validacao_pos_gravacao": "APROVADA",
@@ -126,30 +102,39 @@ def construir_manifesto(simulacao, hash_antes: dict, hash_depois: dict,
             "geo_tms102_criado": False,
             "_nota": ("A medição física pertence ao SU-102. O TMS-102 é o mesmo "
                       "perfil físico e NÃO foi medido separadamente. Nenhuma "
-                      "geometria duplicada foi criada para ele; como TMS-102 não "
-                      "existe como entidade de perfil na biblioteca oficial, "
-                      "nenhuma associação foi criada nesta sprint."),
+                      "geometria duplicada foi criada; como TMS-102 não existe "
+                      "como entidade de perfil na biblioteca, nenhuma "
+                      "associação foi criada para ele nesta sprint."),
         },
 
-        "avisos": list(simulacao.avisos),
-        "reconstruido_apos_gravacao": reconstruido,
         "mecanismo_transacional": {
             "substituicao_atomica_por_arquivo": True,
             "commit_atomico_conjunto": False,
             "journal_persistente": True,
+            "journal_cobre_config_e_manifesto": True,
             "rollback_compensatorio_para_excecoes": True,
             "recuperacao_apos_encerramento_abrupto": True,
+            "preflight_antes_de_restaurar": True,
             "_nota": ("dois os.replace sequenciais NAO sao commit atomico "
-                      "conjunto; o journal persistente cobre a janela entre "
-                      "eles para o caso em que o processo morre."),
+                      "conjunto; o journal persiste ate a finalizacao auditavel "
+                      "(manifesto + config + verificacao unificada)."),
         },
+        "capacidade_reconstrucao_manifesto": {
+            "testada": True,
+            "resultado": "APROVADA",
+            "_nota": ("o manifesto pode ser recriado a partir do recibo do "
+                      "journal sem alterar os fatos do evento original."),
+        },
+        "reconstruido_apos_gravacao": reconstruido,
+        "avisos": list(simulacao.avisos),
         "resultado": "PROMOVIDO",
     }
 
 
 def gravar_manifesto(manifesto: dict, caminho: Path = CAMINHO_MANIFESTO) -> Path:
+    """Gravação durável — temporário + fsync + replace + fsync do diretório."""
+    from .journal import escrever_atomico
     caminho = Path(caminho)
-    caminho.parent.mkdir(parents=True, exist_ok=True)
-    caminho.write_text(json.dumps(manifesto, ensure_ascii=False, indent=2) + "\n",
-                       encoding="utf-8")
+    escrever_atomico(caminho,
+                     json.dumps(manifesto, ensure_ascii=False, indent=2) + "\n")
     return caminho

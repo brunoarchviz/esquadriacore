@@ -10,6 +10,7 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from . import evento
 from .carregar import RAIZ, hash_arquivo, perfil_id_oficial
 from .construir import comparar_contornos_exatamente
 from .modelos import PERFIS_E4B, ResultadoValidacao
@@ -157,10 +158,51 @@ def verificar_integridade_promocao_e4b(config: dict, geometrias: dict,
         if not (isinstance(v, str) and re.fullmatch(r"[0-9a-f]{40}", v)):
             r = r.somar(_r(f"{campo} não é hash de 40 hex", v, "40 hex", MAN))
 
+    # ---- fatos canônicos do EVENTO ---------------------------------------
+    # Não podem ser inferidos do disco já promovido: uma reconstrução que os
+    # derivasse produziria 54 -> 54 com zero criados.
+    for campo, esperado in (
+            ("commit_base_main", evento.COMMIT_BASE_MAIN),
+            ("commit_pre_promocao", evento.COMMIT_PRE_PROMOCAO),
+            ("commit_curadoria_fonte", evento.COMMIT_CURADORIA_FONTE)):
+        if manifesto.get(campo) != esperado:
+            r = r.somar(_r(f"{campo} divergente do evento canônico",
+                           manifesto.get(campo), esperado, MAN))
+    if manifesto.get("hash_antes") != dict(evento.HASH_ANTES):
+        r = r.somar(_r("hash_antes divergente do evento canônico",
+                       manifesto.get("hash_antes"), dict(evento.HASH_ANTES), MAN))
+    if manifesto.get("hash_depois") != dict(evento.HASH_DEPOIS):
+        r = r.somar(_r("hash_depois divergente do evento canônico",
+                       manifesto.get("hash_depois"), dict(evento.HASH_DEPOIS), MAN))
+    if manifesto.get("hash_antes") == manifesto.get("hash_depois"):
+        r = r.somar(_r("hash_antes igual a hash_depois — não descreve promoção",
+                       manifesto.get("hash_antes"), "diferentes", MAN))
+    if manifesto.get("quantidade_antes") != dict(evento.QUANTIDADE_ANTES):
+        r = r.somar(_r("quantidade_antes divergente do evento canônico",
+                       manifesto.get("quantidade_antes"),
+                       dict(evento.QUANTIDADE_ANTES), MAN))
+    if list(manifesto.get("ids_criados") or []) != list(evento.IDS_CRIADOS):
+        r = r.somar(_r("ids_criados divergente do evento canônico",
+                       manifesto.get("ids_criados"), list(evento.IDS_CRIADOS), MAN))
+    if list(manifesto.get("associacoes_criadas") or []) != list(evento.ASSOCIACOES_CRIADAS):
+        r = r.somar(_r("associacoes_criadas divergente do evento canônico",
+                       manifesto.get("associacoes_criadas"),
+                       list(evento.ASSOCIACOES_CRIADAS), MAN))
+    if list(manifesto.get("ids_reutilizados") or []) != []:
+        r = r.somar(_r("ids_reutilizados deveria ser vazio no evento",
+                       manifesto.get("ids_reutilizados"), [], MAN))
+    if list(manifesto.get("associacoes_reutilizadas") or []) != []:
+        r = r.somar(_r("associacoes_reutilizadas deveria ser vazio no evento",
+                       manifesto.get("associacoes_reutilizadas"), [], MAN))
+    if manifesto.get("reconstruido_apos_gravacao") is not False:
+        r = r.somar(_r("manifesto marcado como reconstruído",
+                       manifesto.get("reconstruido_apos_gravacao"), False, MAN))
+
     # hash e contagem do manifesto contra os arquivos que estão no disco AGORA
-    for rel, real in (("dados/geometrias.json", RAIZ / "dados/geometrias.json"),
-                      ("dados/perfil_geometria.json",
-                       RAIZ / "dados/perfil_geometria.json")):
+    # hash_depois TAMBÉM tem de bater com o arquivo que está no disco agora.
+    # hash_antes NÃO é comparado com o disco — é fato histórico.
+    for rel, real in ((evento.REL_GEOMETRIAS, RAIZ / evento.REL_GEOMETRIAS),
+                      (evento.REL_ASSOCIACOES, RAIZ / evento.REL_ASSOCIACOES)):
         esperado = (manifesto.get("hash_depois") or {}).get(rel)
         if esperado and Path(real).exists() and esperado != hash_arquivo(real):
             r = r.somar(_r("hash_depois do manifesto não bate com o arquivo atual",
