@@ -98,19 +98,36 @@ geometria nova.
 proibido de tocar os caminhos oficiais.
 
 Fluxo: carrega → valida os oito → simula em memória → confere idempotência →
-copia backup → grava temporários **no mesmo filesystem** → relê os
-temporários → substitui os destinos com `os.replace` → relê os destinos →
-valida pós-gravação → gera manifesto.
+grava temporários **no mesmo filesystem** → relê os temporários → **grava e
+sincroniza o journal** → `os.replace` no primeiro destino → avança o journal →
+`os.replace` no segundo → avança o journal → relê os destinos → valida
+pós-gravação → grava manifesto → conclui e limpa o journal.
 
-Em qualquer falha depois do início da escrita, **ambos** os arquivos são
-restaurados e os hashes conferidos contra os originais antes de reportar
-sucesso do rollback. Nunca fica estado parcial.
+### O que é e o que não é atômico
+
+```text
+substituição atômica POR ARQUIVO        sim (os.replace)
+commit atômico CONJUNTO dos dois        NÃO
+rollback compensatório para exceções    sim
+recuperação após encerramento abrupto   sim (journal persistente)
+```
+
+Dois `os.replace` sequenciais **não** são um commit atômico conjunto. Cada um é
+atômico isoladamente; o par não é. Um `SIGKILL`, queda de energia ou travamento
+entre os dois deixaria `geometrias.json` novo e `perfil_geometria.json` antigo —
+e o processo morto não executaria `except` nenhum.
+
+O journal cobre essa janela: é gravado e sincronizado **antes** da primeira
+substituição, registra backups e hashes esperados, e sobrevive ao processo.
+Todo comando recusa operar enquanto houver journal pendente, apontando o
+comando de recuperação.
 
 ```bash
 python -m curadoria.promocao.cli diagnosticar --lote E4B
 python -m curadoria.promocao.cli simular      --lote E4B
 python -m curadoria.promocao.cli promover     --lote E4B --apply
 python -m curadoria.promocao.cli verificar    --lote E4B
+python -m curadoria.promocao.cli recuperar    --lote E4B   # journal pendente
 ```
 
 ### Idempotência
@@ -118,13 +135,27 @@ python -m curadoria.promocao.cli verificar    --lote E4B
 Confirmada **em disco**, não só em memória: promover de novo produz diff
 vazio, hashes inalterados, oito IDs reconhecidos como já promovidos.
 
-### Rollback
+### Rollback e recuperação
 
-Coberto por regressão com falha **injetada** em três pontos distintos: depois
-do primeiro temporário, entre os dois `os.replace`, e na validação
-pós-gravação. Cada caso confere que os dois arquivos voltaram ao hash original
-e que nenhum ficou com JSON parcial. Um teste que só percorresse o caminho
-feliz não provaria nada.
+Rollback compensatório (exceção vista pelo processo) coberto por regressão com
+falha **injetada** em três pontos: depois do primeiro temporário, entre os dois
+`os.replace`, e na validação pós-gravação.
+
+Recuperação após encerramento abrupto coberta por regressão que sai **sem**
+rollback — como um processo morto faria — em três pontos: após preparar o
+journal, após o primeiro `replace` e após ambos. Cada caso confere que o
+journal sobreviveu no estado certo, que `recuperar` devolve os hashes
+originais, e que nada fica pendente depois.
+
+Também cobertos: journal corrompido e de versão desconhecida (recusados **sem**
+serem apagados), backup ausente (recuperação impossível, journal preservado
+para inspeção) e ausência de sobras após o sucesso normal.
+
+### Finalização auditável
+
+`dados/` promovido com manifesto ausente **não** é tratado como "nada a fazer":
+a CLI detecta e reconstrói o manifesto, marcando-o `reconstruido_apos_gravacao`.
+Sem isso, gravação e auditoria ficariam permanentemente dessincronizadas.
 
 ---
 
@@ -140,6 +171,11 @@ diff: puramente aditivo (0 deleções)
 
 A ausência de alteração nos registros anteriores é conferida por hash canônico
 registro a registro, não por inspeção visual.
+
+O comando `verificar` roda um verificador **unificado** das quatro camadas —
+config, geometrias, associações e manifesto — e reprova se qualquer uma
+divergir. Verificar cada camada isoladamente deixaria passar o caso perigoso: o
+config afirmando um estado que `dados/` não sustenta.
 
 O arquivo é gravado na **mesma indentação** em que estava. A primeira tentativa
 usou o default do serializador e reformatou 24 mil linhas — um diff assim

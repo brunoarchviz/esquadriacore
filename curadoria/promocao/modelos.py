@@ -27,7 +27,7 @@ class CandidatoPromocao:
     dimensao_nominal_mm: tuple[float, float]
     contorno_externo: tuple[tuple[float, float], ...]
     vazios_internos: tuple[tuple[tuple[float, float], ...], ...]
-    quantidade_componentes: int
+    quantidade_pontos_contorno_externo: int
     quantidade_vazios: int
     nivel_contorno: str
     fabricante: str

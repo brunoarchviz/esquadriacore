@@ -459,7 +459,12 @@ def test_manifesto_tem_os_oito_perfis(manifesto):
 
 def test_manifesto_tem_hashes_antes_e_depois(manifesto):
     assert manifesto["hash_antes"] and manifesto["hash_depois"]
-    assert manifesto["hash_antes"] != manifesto["hash_depois"]
+    if manifesto.get("reconstruido_apos_gravacao"):
+        # manifesto refeito sobre dados JÁ promovidos: nada foi escrito, logo
+        # antes == depois é o registro honesto do que aconteceu
+        assert manifesto["hash_antes"] == manifesto["hash_depois"]
+    else:
+        assert manifesto["hash_antes"] != manifesto["hash_depois"]
 
 
 def test_manifesto_registra_decisao_especial_do_su102(manifesto):
@@ -635,3 +640,242 @@ def test_dados_oficiais_mantem_indentacao_de_origem():
     """Os arquivos publicados continuam no formato em que sempre estiveram."""
     for caminho in (CAMINHO_GEOMETRIAS, CAMINHO_ASSOCIACOES):
         assert transacao.detectar_indentacao(caminho) == 1, caminho.name
+
+
+# ===========================================================================
+# Journal e recuperação após encerramento abrupto
+# ===========================================================================
+
+from curadoria.promocao import integridade, journal          # noqa: E402
+from curadoria.promocao.transacao import InterrupcaoSimulada  # noqa: E402
+
+
+def _dir(copias):
+    return copias[0].parent
+
+
+def test_sucesso_normal_nao_deixa_journal_nem_backup(copias, candidatos):
+    g, a = copias
+    plano, sim = _sim_para(copias, candidatos)
+    estado, _, _ = transacao.aplicar_promocao_transacional(plano, g, a, sim)
+    assert estado.aplicado
+    assert journal.pendente(_dir(copias)) is None
+    restos = [p.name for p in g.parent.iterdir() if p.name.startswith(".")]
+    assert restos == [], f"sobras: {restos}"
+
+
+@pytest.mark.parametrize("ponto,estado_esperado", [
+    ("apos_journal", journal.PREPARADA),
+    ("apos_primeiro_replace", journal.GEOMETRIAS_SUBSTITUIDAS),
+    ("apos_ambos_replaces", journal.AMBOS_SUBSTITUIDOS),
+])
+def test_interrupcao_abrupta_deixa_journal_recuperavel(copias, candidatos,
+                                                       ponto, estado_esperado):
+    """Simula SIGKILL: sai sem rollback, como um processo morto faria."""
+    g, a = copias
+    h0 = (hash_arquivo(g), hash_arquivo(a))
+    plano, sim = _sim_para(copias, candidatos)
+    with pytest.raises(InterrupcaoSimulada):
+        transacao.aplicar_promocao_transacional(plano, g, a, sim,
+                                                interromper_em=ponto)
+    pend = journal.pendente(_dir(copias))
+    assert pend is not None and pend["estado"] == estado_esperado
+
+    # nova "execução" encontra o journal e recupera
+    rel = journal.recuperar(_dir(copias))
+    assert rel["ok"] and rel["acao"] == "restaurado"
+    assert (hash_arquivo(g), hash_arquivo(a)) == h0, "não voltou ao original"
+    assert journal.pendente(_dir(copias)) is None
+    json.loads(g.read_text()); json.loads(a.read_text())
+
+
+def test_interrupcao_apos_primeiro_replace_deixa_destinos_dessincronizados(
+        copias, candidatos):
+    """Prova que a janela existe de verdade — é o que o journal cobre."""
+    g, a = copias
+    h0g = hash_arquivo(g)
+    plano, sim = _sim_para(copias, candidatos)
+    with pytest.raises(InterrupcaoSimulada):
+        transacao.aplicar_promocao_transacional(
+            plano, g, a, sim, interromper_em="apos_primeiro_replace")
+    assert hash_arquivo(g) != h0g, "geometrias deveria ter sido substituída"
+    assert len(json.loads(a.read_text())["associacoes"]) == sim.associacoes_antes
+    journal.recuperar(_dir(copias))
+
+
+def test_promover_recusa_enquanto_houver_journal_pendente(copias, candidatos):
+    g, a = copias
+    plano, sim = _sim_para(copias, candidatos)
+    with pytest.raises(InterrupcaoSimulada):
+        transacao.aplicar_promocao_transacional(plano, g, a, sim,
+                                                interromper_em="apos_journal")
+    with pytest.raises(RuntimeError, match="não concluída"):
+        transacao.aplicar_promocao_transacional(plano, g, a, sim)
+    journal.recuperar(_dir(copias))
+
+
+def test_journal_corrompido_e_recusado_sem_apagar(copias):
+    j = journal.caminho_journal(_dir(copias))
+    j.write_text("{ nao e json", encoding="utf-8")
+    with pytest.raises(journal.JournalCorrompido, match="ilegível"):
+        journal.ler(j)
+    assert j.exists(), "journal ilegível não pode ser apagado silenciosamente"
+    j.unlink()
+
+
+def test_journal_de_versao_desconhecida_e_recusado(copias):
+    j = journal.caminho_journal(_dir(copias))
+    j.write_text(json.dumps({"versao": 99, "estado": "PREPARADA"}), encoding="utf-8")
+    with pytest.raises(journal.JournalCorrompido, match="estrutura desconhecida"):
+        journal.ler(j)
+    j.unlink()
+
+
+def test_backup_ausente_impede_recuperacao_e_preserva_journal(copias, candidatos):
+    g, a = copias
+    plano, sim = _sim_para(copias, candidatos)
+    with pytest.raises(InterrupcaoSimulada):
+        transacao.aplicar_promocao_transacional(
+            plano, g, a, sim, interromper_em="apos_primeiro_replace")
+    journal.caminho_backup(g).unlink()          # backup some
+    with pytest.raises(journal.JournalCorrompido, match="backup ausente"):
+        journal.recuperar(_dir(copias))
+    assert journal.caminho_journal(_dir(copias)).exists(), \
+        "journal não pode sumir sem recuperação confirmada"
+
+
+def test_recuperar_sem_journal_e_no_op(tmp_path):
+    rel = journal.recuperar(tmp_path)
+    assert rel["ok"] and rel["acao"] == "nada_a_recuperar"
+
+
+# ===========================================================================
+# Verificador unificado — cada mutação isolada tem de ser detectada
+# ===========================================================================
+
+@pytest.fixture(scope="module")
+def manifesto_real():
+    return json.loads(auditoria.CAMINHO_MANIFESTO.read_text(encoding="utf-8"))
+
+
+@pytest.fixture(scope="module")
+def quatro_camadas(config, oficiais, manifesto_real, candidatos):
+    geo, assoc = oficiais
+    return config, geo, assoc, manifesto_real, candidatos
+
+
+def test_verificador_unificado_aprova_o_estado_real(quatro_camadas):
+    cfg, geo, assoc, man, cands = quatro_camadas
+    r = integridade.verificar_integridade_promocao_e4b(cfg, geo, assoc, man, cands)
+    assert r.ok, r.descrever()
+
+
+def test_mutacao_no_config_e_detectada(quatro_camadas):
+    cfg, geo, assoc, man, cands = quatro_camadas
+    c2 = copy.deepcopy(cfg)
+    c2["microlote_janela"]["promocao_oficial_realizada"] = False
+    assert not integridade.verificar_integridade_promocao_e4b(c2, geo, assoc, man).ok
+
+
+def test_mutacao_no_id_de_geo_do_config_e_detectada(quatro_camadas):
+    cfg, geo, assoc, man, cands = quatro_camadas
+    c2 = copy.deepcopy(cfg)
+    c2["perfis"]["SU-001"]["promocao_oficial"]["id_geometria"] = "GEO-OUTRO"
+    r = integridade.verificar_integridade_promocao_e4b(c2, geo, assoc, man)
+    assert not r.ok and any("id_geometria" in f["regra"] for f in r.falhas)
+
+
+def test_mutacao_na_geometria_e_detectada(quatro_camadas):
+    cfg, geo, assoc, man, cands = quatro_camadas
+    g2 = copy.deepcopy(geo)
+    g2["geometrias"] = [x for x in g2["geometrias"] if x["id"] != "GEO-SU-039"]
+    r = integridade.verificar_integridade_promocao_e4b(cfg, g2, assoc, man)
+    assert not r.ok and any("ausente" in f["regra"] for f in r.falhas)
+
+
+def test_mutacao_no_contorno_promovido_e_detectada(quatro_camadas):
+    cfg, geo, assoc, man, cands = quatro_camadas
+    g2 = copy.deepcopy(geo)
+    for x in g2["geometrias"]:
+        if x["id"] == "GEO-SU-102":
+            x["contorno_externo"] = [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0]]
+    r = integridade.verificar_integridade_promocao_e4b(cfg, g2, assoc, man, cands)
+    assert not r.ok
+
+
+def test_mutacao_na_associacao_e_detectada(quatro_camadas):
+    cfg, geo, assoc, man, cands = quatro_camadas
+    a2 = copy.deepcopy(assoc)
+    for x in a2["associacoes"]:
+        if x["perfil_id"] == "ALCOA-SU-053":
+            x["geometria_padrao_id"] = "GEO-SU-005"
+    r = integridade.verificar_integridade_promocao_e4b(cfg, geo, a2, man)
+    assert not r.ok and any("GEO errado" in f["regra"] for f in r.falhas)
+
+
+def test_mutacao_no_hash_do_manifesto_e_detectada(quatro_camadas):
+    cfg, geo, assoc, man, cands = quatro_camadas
+    m2 = copy.deepcopy(man)
+    m2["hash_depois"]["dados/geometrias.json"] = "0" * 64
+    r = integridade.verificar_integridade_promocao_e4b(cfg, geo, assoc, m2)
+    assert not r.ok and any("hash_depois" in f["regra"] for f in r.falhas)
+
+
+def test_mutacao_na_contagem_do_manifesto_e_detectada(quatro_camadas):
+    cfg, geo, assoc, man, cands = quatro_camadas
+    m2 = copy.deepcopy(man)
+    m2["quantidade_depois"]["geometrias"] = 999
+    r = integridade.verificar_integridade_promocao_e4b(cfg, geo, assoc, m2)
+    assert not r.ok and any("quantidade_depois" in f["regra"] for f in r.falhas)
+
+
+def test_mutacao_no_texto_de_estado_atual_e_detectada(quatro_camadas):
+    cfg, geo, assoc, man, cands = quatro_camadas
+    c2 = copy.deepcopy(cfg)
+    c2["perfis"]["SU-001"]["promocao_oficial"]["_obs"] = \
+        "nao existe geometria oficial em dados/"
+    r = integridade.verificar_integridade_promocao_e4b(c2, geo, assoc, man)
+    assert not r.ok and any("contradiz" in f["regra"] for f in r.falhas)
+
+
+def test_nota_historica_datada_nao_e_confundida_com_estado_atual(quatro_camadas):
+    """O fato de que ANTES da promoção não existia geometria é verdadeiro e
+    tem de sobreviver — a varredura não pode ser cega."""
+    cfg, geo, assoc, man, cands = quatro_camadas
+    c2 = copy.deepcopy(cfg)
+    c2["perfis"]["SU-001"]["historico_pre_promocao"] = {
+        "observacao": "nao existia geometria oficial em dados/ nesta data"}
+    assert integridade.verificar_integridade_promocao_e4b(c2, geo, assoc, man, cands).ok
+
+
+def test_manifesto_com_commit_descritivo_e_detectado(quatro_camadas):
+    cfg, geo, assoc, man, cands = quatro_camadas
+    m2 = copy.deepcopy(man)
+    m2["commit_curadoria_fonte"] = "E.4B — microlote fechado com 8 perfis"
+    r = integridade.verificar_integridade_promocao_e4b(cfg, geo, assoc, m2)
+    assert not r.ok and any("40 hex" in f["regra"] for f in r.falhas)
+
+
+def test_manifesto_tem_commits_de_procedencia_validos(manifesto_real):
+    import re
+    for campo in ("commit_base_main", "commit_pre_promocao", "commit_curadoria_fonte"):
+        v = manifesto_real[campo]
+        assert re.fullmatch(r"[0-9a-f]{40}", v), f"{campo}={v!r}"
+    assert manifesto_real["commit_base_main"] == \
+        "e356ba2c34b3c04711d97cbf576f3737be974af3"
+    assert manifesto_real["descricao_curadoria_fonte"]
+
+
+def test_manifesto_descreve_o_mecanismo_sem_prometer_atomicidade_conjunta(manifesto_real):
+    m = manifesto_real["mecanismo_transacional"]
+    assert m["substituicao_atomica_por_arquivo"] is True
+    assert m["commit_atomico_conjunto"] is False
+    assert m["journal_persistente"] is True
+    assert m["recuperacao_apos_encerramento_abrupto"] is True
+
+
+def test_campo_de_pontos_tem_nome_honesto(candidatos):
+    """`quantidade_componentes` recebia len(contorno) — era contagem de pontos."""
+    c = candidatos[0]
+    assert c.quantidade_pontos_contorno_externo == len(c.contorno_externo)
+    assert not hasattr(c, "quantidade_componentes")

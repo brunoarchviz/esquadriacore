@@ -7,7 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from . import auditoria, carregar, construir, transacao
+from . import auditoria, carregar, construir, integridade, journal, transacao
 from .carregar import (CAMINHO_ASSOCIACOES, CAMINHO_CONFIG, CAMINHO_GEOMETRIAS,
                        RAIZ, PromocaoErro, hash_arquivo)
 from .modelos import LOTES
@@ -41,7 +41,52 @@ def _arvore_suja() -> list[str]:
     return [l for l in out.splitlines() if l.strip()]
 
 
+DIR_DADOS = CAMINHO_GEOMETRIAS.parent
+
+
+def _bloquear_se_journal_pendente(lote: str) -> int | None:
+    """Toda operação normal recusa enquanto houver transação não concluída."""
+    try:
+        pend = journal.pendente(DIR_DADOS, lote)
+    except journal.JournalCorrompido as e:
+        print(f"journal inutilizável: {e}\n"
+              f"rode: python -m curadoria.promocao.cli recuperar --lote {lote}",
+              file=sys.stderr)
+        return 2
+    if pend:
+        print(f"transação anterior não concluída (estado {pend['estado']}).\n"
+              f"rode: python -m curadoria.promocao.cli recuperar --lote {lote}",
+              file=sys.stderr)
+        return 2
+    return None
+
+
+def _manifesto_ausente_mas_dados_promovidos(cfg, geo, assoc, cands) -> bool:
+    ids = {g["id"] for g in geo["geometrias"]}
+    promovido = all(c.id_geometria in ids for c in cands)
+    return promovido and not auditoria.CAMINHO_MANIFESTO.exists()
+
+
+def cmd_recuperar(args) -> int:
+    try:
+        rel = journal.recuperar(DIR_DADOS, args.lote)
+    except journal.JournalCorrompido as e:
+        print(f"recuperação impossível: {e}", file=sys.stderr)
+        return 1
+    print(f"recuperação: {rel['acao']}")
+    if rel.get("restaurados"):
+        print(f"  restaurados: {rel['restaurados']} "
+              f"(estado encontrado: {rel.get('estado_encontrado')})")
+    if journal.caminho_journal(DIR_DADOS, args.lote).exists():
+        print("  ATENÇÃO: journal ainda presente", file=sys.stderr)
+        return 1
+    print("  nenhum journal ou backup pendente")
+    return 0
+
+
 def cmd_diagnosticar(args) -> int:
+    if (c := _bloquear_se_journal_pendente(args.lote)) is not None:
+        return c
     cfg, geo, assoc, cands = _carregar_tudo(args.lote)
     print(f"lote {args.lote}: {len(cands)} candidatos")
     print(f"biblioteca oficial: {len(geo['geometrias'])} geometrias, "
@@ -53,7 +98,7 @@ def cmd_diagnosticar(args) -> int:
     for c in cands:
         L, A = c.dimensao_nominal_mm
         print(f"{c.codigo_perfil:9s} {c.id_geometria:13s} "
-              f"{L:6.2f} x {A:5.2f} {c.quantidade_componentes:5d} "
+              f"{L:6.2f} x {A:5.2f} {c.quantidade_pontos_contorno_externo:5d} "
               f"{c.quantidade_vazios:4d}  {c.estado_curadoria}")
     val = _validar_todos(cands, cfg)
     print()
@@ -70,6 +115,8 @@ def cmd_diagnosticar(args) -> int:
 
 
 def cmd_simular(args) -> int:
+    if (c := _bloquear_se_journal_pendente(args.lote)) is not None:
+        return c
     cfg, geo, assoc, cands = _carregar_tudo(args.lote)
     val = _validar_todos(cands, cfg)
     if not val.ok:
@@ -104,6 +151,8 @@ def cmd_promover(args) -> int:
         print("recusado: `promover` exige --apply explícito. "
               "Use `simular` para inspecionar sem gravar.")
         return 2
+    if (c := _bloquear_se_journal_pendente(args.lote)) is not None:
+        return c
     sujos = _arvore_suja()
     if sujos and not args.permitir_arvore_suja:
         print("recusado: há arquivos RASTREADOS modificados:\n  "
@@ -127,6 +176,18 @@ def cmd_promover(args) -> int:
         return 1
 
     if not sim.ids_criados and not sim.associacoes_criadas:
+        # `dados/` promovido com manifesto ausente NÃO é "nada a fazer": a
+        # gravação e a auditoria ficariam permanentemente dessincronizadas.
+        if _manifesto_ausente_mas_dados_promovidos(cfg, geo, assoc, cands):
+            print("dados já promovidos, manifesto AUSENTE — reconstruindo.")
+            h = {str(CAMINHO_GEOMETRIAS): hash_arquivo(CAMINHO_GEOMETRIAS),
+                 str(CAMINHO_ASSOCIACOES): hash_arquivo(CAMINHO_ASSOCIACOES)}
+            man = auditoria.construir_manifesto(
+                sim, h, h, cfg, resultado_idempotencia="APROVADA",
+                resultado_rollback="coberto por regressão (tests/test_promocao.py)",
+                lote=args.lote, reconstruido=True)
+            print(f"  manifesto: {auditoria.gravar_manifesto(man).relative_to(RAIZ)}")
+            return 0
         print("nada a fazer: estado já promovido e íntegro.")
         return 0
 
@@ -151,6 +212,8 @@ def cmd_promover(args) -> int:
 
 
 def cmd_verificar(args) -> int:
+    if (c := _bloquear_se_journal_pendente(args.lote)) is not None:
+        return c
     cfg, geo, assoc, cands = _carregar_tudo(args.lote)
     ids = {g["id"] for g in geo["geometrias"]}
     perfis = {a["perfil_id"]: a["geometria_padrao_id"] for a in assoc["associacoes"]}
@@ -187,10 +250,23 @@ def cmd_verificar(args) -> int:
           f"{sum(1 for c in cands if c.id_geometria in ids)} presentes")
     print(f"associações órfãs   : {len(orfas)}")
     print(f"GEO-TMS-102 criado  : {'GEO-TMS-102' in ids}")
-    if problemas:
-        print("\nPROBLEMAS:")
-        for p in problemas:
-            print("  -", p)
+    # verificação unificada das quatro camadas
+    man = {}
+    if auditoria.CAMINHO_MANIFESTO.exists():
+        man = json.loads(auditoria.CAMINHO_MANIFESTO.read_text(encoding="utf-8"))
+    else:
+        problemas.append("manifesto ausente — rode `promover --apply` para reconstruir")
+    unif = integridade.verificar_integridade_promocao_e4b(cfg, geo, assoc, man, cands)
+    print(f"verificação unificada (config/dados/associações/manifesto): "
+          f"{'APROVADA' if unif.ok else 'REPROVADA'}")
+    if not unif.ok:
+        print(unif.descrever())
+
+    if problemas or not unif.ok:
+        if problemas:
+            print("\nPROBLEMAS:")
+            for p in problemas:
+                print("  -", p)
         return 1
     print("\nverificação APROVADA")
     return 0
@@ -203,7 +279,9 @@ def main(argv: list[str] | None = None) -> int:
     for nome, fn, ajuda in (("diagnosticar", cmd_diagnosticar, "inspeciona sem gravar"),
                             ("simular", cmd_simular, "simula a promoção sem gravar"),
                             ("promover", cmd_promover, "grava em dados/ (exige --apply)"),
-                            ("verificar", cmd_verificar, "confere o estado promovido")):
+                            ("verificar", cmd_verificar, "confere o estado promovido"),
+                            ("recuperar", cmd_recuperar,
+                             "desfaz transação interrompida (journal pendente)")):
         p = sub.add_parser(nome, help=ajuda)
         p.add_argument("--lote", default="E4B", choices=sorted(LOTES))
         p.add_argument("--json", action="store_true", help="relatório em JSON")
