@@ -119,6 +119,8 @@ def construir_manifesto(simulacao, config: dict,
             "recuperacao_apos_encerramento_abrupto": True,
             "retomada_orientada_por_estado": True,
             "concluida_validada_antes_da_limpeza": True,
+            "concluida_e_o_ponto_de_commit": True,
+            "falha_de_limpeza_nao_desfaz_promocao": True,
             "preflight_antes_de_restaurar": True,
             "_nota": ("dois os.replace sequenciais NAO sao commit atomico "
                       "conjunto; o journal persiste ate a finalizacao auditavel "
@@ -128,8 +130,22 @@ def construir_manifesto(simulacao, config: dict,
         "capacidade_reconstrucao_manifesto": {
             "testada": True,
             "resultado": "APROVADA",
-            "_nota": ("o manifesto pode ser recriado a partir do recibo do "
-                      "journal sem alterar os fatos do evento original."),
+            "comando": "curadoria.promocao.cli reconstruir-manifesto --apply",
+            "silenciosa_dentro_de_promover": False,
+            "_nota": ("o manifesto pode ser recriado a partir dos fatos "
+                      "canonicos sem alterar o evento original. E operacao "
+                      "EXPLICITA: confere config, dados e associacoes antes de "
+                      "gravar, releh o arquivo, roda a verificacao unificada e "
+                      "remove o manifesto recem-criado se ela reprovar."),
+        },
+        "escopo_da_auditoria_duravel": {
+            "hash_global_e_fato_historico": True,
+            "integridade_atual_por_registros_do_lote": True,
+            "_nota": ("o hash de dados/geometrias.json no fim do E.4C descreve "
+                      "aquele instante. Uma promocao futura legitima acrescenta "
+                      "registros e muda o hash global; a permanencia do E.4B e "
+                      "verificada pelos oito registros, nao pela contagem total "
+                      "nem pelo hash do arquivo inteiro."),
         },
         "reconstruido_apos_gravacao": reconstruido,
         "avisos": list(simulacao.avisos),
@@ -137,10 +153,14 @@ def construir_manifesto(simulacao, config: dict,
     }
 
 
-def gravar_manifesto(manifesto: dict, caminho: Path = CAMINHO_MANIFESTO) -> Path:
-    """Gravação durável — temporário + fsync + replace + fsync do diretório."""
+def gravar_manifesto(manifesto: dict, caminho: Path | None = None) -> Path:
+    """Gravação durável — temporário + fsync + replace + fsync do diretório.
+
+    O destino é resolvido na CHAMADA, não no import: com o default amarrado no
+    `def`, redirecionar `CAMINHO_MANIFESTO` (teste em árvore isolada) não teria
+    efeito e a gravação cairia no repositório real."""
     from .journal import escrever_atomico
-    caminho = Path(caminho)
+    caminho = Path(caminho) if caminho is not None else CAMINHO_MANIFESTO
     escrever_atomico(caminho,
                      json.dumps(manifesto, ensure_ascii=False, indent=2) + "\n")
     return caminho

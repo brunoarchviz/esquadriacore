@@ -1,19 +1,28 @@
-"""Verificador unificado da promoção E.4B.
+"""Verificador da promoção E.4B — duas perguntas distintas.
 
-Confere as QUATRO camadas juntas — config, dados, associações e manifesto.
-Verificar cada uma isoladamente deixaria passar exatamente o caso perigoso: o
-config afirmando um estado que `dados/` não sustenta, ou o manifesto descrevendo
-uma gravação que não é a que está no disco.
+**Evento histórico** (`verificar_evento_historico_e4c`): o manifesto descreve
+fielmente o que aconteceu — `46 → 54`, `245 → 253`, os hashes daquele instante,
+os oito IDs criados, os commits de procedência. Fatos imutáveis.
+
+**Permanência atual** (`verificar_permanencia_atual_e4b`): os oito registros
+promovidos continuam lá, íntegros, hoje.
+
+A separação existe porque as duas perguntas envelhecem de formas opostas. O
+hash de `dados/geometrias.json` no fim do E.4C é fato histórico; exigir que o
+arquivo vivo continue tendo esse hash transformaria a próxima promoção legítima
+em "corrupção". A integridade de hoje se verifica pelos registros do lote, não
+pelo hash global nem pela contagem total do arquivo.
 """
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
 from . import evento
-from .carregar import RAIZ, hash_arquivo, perfil_id_oficial
+from .carregar import perfil_id_oficial
 from .construir import comparar_contornos_exatamente
 from .modelos import PERFIS_E4B, ResultadoValidacao
+
+VERSAO_MANIFESTO_ESPERADA = "1.2"
 
 # Expressões que, num campo de ESTADO ATUAL, contradizem a promoção. Campos
 # `_historico*` e `historico_pre_promocao` ficam de fora: o fato de que antes da
@@ -56,19 +65,99 @@ def _r(regra, encontrado, esperado, arquivo, perfil="-"):
     return ResultadoValidacao.reprovado(perfil, regra, encontrado, esperado, arquivo)
 
 
-def verificar_integridade_promocao_e4b(config: dict, geometrias: dict,
-                                       associacoes: dict, manifesto: dict,
-                                       candidatos=(),
-                                       raiz: Path | None = None) -> ResultadoValidacao:
-    """`raiz` permite verificar uma árvore isolada em vez do repositório vivo.
 
-    Sem isso, um teste integral em `tmp_path` compararia o manifesto da árvore
-    isolada com os arquivos do repositório — e passaria por acidente."""
-    raiz = Path(raiz) if raiz else RAIZ
+
+CFG = "curadoria/aquisicao/configs/e4b_suprema.json"
+DADOS_G = "dados/geometrias.json"
+DADOS_A = "dados/perfil_geometria.json"
+MAN = "curadoria/promocoes/e4c/manifesto_promocao_e4b.json"
+
+
+def verificar_evento_historico_e4c(manifesto: dict) -> ResultadoValidacao:
+    """O manifesto contra os fatos canônicos do EVENTO.
+
+    Fatos, não estado: `46 → 54`, `245 → 253`, os hashes daquele instante, os
+    oito IDs criados, os commits de procedência. Nada aqui olha para o disco.
+
+    É deliberado que esta função **não** compare `hash_depois` com o arquivo
+    vivo. Uma promoção futura legítima acrescentará registros e mudará o hash
+    global de `dados/geometrias.json` — e isso não torna falso o que aconteceu
+    no E.4C. Amarrar a auditoria histórica ao hash do arquivo de hoje
+    transformaria a próxima promoção em "corrupção" aos olhos do verificador."""
     r = ResultadoValidacao.aprovado()
-    CFG, DADOS_G = "curadoria/aquisicao/configs/e4b_suprema.json", "dados/geometrias.json"
-    DADOS_A = "dados/perfil_geometria.json"
-    MAN = "curadoria/promocoes/e4c/manifesto_promocao_e4b.json"
+
+    if manifesto.get("estado") != "PROMOVIDO":
+        r = r.somar(_r("manifesto não está PROMOVIDO", manifesto.get("estado"),
+                       "PROMOVIDO", MAN))
+    if list(manifesto.get("perfis") or []) != list(PERFIS_E4B):
+        r = r.somar(_r("manifesto com lista de perfis divergente",
+                       manifesto.get("perfis"), list(PERFIS_E4B), MAN))
+    if len(manifesto.get("geometrias") or []) != 8:
+        r = r.somar(_r("manifesto sem as 8 geometrias",
+                       len(manifesto.get("geometrias") or []), 8, MAN))
+    if manifesto.get("resultado_idempotencia") != "APROVADA":
+        r = r.somar(_r("manifesto sem idempotência aprovada",
+                       manifesto.get("resultado_idempotencia"), "APROVADA", MAN))
+    if manifesto.get("versao_manifesto") != VERSAO_MANIFESTO_ESPERADA:
+        r = r.somar(_r("versao_manifesto divergente",
+                       manifesto.get("versao_manifesto"),
+                       VERSAO_MANIFESTO_ESPERADA, MAN))
+    if manifesto.get("data_utc") != evento.DATA_UTC_EVENTO:
+        r = r.somar(_r("data_utc divergente do evento canônico",
+                       manifesto.get("data_utc"), evento.DATA_UTC_EVENTO, MAN))
+
+    for campo in ("commit_base_main", "commit_pre_promocao", "commit_curadoria_fonte"):
+        v = manifesto.get(campo)
+        if not (isinstance(v, str) and re.fullmatch(r"[0-9a-f]{40}", v)):
+            r = r.somar(_r(f"{campo} não é hash de 40 hex", v, "40 hex", MAN))
+
+    # Não podem ser inferidos do disco já promovido: uma reconstrução que os
+    # derivasse produziria 54 -> 54 com zero criados.
+    for campo, esperado in (
+            ("commit_base_main", evento.COMMIT_BASE_MAIN),
+            ("commit_pre_promocao", evento.COMMIT_PRE_PROMOCAO),
+            ("commit_curadoria_fonte", evento.COMMIT_CURADORIA_FONTE)):
+        if manifesto.get(campo) != esperado:
+            r = r.somar(_r(f"{campo} divergente do evento canônico",
+                           manifesto.get(campo), esperado, MAN))
+    for campo, esperado in (
+            ("hash_antes", dict(evento.HASH_ANTES)),
+            ("hash_depois", dict(evento.HASH_DEPOIS)),
+            ("quantidade_antes", dict(evento.QUANTIDADE_ANTES)),
+            ("quantidade_depois", dict(evento.QUANTIDADE_DEPOIS)),
+            ("ids_criados", list(evento.IDS_CRIADOS)),
+            ("associacoes_criadas", list(evento.ASSOCIACOES_CRIADAS)),
+            ("ids_reutilizados", []),
+            ("associacoes_reutilizadas", [])):
+        atual = manifesto.get(campo)
+        if isinstance(esperado, list):
+            atual = list(atual or [])
+        if atual != esperado:
+            r = r.somar(_r(f"{campo} divergente do evento canônico",
+                           manifesto.get(campo), esperado, MAN))
+    if manifesto.get("hash_antes") == manifesto.get("hash_depois"):
+        r = r.somar(_r("hash_antes igual a hash_depois — não descreve promoção",
+                       manifesto.get("hash_antes"), "diferentes", MAN))
+    if manifesto.get("quantidade_antes") == manifesto.get("quantidade_depois"):
+        r = r.somar(_r("quantidade_antes igual a quantidade_depois",
+                       manifesto.get("quantidade_antes"), "diferentes", MAN))
+    if manifesto.get("reconstruido_apos_gravacao") is not False:
+        r = r.somar(_r("manifesto marcado como reconstruído",
+                       manifesto.get("reconstruido_apos_gravacao"), False, MAN))
+    return r
+
+
+def verificar_permanencia_atual_e4b(config: dict, geometrias: dict,
+                                    associacoes: dict,
+                                    candidatos=()) -> ResultadoValidacao:
+    """O que foi promovido no E.4B continua lá, íntegro, HOJE.
+
+    Verifica os oito registros do lote — presença, contorno ponto a ponto,
+    dimensão, vazios, associação, declaração no config, ausência de
+    `GEO-TMS-102`. Não verifica contagens totais nem hash global: geometrias e
+    associações **novas**, de outros lotes, são evolução legítima da
+    biblioteca, não corrupção do E.4B."""
+    r = ResultadoValidacao.aprovado()
 
     # ---------------------------------------------------------------- config
     ml = config.get("microlote_janela", {})
@@ -149,81 +238,18 @@ def verificar_integridade_promocao_e4b(config: dict, geometrias: dict,
     orfas = [p for p, g in assoc.items() if g not in por_id]
     if orfas:
         r = r.somar(_r("associações órfãs", orfas, [], DADOS_A))
-
-    # -------------------------------------------------------------- manifesto
-    if manifesto.get("estado") != "PROMOVIDO":
-        r = r.somar(_r("manifesto não está PROMOVIDO", manifesto.get("estado"),
-                       "PROMOVIDO", MAN))
-    if list(manifesto.get("perfis") or []) != list(PERFIS_E4B):
-        r = r.somar(_r("manifesto com lista de perfis divergente",
-                       manifesto.get("perfis"), list(PERFIS_E4B), MAN))
-    if len(manifesto.get("geometrias") or []) != 8:
-        r = r.somar(_r("manifesto sem as 8 geometrias",
-                       len(manifesto.get("geometrias") or []), 8, MAN))
-    if manifesto.get("resultado_idempotencia") != "APROVADA":
-        r = r.somar(_r("manifesto sem idempotência aprovada",
-                       manifesto.get("resultado_idempotencia"), "APROVADA", MAN))
-
-    for campo in ("commit_base_main", "commit_pre_promocao", "commit_curadoria_fonte"):
-        v = manifesto.get(campo)
-        if not (isinstance(v, str) and re.fullmatch(r"[0-9a-f]{40}", v)):
-            r = r.somar(_r(f"{campo} não é hash de 40 hex", v, "40 hex", MAN))
-
-    # ---- fatos canônicos do EVENTO ---------------------------------------
-    # Não podem ser inferidos do disco já promovido: uma reconstrução que os
-    # derivasse produziria 54 -> 54 com zero criados.
-    for campo, esperado in (
-            ("commit_base_main", evento.COMMIT_BASE_MAIN),
-            ("commit_pre_promocao", evento.COMMIT_PRE_PROMOCAO),
-            ("commit_curadoria_fonte", evento.COMMIT_CURADORIA_FONTE)):
-        if manifesto.get(campo) != esperado:
-            r = r.somar(_r(f"{campo} divergente do evento canônico",
-                           manifesto.get(campo), esperado, MAN))
-    if manifesto.get("hash_antes") != dict(evento.HASH_ANTES):
-        r = r.somar(_r("hash_antes divergente do evento canônico",
-                       manifesto.get("hash_antes"), dict(evento.HASH_ANTES), MAN))
-    if manifesto.get("hash_depois") != dict(evento.HASH_DEPOIS):
-        r = r.somar(_r("hash_depois divergente do evento canônico",
-                       manifesto.get("hash_depois"), dict(evento.HASH_DEPOIS), MAN))
-    if manifesto.get("hash_antes") == manifesto.get("hash_depois"):
-        r = r.somar(_r("hash_antes igual a hash_depois — não descreve promoção",
-                       manifesto.get("hash_antes"), "diferentes", MAN))
-    if manifesto.get("quantidade_antes") != dict(evento.QUANTIDADE_ANTES):
-        r = r.somar(_r("quantidade_antes divergente do evento canônico",
-                       manifesto.get("quantidade_antes"),
-                       dict(evento.QUANTIDADE_ANTES), MAN))
-    if list(manifesto.get("ids_criados") or []) != list(evento.IDS_CRIADOS):
-        r = r.somar(_r("ids_criados divergente do evento canônico",
-                       manifesto.get("ids_criados"), list(evento.IDS_CRIADOS), MAN))
-    if list(manifesto.get("associacoes_criadas") or []) != list(evento.ASSOCIACOES_CRIADAS):
-        r = r.somar(_r("associacoes_criadas divergente do evento canônico",
-                       manifesto.get("associacoes_criadas"),
-                       list(evento.ASSOCIACOES_CRIADAS), MAN))
-    if list(manifesto.get("ids_reutilizados") or []) != []:
-        r = r.somar(_r("ids_reutilizados deveria ser vazio no evento",
-                       manifesto.get("ids_reutilizados"), [], MAN))
-    if list(manifesto.get("associacoes_reutilizadas") or []) != []:
-        r = r.somar(_r("associacoes_reutilizadas deveria ser vazio no evento",
-                       manifesto.get("associacoes_reutilizadas"), [], MAN))
-    if manifesto.get("reconstruido_apos_gravacao") is not False:
-        r = r.somar(_r("manifesto marcado como reconstruído",
-                       manifesto.get("reconstruido_apos_gravacao"), False, MAN))
-
-    # hash e contagem do manifesto contra os arquivos que estão no disco AGORA
-    # hash_depois TAMBÉM tem de bater com o arquivo que está no disco agora.
-    # hash_antes NÃO é comparado com o disco — é fato histórico.
-    for rel, real in ((evento.REL_GEOMETRIAS, raiz / evento.REL_GEOMETRIAS),
-                      (evento.REL_ASSOCIACOES, raiz / evento.REL_ASSOCIACOES)):
-        esperado = (manifesto.get("hash_depois") or {}).get(rel)
-        if esperado and Path(real).exists() and esperado != hash_arquivo(real):
-            r = r.somar(_r("hash_depois do manifesto não bate com o arquivo atual",
-                           hash_arquivo(real)[:16], esperado[:16], MAN))
-    qd = manifesto.get("quantidade_depois") or {}
-    if qd.get("geometrias") != len(geometrias.get("geometrias", [])):
-        r = r.somar(_r("quantidade_depois de geometrias divergente",
-                       len(geometrias.get("geometrias", [])), qd.get("geometrias"), MAN))
-    if qd.get("associacoes") != len(associacoes.get("associacoes", [])):
-        r = r.somar(_r("quantidade_depois de associações divergente",
-                       len(associacoes.get("associacoes", [])),
-                       qd.get("associacoes"), MAN))
     return r
+
+
+def verificar_integridade_promocao_e4b(config: dict, geometrias: dict,
+                                       associacoes: dict, manifesto: dict,
+                                       candidatos=()) -> ResultadoValidacao:
+    """As quatro camadas juntas: evento histórico + permanência atual.
+
+    Verificar cada camada isoladamente deixaria passar o caso perigoso — o
+    config afirmando um estado que `dados/` não sustenta, ou o manifesto
+    descrevendo uma promoção que nunca aconteceu."""
+    historico = verificar_evento_historico_e4c(manifesto)
+    atual = verificar_permanencia_atual_e4b(config, geometrias, associacoes,
+                                            candidatos)
+    return historico.somar(atual)

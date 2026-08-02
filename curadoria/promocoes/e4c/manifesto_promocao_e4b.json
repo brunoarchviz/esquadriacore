@@ -256,13 +256,22 @@
     "recuperacao_apos_encerramento_abrupto": true,
     "retomada_orientada_por_estado": true,
     "concluida_validada_antes_da_limpeza": true,
+    "concluida_e_o_ponto_de_commit": true,
+    "falha_de_limpeza_nao_desfaz_promocao": true,
     "preflight_antes_de_restaurar": true,
     "_nota": "dois os.replace sequenciais NAO sao commit atomico conjunto; o journal persiste ate a finalizacao auditavel (manifesto + config + verificacao unificada) e e a unica autoridade de rollback depois de criado."
   },
   "capacidade_reconstrucao_manifesto": {
     "testada": true,
     "resultado": "APROVADA",
-    "_nota": "o manifesto pode ser recriado a partir do recibo do journal sem alterar os fatos do evento original."
+    "comando": "curadoria.promocao.cli reconstruir-manifesto --apply",
+    "silenciosa_dentro_de_promover": false,
+    "_nota": "o manifesto pode ser recriado a partir dos fatos canonicos sem alterar o evento original. E operacao EXPLICITA: confere config, dados e associacoes antes de gravar, releh o arquivo, roda a verificacao unificada e remove o manifesto recem-criado se ela reprovar."
+  },
+  "escopo_da_auditoria_duravel": {
+    "hash_global_e_fato_historico": true,
+    "integridade_atual_por_registros_do_lote": true,
+    "_nota": "o hash de dados/geometrias.json no fim do E.4C descreve aquele instante. Uma promocao futura legitima acrescenta registros e muda o hash global; a permanencia do E.4B e verificada pelos oito registros, nao pela contagem total nem pelo hash do arquivo inteiro."
   },
   "reconstruido_apos_gravacao": false,
   "avisos": [],

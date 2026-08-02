@@ -81,7 +81,7 @@ def _verificador_das_quatro_camadas(cands, lote: str):
 def _finalizacao_auditavel(documentos, cands, lote: str):
     """Callback da transação: retoma a finalização a partir do marco atual."""
     def finalizar(j):
-        finalizacao.retomar_finalizacao(
+        return finalizacao.retomar_finalizacao(
             j, RAIZ, documentos, _verificador_das_quatro_camadas(cands, lote),
             lote=lote)
     return finalizar
@@ -280,16 +280,15 @@ def cmd_promover(args) -> int:
         # `dados/` promovido com manifesto ausente NÃO é "nada a fazer": a
         # gravação e a auditoria ficariam permanentemente dessincronizadas.
         if _manifesto_ausente_mas_dados_promovidos(cfg, geo, assoc, cands):
-            print("dados já promovidos, manifesto AUSENTE — reconstruindo.")
-            # os fatos vêm de evento.py, então o manifesto sai canônico
-            # mesmo aqui: uma reconstrução não muda o que aconteceu.
-            geo_antes, assoc_antes = _estado_anterior(geo, assoc, cands)
-            sim_evento = transacao.simular_promocao(
-                _plano(cands, geo_antes, assoc_antes, args.lote),
-                geo_antes, assoc_antes)
-            man = auditoria.construir_manifesto(sim_evento, cfg, lote=args.lote)
-            print(f"  manifesto: {auditoria.gravar_manifesto(man).relative_to(RAIZ)}")
-            return 0
+            # `promover` NÃO reconstrói em silêncio. Decidir sucesso porque os
+            # oito GEOs existem é fraco demais: o config pode não declarar a
+            # promoção, uma associação pode apontar errado, um contorno pode ter
+            # sido alterado. Reconstruir é operação própria, explícita e
+            # auditada.
+            print("recusado: dados promovidos e manifesto AUSENTE.\n"
+                  "rode: python -m curadoria.promocao.cli "
+                  f"reconstruir-manifesto --lote {args.lote} --apply")
+            return 2
         print("nada a fazer: estado já promovido e íntegro.")
         return 0
 
@@ -311,6 +310,79 @@ def cmd_promover(args) -> int:
     for k, v in h_depois.items():
         print(f"  {Path(k).name}: {v[:16]}")
     print(f"  manifesto: {caminho.relative_to(RAIZ)}")
+    if estado.limpeza_pendente:
+        print(f"\nATENÇÃO: promoção CONCLUÍDA, mas a LIMPEZA falhou.\n"
+              f"  {estado.detalhe}\n"
+              f"  Os quatro artefatos estão no estado final e validados.\n"
+              f"  rode: python -m curadoria.promocao.cli recuperar "
+              f"--lote {args.lote}")
+        return 3
+    return 0
+
+
+def cmd_reconstruir_manifesto(args) -> int:
+    """Recria o manifesto ausente — explicitamente, e sem tocar em mais nada.
+
+    Antes isto acontecia dentro de `promover`, decidindo sucesso só porque os
+    oito GEOs existiam. Fraco demais: o config podia não declarar a promoção,
+    uma associação podia apontar para o GEO errado, um contorno podia ter sido
+    alterado. Aqui a coerência das três camadas é conferida ANTES de escrever, e
+    o manifesto recém-criado é removido se a verificação final reprovar."""
+    if not args.apply:
+        print("recusado: `reconstruir-manifesto` exige --apply explícito.")
+        return 2
+    if (c := _bloquear_se_journal_pendente(args.lote)) is not None:
+        return c
+
+    caminho = auditoria.CAMINHO_MANIFESTO
+    if caminho.exists():
+        print(f"recusado: o manifesto já existe em {caminho.relative_to(RAIZ)}.\n"
+              "Este comando só recria manifesto AUSENTE — sobrescrever seria "
+              "apagar o registro do evento.")
+        return 2
+
+    cfg, geo, assoc, cands = _carregar_tudo(args.lote)
+
+    # Coerência das três camadas SEM depender do manifesto: se `dados/` não
+    # sustenta a promoção, reconstruir a auditoria seria fabricar evidência.
+    val = _validar_todos(cands, cfg)
+    if not val.ok:
+        print("validação dos candidatos REPROVADA — nada gravado:\n"
+              + val.descrever())
+        return 1
+    perm = integridade.verificar_permanencia_atual_e4b(cfg, geo, assoc, cands)
+    if not perm.ok:
+        print("estado atual não sustenta a promoção — manifesto NÃO criado:\n"
+              + perm.descrever())
+        return 1
+
+    geo_antes, assoc_antes = _estado_anterior(geo, assoc, cands)
+    sim = transacao.simular_promocao(
+        _plano(cands, geo_antes, assoc_antes, args.lote), geo_antes, assoc_antes)
+    # Os fatos vêm de evento.py: uma reconstrução não muda o que aconteceu, e
+    # `reconstruido_apos_gravacao` continua false porque descreve o evento.
+    man = auditoria.construir_manifesto(sim, cfg, lote=args.lote)
+    auditoria.gravar_manifesto(man)
+
+    relido = json.loads(caminho.read_text(encoding="utf-8"))
+    unif = integridade.verificar_integridade_promocao_e4b(
+        cfg, geo, assoc, relido, cands)
+    if not unif.ok:
+        caminho.unlink()
+        journal.sincronizar_diretorio(caminho.parent)
+        print("verificação unificada REPROVOU — manifesto removido:\n"
+              + unif.descrever(), file=sys.stderr)
+        return 1
+
+    print("MANIFESTO RECONSTRUÍDO")
+    print(f"  {caminho.relative_to(RAIZ)}")
+    print(f"  evento: {man['quantidade_antes']['geometrias']} -> "
+          f"{man['quantidade_depois']['geometrias']} geometrias, "
+          f"{man['quantidade_antes']['associacoes']} -> "
+          f"{man['quantidade_depois']['associacoes']} associações")
+    print(f"  reconstruido_apos_gravacao: {man['reconstruido_apos_gravacao']} "
+          f"(o campo descreve o evento, não esta operação)")
+    print("  verificação unificada: APROVADA")
     return 0
 
 
@@ -384,10 +456,15 @@ def main(argv: list[str] | None = None) -> int:
                             ("promover", cmd_promover, "grava em dados/ (exige --apply)"),
                             ("verificar", cmd_verificar, "confere o estado promovido"),
                             ("recuperar", cmd_recuperar,
-                             "desfaz transação interrompida (journal pendente)")):
+                             "desfaz transação interrompida (journal pendente)"),
+                            ("reconstruir-manifesto", cmd_reconstruir_manifesto,
+                             "recria manifesto AUSENTE (exige --apply)")):
         p = sub.add_parser(nome, help=ajuda)
         p.add_argument("--lote", default="E4B", choices=sorted(LOTES))
         p.add_argument("--json", action="store_true", help="relatório em JSON")
+        if nome == "reconstruir-manifesto":
+            p.add_argument("--apply", action="store_true",
+                           help="confirma a criação do manifesto")
         if nome == "promover":
             p.add_argument("--apply", action="store_true",
                            help="confirma a gravação em dados/")
