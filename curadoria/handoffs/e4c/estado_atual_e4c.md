@@ -107,10 +107,14 @@ pós-gravação → grava manifesto → conclui e limpa o journal.
 
 ```text
 substituição atômica POR ARQUIVO        sim (os.replace)
-commit atômico CONJUNTO dos dois        NÃO
+commit atômico CONJUNTO dos artefatos   NÃO
 rollback compensatório para exceções    sim
 recuperação após encerramento abrupto   sim (journal persistente)
+preflight antes de restaurar            sim (zero restauração parcial)
 ```
+
+A consistência do conjunto **não** vem de atomicidade — vem do journal, da
+recuperação e da finalização retomável.
 
 Dois `os.replace` sequenciais **não** são um commit atômico conjunto. Cada um é
 atômico isoladamente; o par não é. Um `SIGKILL`, queda de energia ou travamento
@@ -119,8 +123,52 @@ e o processo morto não executaria `except` nenhum.
 
 O journal cobre essa janela: é gravado e sincronizado **antes** da primeira
 substituição, registra backups e hashes esperados, e sobrevive ao processo.
-Todo comando recusa operar enquanto houver journal pendente, apontando o
-comando de recuperação.
+Todo comando recusa operar enquanto houver journal pendente — inclusive um
+`CONCLUIDA` abandonado antes da limpeza, que deixaria backups órfãos.
+
+Ele cobre os **quatro** artefatos, não só os dois de `dados/`:
+
+```text
+dados/geometrias.json
+dados/perfil_geometria.json
+curadoria/aquisicao/configs/e4b_suprema.json
+curadoria/promocoes/e4c/manifesto_promocao_e4b.json
+```
+
+O manifesto pode não existir antes da primeira promoção; nesse caso o rollback
+é **remover** o arquivo criado, não restaurar um backup inexistente.
+
+### Quando o journal é limpo
+
+Só depois da finalização auditável inteira:
+
+```text
+PREPARADA → GEOMETRIAS_SUBSTITUIDAS → AMBOS_SUBSTITUIDOS → DADOS_VALIDOS
+          → MANIFESTO_GRAVADO → CONFIG_FINALIZADO → VALIDACAO_UNIFICADA
+          → CONCLUIDA → limpar
+```
+
+Limpar em `DADOS_VALIDOS`, como fazia antes, deixaria uma janela em que os dados
+estão promovidos, a auditoria não existe e nada no disco permite retomar.
+
+### Estratégia de recuperação por estado
+
+```text
+até AMBOS_SUBSTITUIDOS      desfazer (estratégia A)
+de DADOS_VALIDOS em diante  retomar a finalização (estratégia B)
+CONCLUIDA                   apenas limpar
+```
+
+A partir de `DADOS_VALIDOS` os dados já passaram na validação pós-gravação;
+desfazê-los perderia trabalho verificado sem ganho de segurança. As duas
+estratégias nunca se misturam silenciosamente — o comando informa qual adotou.
+
+### Recibo do evento no journal
+
+`hash_antes`, `quantidade_antes`, `ids_criados`, `associacoes_criadas` e
+`commit_pre_promocao` **não podem ser inferidos** observando o estado já
+promovido. Viajam no journal para que a finalização retomada recrie o manifesto
+canônico em vez de descrever a si mesma.
 
 ```bash
 python -m curadoria.promocao.cli diagnosticar --lote E4B
@@ -150,6 +198,25 @@ originais, e que nada fica pendente depois.
 Também cobertos: journal corrompido e de versão desconhecida (recusados **sem**
 serem apagados), backup ausente (recuperação impossível, journal preservado
 para inspeção) e ausência de sobras após o sucesso normal.
+
+### O manifesto descreve o evento, não o disco
+
+```yaml
+quantidade_antes:  {geometrias: 46, associacoes: 245}
+quantidade_depois: {geometrias: 54, associacoes: 253}
+ids_criados:       os 8 GEO-SU-xxx
+commit_pre_promocao: 53fcfac  (HEAD antes da gravação — não o HEAD atual)
+reconstruido_apos_gravacao: false
+```
+
+Uma reconstrução **nunca** muda os fatos do evento. Os valores vêm de
+`curadoria/promocao/evento.py`, verificados contra o histórico do git, e não da
+observação do disco: derivá-los do estado promovido produziria `54 → 54` com
+`ids_criados: []`, descrevendo a própria reconstrução em vez da promoção.
+
+O verificador unificado compara `hash_depois` com os arquivos atuais **e**
+valida `hash_antes`, contagens e listas contra a baseline canônica. `54 → 54`
+nunca é aceito como promoção.
 
 ### Finalização auditável
 

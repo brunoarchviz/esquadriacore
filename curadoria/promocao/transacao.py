@@ -16,7 +16,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from . import journal
+from . import evento, journal
 from .carregar import calcular_hash_canonico, hash_arquivo
 from .modelos import (EstadoTransacao, PlanoPromocao, ResultadoSimulacao,
                       ResultadoValidacao)
@@ -239,25 +239,33 @@ class InterrupcaoSimulada(RuntimeError):
 
 def aplicar_promocao_transacional(plano: PlanoPromocao, caminho_geo: Path,
                                   caminho_assoc: Path, simulacao: ResultadoSimulacao,
+                                  finalizar=None,
+                                  caminho_config: Path | None = None,
+                                  caminho_manifesto: Path | None = None,
+                                  raiz: Path | None = None,
                                   falha_injetada: str = "",
                                   interromper_em: str = "",
                                   lote: str = "E4B") -> tuple[EstadoTransacao, dict, dict]:
-    """Grava os dois arquivos, ou restaura ambos, ou deixa journal recuperável.
+    """Grava dados, manifesto e config sob um único journal.
 
-    Dois `os.replace` sequenciais NÃO são um commit atômico conjunto: cada um é
-    atômico por arquivo, o par não é. O journal persistente cobre a janela entre
-    eles para o caso em que o processo morre e nenhum `except` roda.
+    O journal só é limpo depois da finalização auditável inteira — dados
+    gravados e validados, manifesto gravado, config finalizado e verificação
+    unificada aprovada. Limpar antes deixaria uma janela em que os dados estão
+    promovidos e a auditoria não existe, sem nada no disco para retomar.
 
-    `falha_injetada` exercita o rollback compensatório (exceção vista pelo
-    processo). `interromper_em` simula o encerramento abrupto — sai sem
-    rollback, deixando o journal para `recuperar`."""
+    `finalizar(estado_journal)` é o callback que grava manifesto e config e roda
+    a verificação unificada; recebe o marco atual para poder ser retomado.
+
+    `falha_injetada` exercita o rollback compensatório; `interromper_em` simula
+    encerramento abrupto — sai sem rollback, deixando o journal."""
     caminho_geo, caminho_assoc = Path(caminho_geo), Path(caminho_assoc)
+    raiz = Path(raiz) if raiz else caminho_geo.parents[1]
     dir_dados = caminho_geo.parent
     hash_antes = {str(caminho_geo): hash_arquivo(caminho_geo),
                   str(caminho_assoc): hash_arquivo(caminho_assoc)}
 
-    pend = journal.pendente(dir_dados, lote)
-    if pend:
+    if journal.pendente(dir_dados, lote):
+        pend = journal.pendente(dir_dados, lote)
         raise RuntimeError(
             f"transação anterior não concluída (estado {pend['estado']}). "
             f"Rode `recuperar --lote {lote}` antes de promover.")
@@ -271,16 +279,20 @@ def aplicar_promocao_transacional(plano: PlanoPromocao, caminho_geo: Path,
             if falha_injetada == "apos_primeiro_temporario":
                 raise RuntimeError("falha injetada: após o primeiro temporário")
             tmp_assoc = escrever_json_temporario(caminho_assoc, simulacao.associacoes_depois_doc)
+            for x in (tmp_geo, tmp_assoc):
+                json.loads(x.read_text(encoding="utf-8"))
 
-            # relê os temporários antes de substituir qualquer destino
-            for t in (tmp_geo, tmp_assoc):
-                json.loads(t.read_text(encoding="utf-8"))
+            destinos = {"geometrias": caminho_geo, "associacoes": caminho_assoc}
+            if caminho_config:
+                destinos["config"] = Path(caminho_config)
+            if caminho_manifesto:
+                destinos["manifesto"] = Path(caminho_manifesto)
 
-            # journal ANTES do primeiro replace: é o que sobrevive ao SIGKILL
             j = journal.preparar(
-                {"geometrias": caminho_geo, "associacoes": caminho_assoc},
+                destinos,
                 {"geometrias": hash_arquivo(tmp_geo),
-                 "associacoes": hash_arquivo(tmp_assoc)}, lote)
+                 "associacoes": hash_arquivo(tmp_assoc)},
+                evento.recibo_evento(), raiz, lote)
             if interromper_em == "apos_journal":
                 raise InterrupcaoSimulada("interrompido após preparar o journal")
 
@@ -304,26 +316,32 @@ def aplicar_promocao_transacional(plano: PlanoPromocao, caminho_geo: Path,
             if not val.ok:
                 raise RuntimeError("validação pós-gravação reprovou:\n"
                                    + val.descrever())
-            journal.avancar(j, journal.VALIDADA)
+            journal.avancar(j, journal.DADOS_VALIDOS)
+            if interromper_em == "apos_dados_validos":
+                raise InterrupcaoSimulada("interrompido após validar os dados")
 
             hash_depois = {str(caminho_geo): hash_arquivo(caminho_geo),
                            str(caminho_assoc): hash_arquivo(caminho_assoc)}
+
+            # finalização auditável AINDA sob o journal
+            if finalizar is not None:
+                finalizar(j)
             journal.avancar(j, journal.CONCLUIDA)
-            journal.limpar(dir_dados, lote)
+            if interromper_em == "apos_concluida":
+                raise InterrupcaoSimulada("interrompido após CONCLUIDA")
+            journal.limpar(dir_dados, raiz, lote)
             return (EstadoTransacao(backups={}, aplicado=True,
                                     rollback_executado=False),
                     hash_antes, hash_depois)
 
         except InterrupcaoSimulada:
-            # encerramento abrupto: NÃO desfaz nada e NÃO limpa o journal —
-            # é exatamente o estado que `recuperar` precisa encontrar.
-            raise
+            raise                      # sem rollback: é o estado que `recuperar` espera
 
-        except Exception as e:                      # rollback dos DOIS arquivos
+        except Exception as e:
             restaurar_backup(backups)
-            for t in (tmp_geo, tmp_assoc):
-                if t is not None and Path(t).exists():
-                    Path(t).unlink()
+            for x in (tmp_geo, tmp_assoc):
+                if x is not None and Path(x).exists():
+                    Path(x).unlink()
             depois = {str(caminho_geo): hash_arquivo(caminho_geo),
                       str(caminho_assoc): hash_arquivo(caminho_assoc)}
             if depois != hash_antes:
@@ -331,7 +349,7 @@ def aplicar_promocao_transacional(plano: PlanoPromocao, caminho_geo: Path,
                     f"ROLLBACK INCOMPLETO — hashes não voltaram ao original.\n"
                     f"antes={hash_antes}\ndepois={depois}\ncausa={e}") from e
             if j is not None:
-                journal.limpar(dir_dados, lote)
+                journal.limpar(dir_dados, raiz, lote)
             return (EstadoTransacao(backups={}, aplicado=False,
                                     rollback_executado=True, detalhe=str(e)),
                     hash_antes, depois)

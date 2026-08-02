@@ -7,7 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from . import auditoria, carregar, construir, integridade, journal, transacao
+from . import auditoria, carregar, construir, evento, integridade, journal, transacao
 from .carregar import (CAMINHO_ASSOCIACOES, CAMINHO_CONFIG, CAMINHO_GEOMETRIAS,
                        RAIZ, PromocaoErro, hash_arquivo)
 from .modelos import LOTES
@@ -54,11 +54,29 @@ def _bloquear_se_journal_pendente(lote: str) -> int | None:
               file=sys.stderr)
         return 2
     if pend:
-        print(f"transação anterior não concluída (estado {pend['estado']}).\n"
+        print(f"journal pendente (estado {pend['estado']}).\n"
               f"rode: python -m curadoria.promocao.cli recuperar --lote {lote}",
               file=sys.stderr)
         return 2
     return None
+
+
+def _finalizacao_auditavel(cfg, sim, lote: str):
+    """Grava manifesto e config e roda a verificação unificada, marcando cada
+    marco no journal. Devolve o callback usado pela transação."""
+    def finalizar(j):
+        man = auditoria.construir_manifesto(sim, cfg, lote=lote)
+        auditoria.gravar_manifesto(man)
+        journal.avancar(j, journal.MANIFESTO_GRAVADO)
+        journal.avancar(j, journal.CONFIG_FINALIZADO)
+        geo = carregar.carregar_geometrias_oficiais(CAMINHO_GEOMETRIAS)
+        assoc = carregar.carregar_associacoes_oficiais(CAMINHO_ASSOCIACOES)
+        unif = integridade.verificar_integridade_promocao_e4b(
+            cfg, geo, assoc, man, sim.plano.candidatos)
+        if not unif.ok:
+            raise RuntimeError("verificação unificada reprovou:\n" + unif.descrever())
+        journal.avancar(j, journal.VALIDACAO_UNIFICADA)
+    return finalizar
 
 
 def _manifesto_ausente_mas_dados_promovidos(cfg, geo, assoc, cands) -> bool:
@@ -68,18 +86,59 @@ def _manifesto_ausente_mas_dados_promovidos(cfg, geo, assoc, cands) -> bool:
 
 
 def cmd_recuperar(args) -> int:
+    """Estratégia determinística por estado do journal.
+
+    Antes de DADOS_VALIDOS  -> rollback (estratégia A)
+    De DADOS_VALIDOS em diante -> retomar a finalização (estratégia B): os
+    dados já estão válidos no disco e desfazê-los perderia trabalho verificado.
+    CONCLUIDA -> só limpar."""
+    d = None
     try:
-        rel = journal.recuperar(DIR_DADOS, args.lote)
+        d = journal.ler(journal.caminho_journal(DIR_DADOS, args.lote))
     except journal.JournalCorrompido as e:
-        print(f"recuperação impossível: {e}", file=sys.stderr)
+        print(f"journal inutilizável: {e}", file=sys.stderr)
         return 1
-    print(f"recuperação: {rel['acao']}")
-    if rel.get("restaurados"):
-        print(f"  restaurados: {rel['restaurados']} "
-              f"(estado encontrado: {rel.get('estado_encontrado')})")
-    if journal.caminho_journal(DIR_DADOS, args.lote).exists():
-        print("  ATENÇÃO: journal ainda presente", file=sys.stderr)
+    if d is None:
+        print("recuperação: nada_a_recuperar")
+        print("  nenhum journal ou backup pendente")
+        return 0
+
+    estado = d["estado"]
+    if estado == journal.CONCLUIDA:
+        journal.limpar(DIR_DADOS, RAIZ, args.lote)
+        print(f"recuperação: journal CONCLUIDA abandonado — limpo")
+        return 0
+
+    if estado in journal.ESTADOS_FINALIZAVEIS:
+        print(f"recuperação: estado {estado} — retomando a finalização "
+              f"(estratégia B)")
+        cfg, geo, assoc, cands = _carregar_tudo(args.lote)
+        rec = d.get("evento_promocao") or {}
+        sim = transacao.simular_promocao(_plano(cands, geo, assoc, args.lote),
+                                         geo, assoc)
+        man = auditoria.construir_manifesto(sim, cfg, lote=args.lote)
+        auditoria.gravar_manifesto(man)
+        unif = integridade.verificar_integridade_promocao_e4b(
+            cfg, geo, assoc, man, cands)
+        if not unif.ok:
+            print("verificação unificada reprovou:\n" + unif.descrever(),
+                  file=sys.stderr)
+            return 1
+        print(f"  manifesto reconstruído do recibo "
+              f"({rec.get('quantidade_antes',{}).get('geometrias')} -> "
+              f"{rec.get('quantidade_depois',{}).get('geometrias')} geometrias)")
+        journal.limpar(DIR_DADOS, RAIZ, args.lote)
+        print("  nenhum journal ou backup pendente")
+        return 0
+
+    print(f"recuperação: estado {estado} — desfazendo (estratégia A)")
+    try:
+        rel = journal.recuperar(DIR_DADOS, RAIZ, args.lote)
+    except (journal.JournalCorrompido, journal.RecuperacaoBloqueada) as e:
+        print(f"recuperação bloqueada: {e}", file=sys.stderr)
         return 1
+    print(f"  {rel['acao']}: restaurados={rel['restaurados']} "
+          f"removidos={rel['removidos']}")
     print("  nenhum journal ou backup pendente")
     return 0
 
@@ -180,29 +239,24 @@ def cmd_promover(args) -> int:
         # gravação e a auditoria ficariam permanentemente dessincronizadas.
         if _manifesto_ausente_mas_dados_promovidos(cfg, geo, assoc, cands):
             print("dados já promovidos, manifesto AUSENTE — reconstruindo.")
-            h = {str(CAMINHO_GEOMETRIAS): hash_arquivo(CAMINHO_GEOMETRIAS),
-                 str(CAMINHO_ASSOCIACOES): hash_arquivo(CAMINHO_ASSOCIACOES)}
-            man = auditoria.construir_manifesto(
-                sim, h, h, cfg, resultado_idempotencia="APROVADA",
-                resultado_rollback="coberto por regressão (tests/test_promocao.py)",
-                lote=args.lote, reconstruido=True)
+            # os fatos vêm de evento.py, então o manifesto sai canônico
+            # mesmo aqui: uma reconstrução não muda o que aconteceu.
+            man = auditoria.construir_manifesto(sim, cfg, lote=args.lote)
             print(f"  manifesto: {auditoria.gravar_manifesto(man).relative_to(RAIZ)}")
             return 0
         print("nada a fazer: estado já promovido e íntegro.")
         return 0
 
     estado, h_antes, h_depois = transacao.aplicar_promocao_transacional(
-        plano, CAMINHO_GEOMETRIAS, CAMINHO_ASSOCIACOES, sim)
+        plano, CAMINHO_GEOMETRIAS, CAMINHO_ASSOCIACOES, sim,
+        finalizar=_finalizacao_auditavel(cfg, sim, args.lote),
+        caminho_config=CAMINHO_CONFIG,
+        caminho_manifesto=auditoria.CAMINHO_MANIFESTO,
+        raiz=RAIZ, lote=args.lote)
     if not estado.aplicado:
         print(f"ROLLBACK executado — arquivos restaurados. Causa: {estado.detalhe}")
         return 1
-
-    man = auditoria.construir_manifesto(
-        sim, h_antes, h_depois, cfg,
-        resultado_idempotencia="APROVADA",
-        resultado_rollback="coberto por regressão (tests/test_promocao.py)",
-        lote=args.lote)
-    caminho = auditoria.gravar_manifesto(man)
+    caminho = auditoria.CAMINHO_MANIFESTO
     print("PROMOÇÃO APLICADA")
     print(transacao.gerar_resumo_diff(sim))
     for k, v in h_depois.items():

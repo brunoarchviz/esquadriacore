@@ -392,7 +392,7 @@ def _sim_para(copias, candidatos):
 def test_grava_os_dois_arquivos_em_sucesso(copias, candidatos):
     g, a = copias
     plano, sim = _sim_para(copias, candidatos)
-    estado, h0, h1 = transacao.aplicar_promocao_transacional(plano, g, a, sim)
+    estado, h0, h1 = transacao.aplicar_promocao_transacional(plano, g, a, sim, raiz=g.parent)
     assert estado.aplicado and not estado.rollback_executado
     assert h1 != h0
     assert len(json.loads(g.read_text())["geometrias"]) == sim.geometrias_depois
@@ -407,7 +407,7 @@ def test_falha_em_qualquer_ponto_restaura_os_dois_arquivos(copias, candidatos, p
     h0 = (hash_arquivo(g), hash_arquivo(a))
     plano, sim = _sim_para(copias, candidatos)
     estado, _, _ = transacao.aplicar_promocao_transacional(
-        plano, g, a, sim, falha_injetada=ponto)
+        plano, g, a, sim, raiz=g.parent, falha_injetada=ponto)
     assert not estado.aplicado and estado.rollback_executado
     assert (hash_arquivo(g), hash_arquivo(a)) == h0, "rollback não restaurou tudo"
     json.loads(g.read_text())          # não pode ficar JSON parcial
@@ -417,7 +417,7 @@ def test_falha_em_qualquer_ponto_restaura_os_dois_arquivos(copias, candidatos, p
 def test_temporarios_nao_permanecem_apos_sucesso(copias, candidatos):
     g, a = copias
     plano, sim = _sim_para(copias, candidatos)
-    transacao.aplicar_promocao_transacional(plano, g, a, sim)
+    transacao.aplicar_promocao_transacional(plano, g, a, sim, raiz=g.parent)
     restos = [p.name for p in g.parent.iterdir() if p.suffix == ".tmp"]
     assert restos == []
 
@@ -425,7 +425,7 @@ def test_temporarios_nao_permanecem_apos_sucesso(copias, candidatos):
 def test_promocao_repetida_e_idempotente(copias, candidatos):
     g, a = copias
     plano, sim = _sim_para(copias, candidatos)
-    transacao.aplicar_promocao_transacional(plano, g, a, sim)
+    transacao.aplicar_promocao_transacional(plano, g, a, sim, raiz=g.parent)
     h1 = (hash_arquivo(g), hash_arquivo(a))
     plano2, sim2 = _sim_para(copias, candidatos)
     assert sim2.ids_criados == () and sim2.associacoes_criadas == ()
@@ -458,13 +458,11 @@ def test_manifesto_tem_os_oito_perfis(manifesto):
 
 
 def test_manifesto_tem_hashes_antes_e_depois(manifesto):
+    """Os hashes descrevem o EVENTO. Uma reconstrução não os iguala — se
+    igualasse, o manifesto estaria descrevendo a si mesmo em vez da promoção."""
     assert manifesto["hash_antes"] and manifesto["hash_depois"]
-    if manifesto.get("reconstruido_apos_gravacao"):
-        # manifesto refeito sobre dados JÁ promovidos: nada foi escrito, logo
-        # antes == depois é o registro honesto do que aconteceu
-        assert manifesto["hash_antes"] == manifesto["hash_depois"]
-    else:
-        assert manifesto["hash_antes"] != manifesto["hash_depois"]
+    assert manifesto["hash_antes"] != manifesto["hash_depois"]
+    assert manifesto["reconstruido_apos_gravacao"] is False
 
 
 def test_manifesto_registra_decisao_especial_do_su102(manifesto):
@@ -646,7 +644,7 @@ def test_dados_oficiais_mantem_indentacao_de_origem():
 # Journal e recuperação após encerramento abrupto
 # ===========================================================================
 
-from curadoria.promocao import integridade, journal          # noqa: E402
+from curadoria.promocao import evento, integridade, journal   # noqa: E402
 from curadoria.promocao.transacao import InterrupcaoSimulada  # noqa: E402
 
 
@@ -657,7 +655,7 @@ def _dir(copias):
 def test_sucesso_normal_nao_deixa_journal_nem_backup(copias, candidatos):
     g, a = copias
     plano, sim = _sim_para(copias, candidatos)
-    estado, _, _ = transacao.aplicar_promocao_transacional(plano, g, a, sim)
+    estado, _, _ = transacao.aplicar_promocao_transacional(plano, g, a, sim, raiz=g.parent)
     assert estado.aplicado
     assert journal.pendente(_dir(copias)) is None
     restos = [p.name for p in g.parent.iterdir() if p.name.startswith(".")]
@@ -677,12 +675,12 @@ def test_interrupcao_abrupta_deixa_journal_recuperavel(copias, candidatos,
     plano, sim = _sim_para(copias, candidatos)
     with pytest.raises(InterrupcaoSimulada):
         transacao.aplicar_promocao_transacional(plano, g, a, sim,
-                                                interromper_em=ponto)
+                                                raiz=g.parent, interromper_em=ponto)
     pend = journal.pendente(_dir(copias))
     assert pend is not None and pend["estado"] == estado_esperado
 
     # nova "execução" encontra o journal e recupera
-    rel = journal.recuperar(_dir(copias))
+    rel = journal.recuperar(_dir(copias), _dir(copias))
     assert rel["ok"] and rel["acao"] == "restaurado"
     assert (hash_arquivo(g), hash_arquivo(a)) == h0, "não voltou ao original"
     assert journal.pendente(_dir(copias)) is None
@@ -697,10 +695,10 @@ def test_interrupcao_apos_primeiro_replace_deixa_destinos_dessincronizados(
     plano, sim = _sim_para(copias, candidatos)
     with pytest.raises(InterrupcaoSimulada):
         transacao.aplicar_promocao_transacional(
-            plano, g, a, sim, interromper_em="apos_primeiro_replace")
+            plano, g, a, sim, raiz=g.parent, interromper_em="apos_primeiro_replace")
     assert hash_arquivo(g) != h0g, "geometrias deveria ter sido substituída"
     assert len(json.loads(a.read_text())["associacoes"]) == sim.associacoes_antes
-    journal.recuperar(_dir(copias))
+    journal.recuperar(_dir(copias), _dir(copias))
 
 
 def test_promover_recusa_enquanto_houver_journal_pendente(copias, candidatos):
@@ -708,10 +706,11 @@ def test_promover_recusa_enquanto_houver_journal_pendente(copias, candidatos):
     plano, sim = _sim_para(copias, candidatos)
     with pytest.raises(InterrupcaoSimulada):
         transacao.aplicar_promocao_transacional(plano, g, a, sim,
+                                                raiz=g.parent,
                                                 interromper_em="apos_journal")
     with pytest.raises(RuntimeError, match="não concluída"):
-        transacao.aplicar_promocao_transacional(plano, g, a, sim)
-    journal.recuperar(_dir(copias))
+        transacao.aplicar_promocao_transacional(plano, g, a, sim, raiz=g.parent)
+    journal.recuperar(_dir(copias), _dir(copias))
 
 
 def test_journal_corrompido_e_recusado_sem_apagar(copias):
@@ -731,21 +730,52 @@ def test_journal_de_versao_desconhecida_e_recusado(copias):
     j.unlink()
 
 
-def test_backup_ausente_impede_recuperacao_e_preserva_journal(copias, candidatos):
+@pytest.mark.parametrize("faltando", ["geometrias", "associacoes"])
+def test_preflight_bloqueia_sem_restaurar_nada_quando_falta_backup(
+        copias, candidatos, faltando):
+    """Prova de NÃO-restauração parcial.
+
+    Restaurar um arquivo e só então descobrir que o backup do outro sumiu
+    deixaria o estado pior do que estava. O preflight roda antes de qualquer
+    mutação; se reprova, zero destinos são tocados."""
     g, a = copias
     plano, sim = _sim_para(copias, candidatos)
     with pytest.raises(InterrupcaoSimulada):
         transacao.aplicar_promocao_transacional(
-            plano, g, a, sim, interromper_em="apos_primeiro_replace")
-    journal.caminho_backup(g).unlink()          # backup some
-    with pytest.raises(journal.JournalCorrompido, match="backup ausente"):
-        journal.recuperar(_dir(copias))
-    assert journal.caminho_journal(_dir(copias)).exists(), \
-        "journal não pode sumir sem recuperação confirmada"
+            plano, g, a, sim, raiz=g.parent, interromper_em="apos_ambos_replaces")
+
+    # ambos os destinos estão NOVOS neste ponto
+    novos = (hash_arquivo(g), hash_arquivo(a))
+    alvo = g if faltando == "geometrias" else a
+    outro = a if faltando == "geometrias" else g
+    journal.caminho_backup(alvo).unlink()
+    bak_outro = journal.caminho_backup(outro)
+
+    with pytest.raises(journal.RecuperacaoBloqueada, match="backup ausente"):
+        journal.recuperar(_dir(copias), _dir(copias))
+
+    # nada foi restaurado — nem o arquivo cujo backup ainda existe
+    assert (hash_arquivo(g), hash_arquivo(a)) == novos, \
+        "houve restauração parcial"
+    assert journal.caminho_journal(_dir(copias)).exists(), "journal sumiu"
+    assert bak_outro.exists(), "backup existente foi removido"
+
+
+def test_preflight_bloqueia_backup_com_hash_divergente(copias, candidatos):
+    g, a = copias
+    plano, sim = _sim_para(copias, candidatos)
+    with pytest.raises(InterrupcaoSimulada):
+        transacao.aplicar_promocao_transacional(
+            plano, g, a, sim, raiz=g.parent, interromper_em="apos_ambos_replaces")
+    novos = (hash_arquivo(g), hash_arquivo(a))
+    journal.caminho_backup(g).write_text('{"geometrias": []}', encoding="utf-8")
+    with pytest.raises(journal.RecuperacaoBloqueada, match="hash divergente"):
+        journal.recuperar(_dir(copias), _dir(copias))
+    assert (hash_arquivo(g), hash_arquivo(a)) == novos
 
 
 def test_recuperar_sem_journal_e_no_op(tmp_path):
-    rel = journal.recuperar(tmp_path)
+    rel = journal.recuperar(tmp_path, tmp_path)
     assert rel["ok"] and rel["acao"] == "nada_a_recuperar"
 
 
@@ -879,3 +909,166 @@ def test_campo_de_pontos_tem_nome_honesto(candidatos):
     c = candidatos[0]
     assert c.quantidade_pontos_contorno_externo == len(c.contorno_externo)
     assert not hasattr(c, "quantidade_componentes")
+
+
+# ===========================================================================
+# Journal CONCLUIDA abandonado e finalização retomável
+# ===========================================================================
+
+def test_journal_concluida_abandonado_nao_e_ignorado(copias, candidatos):
+    """Morte entre CONCLUIDA e a limpeza deixaria backups órfãos no disco.
+    `pendente()` não pode fingir que está tudo bem."""
+    g, a = copias
+    plano, sim = _sim_para(copias, candidatos)
+    with pytest.raises(InterrupcaoSimulada):
+        transacao.aplicar_promocao_transacional(
+            plano, g, a, sim, raiz=g.parent, interromper_em="apos_concluida")
+    pend = journal.pendente(_dir(copias))
+    assert pend is not None and pend["estado"] == journal.CONCLUIDA
+    journal.limpar(_dir(copias), _dir(copias))
+    assert journal.pendente(_dir(copias)) is None
+    assert not journal.caminho_backup(g).exists()
+
+
+def test_interrupcao_apos_dados_validos_mantem_dados_novos(copias, candidatos):
+    """A partir de DADOS_VALIDOS a estratégia é retomar, não desfazer: os dados
+    já foram validados e desfazê-los perderia trabalho verificado."""
+    g, a = copias
+    plano, sim = _sim_para(copias, candidatos)
+    with pytest.raises(InterrupcaoSimulada):
+        transacao.aplicar_promocao_transacional(
+            plano, g, a, sim, raiz=g.parent, interromper_em="apos_dados_validos")
+    pend = journal.pendente(_dir(copias))
+    assert pend["estado"] == journal.DADOS_VALIDOS
+    assert pend["estado"] in journal.ESTADOS_FINALIZAVEIS
+    assert pend["estado"] not in journal.ESTADOS_ROLLBACK
+    assert len(json.loads(g.read_text())["geometrias"]) == sim.geometrias_depois
+    journal.limpar(_dir(copias), _dir(copias))
+
+
+def test_journal_carrega_recibo_suficiente_para_o_manifesto(copias, candidatos):
+    """hash_antes, quantidade_antes e ids_criados NÃO podem ser inferidos
+    depois da gravação — por isso viajam no journal."""
+    g, a = copias
+    plano, sim = _sim_para(copias, candidatos)
+    with pytest.raises(InterrupcaoSimulada):
+        transacao.aplicar_promocao_transacional(
+            plano, g, a, sim, raiz=g.parent, interromper_em="apos_dados_validos")
+    rec = journal.pendente(_dir(copias))["evento_promocao"]
+    assert rec["quantidade_antes"] == {"geometrias": 46, "associacoes": 245}
+    assert rec["quantidade_depois"] == {"geometrias": 54, "associacoes": 253}
+    assert len(rec["ids_criados"]) == 8
+    assert len(rec["associacoes_criadas"]) == 8
+    assert rec["commit_pre_promocao"] == evento.COMMIT_PRE_PROMOCAO
+    assert rec["hash_antes"] != rec["hash_esperado_depois"]
+    journal.limpar(_dir(copias), _dir(copias))
+
+
+def test_journal_registra_config_e_manifesto(copias, candidatos, tmp_path):
+    """A finalização auditável tem de estar sob o mesmo journal."""
+    g, a = copias
+    cfg_falso = tmp_path / "cfg.json"
+    cfg_falso.write_text("{}", encoding="utf-8")
+    man_falso = tmp_path / "manifesto.json"      # NÃO existe ainda
+    plano, sim = _sim_para(copias, candidatos)
+    with pytest.raises(InterrupcaoSimulada):
+        transacao.aplicar_promocao_transacional(
+            plano, g, a, sim, raiz=g.parent, caminho_config=cfg_falso,
+            caminho_manifesto=man_falso, interromper_em="apos_journal")
+    arq = journal.pendente(_dir(copias))["arquivos"]
+    assert set(arq) == {"geometrias", "associacoes", "config", "manifesto"}
+    assert arq["config"]["existia_antes"] is True
+    assert arq["manifesto"]["existia_antes"] is False
+    assert arq["manifesto"]["backup"] is None
+    journal.recuperar(_dir(copias), _dir(copias))
+
+
+def test_rollback_remove_manifesto_que_nao_existia(copias, candidatos, tmp_path):
+    """Sem backup para restaurar: rollback = remover o arquivo criado."""
+    g, a = copias
+    man = tmp_path / "manifesto_novo.json"
+    plano, sim = _sim_para(copias, candidatos)
+    with pytest.raises(InterrupcaoSimulada):
+        transacao.aplicar_promocao_transacional(
+            plano, g, a, sim, raiz=g.parent, caminho_manifesto=man,
+            interromper_em="apos_primeiro_replace")
+    man.write_text('{"parcial": true}', encoding="utf-8")   # criado no meio
+    rel = journal.recuperar(_dir(copias), _dir(copias))
+    assert "manifesto" in rel["removidos"]
+    assert not man.exists()
+
+
+# ===========================================================================
+# O manifesto rastreado real não pode ser alterado pelos testes
+# ===========================================================================
+
+def test_manifesto_rastreado_descreve_o_evento_e_nao_o_disco_atual(manifesto):
+    assert manifesto["quantidade_antes"] == {"geometrias": 46, "associacoes": 245}
+    assert manifesto["quantidade_depois"] == {"geometrias": 54, "associacoes": 253}
+    assert manifesto["quantidade_antes"] != manifesto["quantidade_depois"], \
+        "54 -> 54 não é promoção"
+    assert list(manifesto["ids_criados"]) == [f"GEO-{p}" for p in PERFIS_E4B]
+    assert list(manifesto["associacoes_criadas"]) == [f"ALCOA-{p}" for p in PERFIS_E4B]
+    assert manifesto["ids_reutilizados"] == []
+    assert manifesto["associacoes_reutilizadas"] == []
+
+
+def test_commit_pre_promocao_e_o_do_evento_nao_o_head(manifesto):
+    """HEAD muda a cada commit novo; o evento não."""
+    import subprocess
+    assert manifesto["commit_pre_promocao"] == \
+        "53fcfaca7ba89ccc1c7a0fc8c52a7e6efc18dc76"
+    assert manifesto["commit_pre_promocao"] != "2d918acb44745ce91b5fac56d58fc48c4d55957f"
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=RAIZ,
+                          capture_output=True, text=True).stdout.strip()
+    assert manifesto["commit_pre_promocao"] != head, \
+        "commit_pre_promocao virou o HEAD atual — descreve a execução, não o evento"
+
+
+def test_manifesto_registra_capacidade_de_reconstrucao_separadamente(manifesto):
+    c = manifesto["capacidade_reconstrucao_manifesto"]
+    assert c["testada"] is True and c["resultado"] == "APROVADA"
+    assert manifesto["reconstruido_apos_gravacao"] is False
+
+
+def test_suite_de_recuperacao_nao_altera_o_manifesto_rastreado():
+    """Roda os cenários de crash e confere que o manifesto do repositório
+    continua byte a byte igual. Nenhum teste pode apagá-lo."""
+    antes = hash_arquivo(auditoria.CAMINHO_MANIFESTO)
+    import subprocess
+    subprocess.run(
+        [".venv/bin/python", "-m", "pytest", "-q", "-p", "no:cacheprovider",
+         "tests/test_promocao.py", "-k",
+         "journal or recuperar or preflight or interrupcao or crash"],
+        cwd=RAIZ, capture_output=True, text=True, timeout=300)
+    assert hash_arquivo(auditoria.CAMINHO_MANIFESTO) == antes, \
+        "a suíte de recuperação alterou o manifesto rastreado"
+
+
+# ---- mutações dos invariantes canônicos -----------------------------------
+
+@pytest.mark.parametrize("campo,valor", [
+    ("quantidade_antes", {"geometrias": 54, "associacoes": 253}),
+    ("quantidade_depois", {"geometrias": 46, "associacoes": 245}),
+    ("ids_criados", []),
+    ("associacoes_criadas", []),
+    ("ids_reutilizados", ["GEO-SU-001"]),
+    ("associacoes_reutilizadas", ["ALCOA-SU-001"]),
+    ("reconstruido_apos_gravacao", True),
+    ("commit_pre_promocao", "2d918acb44745ce91b5fac56d58fc48c4d55957f"),
+])
+def test_mutacao_de_invariante_canonico_e_detectada(quatro_camadas, campo, valor):
+    cfg, geo, assoc, man, cands = quatro_camadas
+    m2 = copy.deepcopy(man)
+    m2[campo] = valor
+    r = integridade.verificar_integridade_promocao_e4b(cfg, geo, assoc, m2)
+    assert not r.ok, f"{campo}={valor!r} passou sem ser detectado"
+
+
+def test_hash_antes_igual_a_depois_e_detectado(quatro_camadas):
+    """O sintoma exato do manifesto que descreve a si mesmo."""
+    cfg, geo, assoc, man, cands = quatro_camadas
+    m2 = copy.deepcopy(man)
+    m2["hash_antes"] = copy.deepcopy(m2["hash_depois"])
+    r = integridade.verificar_integridade_promocao_e4b(cfg, geo, assoc, m2)
+    assert not r.ok and any("hash_antes" in f["regra"] for f in r.falhas)
