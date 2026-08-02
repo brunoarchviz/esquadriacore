@@ -146,14 +146,34 @@ def criar_backup_temporario(caminhos, diretorio_temporario: Path) -> dict:
     return backups
 
 
-def escrever_json_temporario(destino: Path, conteudo: object) -> Path:
+def detectar_indentacao(caminho: Path, padrao: int = 1) -> int:
+    """Indentação já usada pelo arquivo oficial.
+
+    Reescrever 24 mil linhas só porque o serializador tem outro default
+    produziria um diff impossível de revisar e esconderia qualquer alteração
+    real de geometria. A promoção é aditiva: o arquivo tem de sair no mesmo
+    formato em que entrou."""
+    try:
+        for linha in Path(caminho).read_text(encoding="utf-8").splitlines()[1:]:
+            if linha.strip() and not linha.startswith("{"):
+                recuo = len(linha) - len(linha.lstrip(" "))
+                return recuo or padrao
+    except OSError:
+        pass
+    return padrao
+
+
+def escrever_json_temporario(destino: Path, conteudo: object,
+                             indent: int | None = None) -> Path:
     """Grava ao lado do destino (mesmo filesystem) para permitir os.replace."""
     destino = Path(destino)
+    if indent is None:
+        indent = detectar_indentacao(destino)
     fd, tmp = tempfile.mkstemp(dir=destino.parent, prefix=destino.name + ".",
                                suffix=".tmp")
     os.close(fd)
     tmp = Path(tmp)
-    tmp.write_text(json.dumps(conteudo, ensure_ascii=False, indent=2) + "\n",
+    tmp.write_text(json.dumps(conteudo, ensure_ascii=False, indent=indent) + "\n",
                    encoding="utf-8")
     sincronizar_arquivo(tmp)
     return tmp

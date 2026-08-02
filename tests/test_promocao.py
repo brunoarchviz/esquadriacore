@@ -45,6 +45,23 @@ def oficiais():
             carregar.carregar_associacoes_oficiais(CAMINHO_ASSOCIACOES))
 
 
+@pytest.fixture(scope="module")
+def oficiais_antes(oficiais):
+    """Baseline PRÉ-promoção, derivada da biblioteca viva removendo os oito
+    registros do E.4B.
+
+    Sem isto, os testes de simulação e transação passariam ou falhariam
+    conforme a promoção já tivesse rodado — dependência de ordem que
+    esconderia regressão. Aqui eles provam o comportamento sempre."""
+    geo, assoc = oficiais
+    novas = {f"GEO-{p}" for p in PERFIS_E4B}
+    perfis = {carregar.perfil_id_oficial(p) for p in PERFIS_E4B}
+    g = dict(geo, geometrias=[x for x in geo["geometrias"] if x["id"] not in novas])
+    a = dict(assoc, associacoes=[x for x in assoc["associacoes"]
+                                 if x["perfil_id"] not in perfis])
+    return g, a
+
+
 def _plano(cands, geo, assoc):
     return construir.construir_plano_promocao(cands, geo, assoc, "E4B")
 
@@ -274,8 +291,8 @@ def test_aceita_id_existente_identico(candidatos, oficiais):
     assert conf is not None and not conf.bloqueante
 
 
-def test_detecta_perfil_associado_a_outra_geometria(candidatos, oficiais):
-    _, assoc = oficiais
+def test_detecta_perfil_associado_a_outra_geometria(candidatos, oficiais_antes):
+    _, assoc = oficiais_antes
     a2 = copy.deepcopy(assoc)
     a2["associacoes"].append({"perfil_id": "ALCOA-SU-001",
                               "geometria_padrao_id": "GEO-OUTRA",
@@ -301,8 +318,8 @@ def test_detecta_perfis_duplicados_no_plano(candidatos):
 # Simulação
 # ===========================================================================
 
-def test_simulacao_promove_exatamente_oito(candidatos, oficiais):
-    geo, assoc = oficiais
+def test_simulacao_promove_exatamente_oito(candidatos, oficiais_antes):
+    geo, assoc = oficiais_antes
     sim = transacao.simular_promocao(_plano(candidatos, geo, assoc), geo, assoc)
     assert len(sim.ids_criados) == 8
     assert sim.geometrias_depois == sim.geometrias_antes + 8
@@ -310,8 +327,8 @@ def test_simulacao_promove_exatamente_oito(candidatos, oficiais):
     assert sim.aprovada
 
 
-def test_simulacao_preserva_todos_os_registros_anteriores(candidatos, oficiais):
-    geo, assoc = oficiais
+def test_simulacao_preserva_todos_os_registros_anteriores(candidatos, oficiais_antes):
+    geo, assoc = oficiais_antes
     sim = transacao.simular_promocao(_plano(candidatos, geo, assoc), geo, assoc)
     assert sim.registros_antigos_alterados == ()
 
@@ -323,8 +340,8 @@ def test_simulacao_nao_escreve_no_disco(candidatos, oficiais):
     assert (hash_arquivo(CAMINHO_GEOMETRIAS), hash_arquivo(CAMINHO_ASSOCIACOES)) == antes
 
 
-def test_segunda_simulacao_produz_diff_vazio(candidatos, oficiais):
-    geo, assoc = oficiais
+def test_segunda_simulacao_produz_diff_vazio(candidatos, oficiais_antes):
+    geo, assoc = oficiais_antes
     sim = transacao.simular_promocao(_plano(candidatos, geo, assoc), geo, assoc)
     idem = transacao.verificar_idempotencia_simulada(sim, candidatos, _plano)
     assert idem.ok, idem.descrever()
@@ -340,8 +357,8 @@ def test_simulacao_bloqueia_se_registro_antigo_mudar(candidatos, oficiais):
     assert alterados == (geo["geometrias"][0]["id"],)
 
 
-def test_ordem_dos_candidatos_nao_altera_o_resultado(candidatos, oficiais):
-    geo, assoc = oficiais
+def test_ordem_dos_candidatos_nao_altera_o_resultado(candidatos, oficiais_antes):
+    geo, assoc = oficiais_antes
     a = _plano(candidatos, geo, assoc)
     b = _plano(tuple(reversed(candidatos)), geo, assoc)
     assert ({p.id for p in a.geometrias_novas} == {p.id for p in b.geometrias_novas})
@@ -354,11 +371,13 @@ def test_ordem_dos_candidatos_nao_altera_o_resultado(candidatos, oficiais):
 # ===========================================================================
 
 @pytest.fixture
-def copias(tmp_path):
+def copias(tmp_path, oficiais_antes):
+    """Cópias no estado PRÉ-promoção, para que a transação tenha o que gravar."""
+    geo, assoc = oficiais_antes
     g = tmp_path / "geometrias.json"
     a = tmp_path / "perfil_geometria.json"
-    g.write_bytes(CAMINHO_GEOMETRIAS.read_bytes())
-    a.write_bytes(CAMINHO_ASSOCIACOES.read_bytes())
+    g.write_text(json.dumps(geo, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    a.write_text(json.dumps(assoc, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return g, a
 
 
@@ -471,3 +490,148 @@ def test_manifesto_registra_gates_zerados(manifesto):
     assert g["registros_antigos_alterados"] == 0
     assert g["bloqueios"] == 0
     assert g["associacoes_orfas"] == 0
+
+
+# ===========================================================================
+# Integração com o contrato de consumo (pós-promoção)
+# ===========================================================================
+
+@pytest.fixture(scope="module")
+def biblioteca():
+    from contrato.consumo import carregar_biblioteca
+    return carregar_biblioteca(str(CAMINHO_GEOMETRIAS), str(CAMINHO_ASSOCIACOES))
+
+
+@pytest.fixture(scope="module")
+def promovidas(biblioteca):
+    return {g.codigo: g for g in biblioteca.geometrias
+            if g.codigo in {f"GEO-{p}" for p in PERFIS_E4B}}
+
+
+def test_contrato_carrega_as_oito_novas_geometrias(promovidas):
+    assert len(promovidas) == 8
+
+
+def test_contrato_carrega_geometria_su102(promovidas):
+    g = promovidas["GEO-SU-102"]
+    assert g.renderizavel and g.contorno_externo
+    assert g.bounding_box is not None
+
+
+def test_contrato_preserva_bounding_box_como_objeto(promovidas):
+    from contrato.consumo import BoundingBoxDTO
+    for g in promovidas.values():
+        assert isinstance(g.bounding_box, BoundingBoxDTO), g.codigo
+
+
+def test_contrato_preserva_biblioteca_imutavel(biblioteca):
+    assert isinstance(biblioteca.geometrias, tuple)
+    assert isinstance(biblioteca.associacoes, tuple)
+    with pytest.raises((AttributeError, TypeError)):
+        biblioteca.geometrias[0].codigo = "X"
+
+
+def test_associacoes_apontam_para_geometrias_existentes(biblioteca):
+    ids = {g.codigo for g in biblioteca.geometrias}
+    for a in biblioteca.associacoes:
+        assert a.geometria_padrao_id in ids, a.perfil_id
+
+
+def test_nenhuma_associacao_fica_orfa(biblioteca):
+    ids = {g.codigo for g in biblioteca.geometrias}
+    assert [a.perfil_id for a in biblioteca.associacoes
+            if a.geometria_padrao_id not in ids] == []
+
+
+def test_geometrias_antigas_permanecem_iguais(biblioteca):
+    """As 46 anteriores continuam carregando; a promoção só acrescentou."""
+    novas = {f"GEO-{p}" for p in PERFIS_E4B}
+    antigas = [g for g in biblioteca.geometrias if g.codigo not in novas]
+    assert len(antigas) == 46
+
+
+def test_todos_os_ids_da_biblioteca_sao_unicos(biblioteca):
+    ids = [g.codigo for g in biblioteca.geometrias]
+    assert len(ids) == len(set(ids))
+
+
+def test_nenhum_perfil_tem_duas_associacoes_incompativeis(biblioteca):
+    import collections
+    por_perfil = collections.defaultdict(set)
+    for a in biblioteca.associacoes:
+        por_perfil[a.perfil_id].add(a.geometria_padrao_id)
+    conflitos = {p: g for p, g in por_perfil.items() if len(g) > 1}
+    assert not conflitos, conflitos
+
+
+# ===========================================================================
+# Propriedades/invariantes dos oito perfis
+# ===========================================================================
+
+@pytest.mark.parametrize("perfil", PERFIS_E4B)
+def test_geometria_promovida_tem_id_esperado(perfil, promovidas):
+    assert f"GEO-{perfil}" in promovidas
+
+
+@pytest.mark.parametrize("perfil", PERFIS_E4B)
+def test_geometria_promovida_tem_dimensao_aprovada(perfil, promovidas, config):
+    p = config["perfis"][perfil]
+    bb = promovidas[f"GEO-{perfil}"].bounding_box
+    assert bb.largura == pytest.approx(p["largura_mm"], abs=0.05), perfil
+    assert bb.altura == pytest.approx(p["altura_mm"], abs=0.05), perfil
+    assert bb.largura > 0 and bb.altura > 0
+
+
+@pytest.mark.parametrize("perfil", PERFIS_E4B)
+def test_geometria_promovida_preserva_contorno(perfil, promovidas, candidatos):
+    """Ponto a ponto contra o artefato curado — sem novo arredondamento."""
+    c = next(x for x in candidatos if x.codigo_perfil == perfil)
+    g = promovidas[f"GEO-{perfil}"]
+    r = construir.comparar_contornos_exatamente(c.contorno_externo, g.contorno_externo)
+    assert r.ok, r.descrever()
+
+
+@pytest.mark.parametrize("perfil", PERFIS_E4B)
+def test_geometria_promovida_preserva_topologia(perfil, promovidas, config):
+    esperado = config["perfis"][perfil]["vazios_esperados"]
+    assert len(promovidas[f"GEO-{perfil}"].vazios_internos) == esperado
+
+
+@pytest.mark.parametrize("perfil", PERFIS_E4B)
+def test_geometria_promovida_tem_associacao(perfil, biblioteca):
+    pid = carregar.perfil_id_oficial(perfil)
+    achadas = [a for a in biblioteca.associacoes if a.perfil_id == pid]
+    assert len(achadas) == 1, f"{pid}: {len(achadas)} associações"
+    assert achadas[0].geometria_padrao_id == f"GEO-{perfil}"
+
+
+@pytest.mark.parametrize("perfil", PERFIS_E4B)
+def test_geometria_promovida_e_renderizavel(perfil, promovidas):
+    g = promovidas[f"GEO-{perfil}"]
+    assert g.nivel_contorno == "2_renderizavel_comercial"
+    assert g.renderizavel is True
+
+
+def test_serializacao_da_biblioteca_e_determinista():
+    a = CAMINHO_GEOMETRIAS.read_bytes()
+    b = CAMINHO_GEOMETRIAS.read_bytes()
+    assert calcular_hash_canonico(json.loads(a)) == calcular_hash_canonico(json.loads(b))
+
+
+def test_escrita_preserva_a_indentacao_do_arquivo_oficial(tmp_path):
+    """A promoção é aditiva. Reescrever o arquivo inteiro só porque o
+    serializador tem outro default produziria um diff de 24 mil linhas e
+    esconderia qualquer alteração real de geometria."""
+    destino = tmp_path / "oficial.json"
+    destino.write_text(json.dumps({"a": [1, 2]}, indent=1) + "\n", encoding="utf-8")
+    assert transacao.detectar_indentacao(destino) == 1
+    tmp = transacao.escrever_json_temporario(destino, {"a": [1, 2], "b": 3})
+    linhas = tmp.read_text(encoding="utf-8").splitlines()
+    assert linhas[1].startswith(' "'), "indentação do original não foi preservada"
+    tmp.unlink()
+
+
+def test_dados_oficiais_mantem_indentacao_de_origem():
+    """Os arquivos publicados continuam no formato em que sempre estiveram."""
+    for caminho in (CAMINHO_GEOMETRIAS, CAMINHO_ASSOCIACOES):
+        assert transacao.detectar_indentacao(caminho) == 1, caminho.name

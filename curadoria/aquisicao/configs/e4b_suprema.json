@@ -140,7 +140,14 @@
         "justificativa": "o trabalho no SU-039 foi a contaminacao grafica (linha de cota aderida a face), nao o reconhecimento de motivos. Nenhuma ocorrencia foi confirmada pelo Bruno ate 2026-07-26 e nenhuma foi inferida: lista vazia significa NAO LEVANTADO, nunca ausencia comprovada.",
         "_acao": "levantar as ocorrencias do SU-039 e submeter a arbitragem antes de tratar a lista vazia como definitiva"
       },
-      "estado": "CANDIDATO_GEOMETRICO_APROVADO"
+      "estado": "CANDIDATO_GEOMETRICO_APROVADO",
+      "promocao_oficial": {
+        "status": "PROMOVIDO",
+        "id_geometria": "GEO-SU-039",
+        "lote": "E4C",
+        "perfil_id_oficial": "ALCOA-SU-039",
+        "origem_dimensional": "COTA_DE_CATALOGO"
+      }
     },
     "SU-053": {
       "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
@@ -564,6 +571,13 @@
         "vazios": 0,
         "pontos_externo": 163,
         "f1_tolerante": 1.0
+      },
+      "promocao_oficial": {
+        "status": "PROMOVIDO",
+        "id_geometria": "GEO-SU-053",
+        "lote": "E4C",
+        "perfil_id_oficial": "ALCOA-SU-053",
+        "origem_dimensional": "COTA_DE_CATALOGO"
       }
     },
     "SU-102": {
@@ -989,7 +1003,19 @@
         },
         "_distincao": "registro geometrico entre fontes = ISOTROPICO (escala 1.000054, rotacao -0.03 graus). Nominalizacao dimensional final = ANISOTROPICA (fator_x 1.005917 != fator_y 1.0), explicitamente auditada. Sao duas transformacoes distintas."
       },
-      "promocao_oficial": "ainda_nao_autorizada",
+      "promocao_oficial": {
+        "status": "PROMOVIDO",
+        "id_geometria": "GEO-SU-102",
+        "lote": "E4C",
+        "perfil_id_oficial": "ALCOA-SU-102",
+        "dimensao_nominal_mm": [
+          17.0,
+          15.0
+        ],
+        "origem_dimensional": "MEDICAO_FISICA_COM_NOMINALIZACAO_POR_DOMINIO",
+        "identidade_tms102": "CONFIRMADA",
+        "geo_tms102_criado": false
+      },
       "gate_aspecto_fisico_bruto": {
         "dimensoes_mm": [
           16.9,
@@ -1136,7 +1162,14 @@
         }
       ],
       "_nota_bolsos": "bolsos detectados automaticamente; os de forma circular são candidatos a GAB-OLHAL-01, não a escovinha",
-      "estado": "CANDIDATO_PREVIAMENTE_APROVADO"
+      "estado": "CANDIDATO_PREVIAMENTE_APROVADO",
+      "promocao_oficial": {
+        "status": "PROMOVIDO",
+        "id_geometria": "GEO-SU-040",
+        "lote": "E4C",
+        "perfil_id_oficial": "ALCOA-SU-040",
+        "origem_dimensional": "COTA_DE_CATALOGO"
+      }
     },
     "SU-041": {
       "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
@@ -1247,7 +1280,13 @@
         }
       },
       "pendencia_zona": "resolvida",
-      "promocao_oficial": "ainda_nao_autorizada"
+      "promocao_oficial": {
+        "status": "PROMOVIDO",
+        "id_geometria": "GEO-SU-041",
+        "lote": "E4C",
+        "perfil_id_oficial": "ALCOA-SU-041",
+        "origem_dimensional": "COTA_DE_CATALOGO"
+      }
     },
     "SU-056": {
       "fonte_pdf": "dados_exemplo/catalago-alcoa (1).pdf",
@@ -1386,6 +1425,13 @@
         "confirmado": "dois trilhos preservados; ganchos inferiores preservados; travessa superior completa; montantes externos completos; nenhuma contaminacao grafica",
         "diferenca_bruto_comercial": "somente ajustes controlados de simplificacao das bordas; sem perda de componentes e sem mudanca topologica",
         "_nota": "aprovado SO na camada de curadoria; nao existe geometria oficial em dados/"
+      },
+      "promocao_oficial": {
+        "status": "PROMOVIDO",
+        "id_geometria": "GEO-SU-001",
+        "lote": "E4C",
+        "perfil_id_oficial": "ALCOA-SU-001",
+        "origem_dimensional": "COTA_DE_CATALOGO"
       }
     },
     "SU-002": {
@@ -1487,6 +1533,13 @@
         "confirmado": "dois trilhos superiores completos; ganchos preservados; base e extremidades completas; 71 mm = envelope externo; 35 mm = vao interno entre trilhos; nenhuma perda funcional no contorno comercial",
         "diferenca_bruto_comercial": "somente ajustes controlados de simplificacao das bordas; sem perda de componentes e sem mudanca topologica",
         "_nota": "aprovado SO na camada de curadoria; nao existe geometria oficial em dados/"
+      },
+      "promocao_oficial": {
+        "status": "PROMOVIDO",
+        "id_geometria": "GEO-SU-002",
+        "lote": "E4C",
+        "perfil_id_oficial": "ALCOA-SU-002",
+        "origem_dimensional": "COTA_DE_CATALOGO"
       }
     },
     "SU-003": {
@@ -1531,6 +1584,13 @@
         "confirmado": "alma horizontal preservada; paredes laterais preservadas; duas aletas inclinadas preservadas; mata-junta completo; 83 pontos compativeis com a simplicidade da secao",
         "diferenca_bruto_comercial": "somente ajustes controlados de simplificacao das bordas; sem perda de componentes e sem mudanca topologica",
         "_nota": "aprovado SO na camada de curadoria; nao existe geometria oficial em dados/"
+      },
+      "promocao_oficial": {
+        "status": "PROMOVIDO",
+        "id_geometria": "GEO-SU-003",
+        "lote": "E4C",
+        "perfil_id_oficial": "ALCOA-SU-003",
+        "origem_dimensional": "COTA_DE_CATALOGO"
       }
     }
   },
@@ -2469,6 +2529,8 @@
       "SU-102"
     ],
     "_nota_fechamento": "fechamento da CURADORIA do microlote E.4B. NAO e promocao oficial para dados/: nenhum GEO-* foi criado.",
-    "promocao_oficial_realizada": false
+    "promocao_oficial_realizada": true,
+    "lote_promocao": "E4C",
+    "_nota_promocao": "8 de 8 promovidos para dados/ na sprint E.4C. Manifesto em curadoria/promocoes/e4c/manifesto_promocao_e4b.json."
   }
 }

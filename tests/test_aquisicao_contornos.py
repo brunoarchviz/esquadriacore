@@ -1812,7 +1812,8 @@ def test_su102_pode_ser_reproduzido_na_camada_de_curadoria():
     from curadoria.aquisicao import executar_lote1_e4b as ex
     p = ex.parametros("SU-102")          # não pode levantar
     assert p["largura_mm"] == 17.0 and p["altura_mm"] == 15.0
-    assert p["promocao_oficial"] == "ainda_nao_autorizada"
+    # promovido na E.4C — o driver de curadoria segue indiferente a isso
+    assert p["promocao_oficial"]["status"] == "PROMOVIDO"
 
 
 def test_promocao_pendente_nao_bloqueia_os_demais_candidatos():
@@ -2162,16 +2163,20 @@ def test_su102_gate_funcional_local_completo():
         assert v["p95"] <= 4.0, v
 
 
-def test_su102_nao_vira_geometria_oficial():
-    """Curadoria fechada não é promoção: a forma e a escala foram aprovadas,
-    mas nenhum GEO-* existe e a promoção segue dependendo de autorização."""
+def test_su102_promovido_com_geometria_real_em_dados():
+    """A promoção da E.4C é deliberada e verificável: o config só pode citar
+    GEO-SU-102 se ele existir de fato na biblioteca oficial."""
     su = CONFIG["perfis"]["SU-102"]
     assert su["estado_geometrico"] == "CANDIDATO_GEOMETRICO_APROVADO"
     assert su["estado_dimensional"]["status"] == \
         "DIMENSAO_NOMINAL_APROVADA_POR_ARBITRAGEM_DE_DOMINIO"
-    assert su["promocao_oficial"] == "ainda_nao_autorizada"
-    texto = json.dumps(su, ensure_ascii=False)
-    assert "GEO-SU-102" not in texto
+    po = su["promocao_oficial"]
+    assert po["status"] == "PROMOVIDO" and po["id_geometria"] == "GEO-SU-102"
+    assert po["geo_tms102_criado"] is False
+    oficiais = json.loads((RAIZ / "dados/geometrias.json").read_text())
+    ids = {g["id"] for g in oficiais["geometrias"]}
+    assert "GEO-SU-102" in ids, "config cita um GEO que não existe em dados/"
+    assert "GEO-TMS-102" not in ids, "não pode existir geometria duplicada"
 
 
 # ============================================================================
@@ -2338,10 +2343,13 @@ def test_validador_pega_duplicata_em_perfis_fechados():
     assert any("duplicatas" in x for x in e), e
 
 
-def test_validador_pega_promocao_marcada_como_realizada():
+def test_validador_pega_promocao_declarada_sem_evidencia():
+    """Marcar promovido sem que cada perfil aponte para o próprio GEO seria
+    afirmar um estado que dados/ não sustenta."""
     from curadoria.aquisicao.validar_config import validar
-    e = validar(_ml(promocao_oficial_realizada=True))
-    assert any("promocao_oficial_realizada" in x for x in e), e
+    e = validar(_ml(promocao_oficial_realizada=True))   # sem perfis promovidos
+    assert any("promocao_oficial_realizada" in x and "sem promocao_oficial" in x
+               for x in e), e
 
 
 def test_microlote_do_config_real_esta_integro():
@@ -2353,7 +2361,8 @@ def test_microlote_do_config_real_esta_integro():
     assert ml["fechados_na_curadoria"] == 8
     assert ml["aguardando_evidencia_externa"] == 0
     assert ml["pendencia_restante"] is None
-    assert ml["promocao_oficial_realizada"] is False
+    # a promoção oficial ocorreu na sprint E.4C
+    assert ml["promocao_oficial_realizada"] is True
     assert sorted(ml["perfis_fechados"]) == sorted(OITO)
 
 
@@ -2587,11 +2596,15 @@ def test_lote2_aprovado_visualmente_so_na_curadoria():
         assert "dados/" in a["_nota"], cod
 
 
-def test_lote2_nao_cria_geometria_oficial():
-    texto = json.dumps({c: CONFIG["perfis"][c] for c in
-                        ("SU-001", "SU-002", "SU-003")}, ensure_ascii=False)
-    for proibido in ("GEO-SU-001", "GEO-SU-002", "GEO-SU-003"):
-        assert proibido not in texto
+def test_lote2_promovido_com_geometria_real_em_dados():
+    """Cada GEO citado pelo config do lote 2 existe mesmo na biblioteca."""
+    oficiais = json.loads((RAIZ / "dados/geometrias.json").read_text())
+    ids = {g["id"] for g in oficiais["geometrias"]}
+    for c in ("SU-001", "SU-002", "SU-003"):
+        po = CONFIG["perfis"][c]["promocao_oficial"]
+        assert po["status"] == "PROMOVIDO"
+        assert po["id_geometria"] == f"GEO-{c}"
+        assert po["id_geometria"] in ids, f"{c}: GEO citado não existe em dados/"
 
 
 # ============================================================================
@@ -2654,7 +2667,8 @@ def test_su041_sem_atribuicao_pendente():
         assert m["zona_protegida"] is not None, m["id"]
     assert su["estado"] == "CANDIDATO_GEOMETRICO_APROVADO"
     assert su["pendencia_zona"] == "resolvida"
-    assert su["promocao_oficial"] == "ainda_nao_autorizada"
+    assert su["promocao_oficial"]["status"] == "PROMOVIDO"
+    assert su["promocao_oficial"]["id_geometria"] == "GEO-SU-041"
 
 
 def test_su041_zona_m2_cabe_no_referencial():

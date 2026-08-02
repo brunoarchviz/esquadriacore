@@ -2205,6 +2205,78 @@
    "data": "2026-07-10",
    "nivel_de_confianca": "alto",
    "observacoes": "Família Gold. Nomenclatura local TMG-062 (equivale a LG-062). Pesos diferem do padrão Alcoa."
+  },
+  {
+   "perfil_id": "ALCOA-SU-001",
+   "geometria_padrao_id": "GEO-SU-001",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "pipeline de aquisição raster + gates de curadoria E.4B",
+   "data": "2026-08-01",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Promoção oficial do microlote E.4B (sprint E.4C). Contorno reproduzível; artefatos em curadoria/contornos/SU-001/."
+  },
+  {
+   "perfil_id": "ALCOA-SU-002",
+   "geometria_padrao_id": "GEO-SU-002",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "pipeline de aquisição raster + gates de curadoria E.4B",
+   "data": "2026-08-01",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Promoção oficial do microlote E.4B (sprint E.4C). Contorno reproduzível; artefatos em curadoria/contornos/SU-002/."
+  },
+  {
+   "perfil_id": "ALCOA-SU-003",
+   "geometria_padrao_id": "GEO-SU-003",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "pipeline de aquisição raster + gates de curadoria E.4B",
+   "data": "2026-08-01",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Promoção oficial do microlote E.4B (sprint E.4C). Contorno reproduzível; artefatos em curadoria/contornos/SU-003/."
+  },
+  {
+   "perfil_id": "ALCOA-SU-039",
+   "geometria_padrao_id": "GEO-SU-039",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "pipeline de aquisição raster + gates de curadoria E.4B",
+   "data": "2026-08-01",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Promoção oficial do microlote E.4B (sprint E.4C). Contorno reproduzível; artefatos em curadoria/contornos/SU-039/."
+  },
+  {
+   "perfil_id": "ALCOA-SU-040",
+   "geometria_padrao_id": "GEO-SU-040",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "pipeline de aquisição raster + gates de curadoria E.4B",
+   "data": "2026-08-01",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Promoção oficial do microlote E.4B (sprint E.4C). Contorno reproduzível; artefatos em curadoria/contornos/SU-040/."
+  },
+  {
+   "perfil_id": "ALCOA-SU-041",
+   "geometria_padrao_id": "GEO-SU-041",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "pipeline de aquisição raster + gates de curadoria E.4B",
+   "data": "2026-08-01",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Promoção oficial do microlote E.4B (sprint E.4C). Contorno reproduzível; artefatos em curadoria/contornos/SU-041/."
+  },
+  {
+   "perfil_id": "ALCOA-SU-053",
+   "geometria_padrao_id": "GEO-SU-053",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "pipeline de aquisição raster + gates de curadoria E.4B",
+   "data": "2026-08-01",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Promoção oficial do microlote E.4B (sprint E.4C). Contorno reproduzível; artefatos em curadoria/contornos/SU-053/."
+  },
+  {
+   "perfil_id": "ALCOA-SU-102",
+   "geometria_padrao_id": "GEO-SU-102",
+   "responsavel_homologacao": "Bruno",
+   "metodo_validacao": "pipeline de aquisição raster + gates de curadoria E.4B",
+   "data": "2026-08-01",
+   "nivel_de_confianca": "alto",
+   "observacoes": "Promoção oficial do microlote E.4B (sprint E.4C). Contorno reproduzível; artefatos em curadoria/contornos/SU-102/. Dimensão nominal 17,0 × 15,0 mm por arbitragem de domínio sobre medição física de 16,9 × 15,0 mm."
   }
  ]
 }
