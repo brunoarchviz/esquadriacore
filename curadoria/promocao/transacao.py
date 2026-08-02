@@ -325,9 +325,12 @@ def aplicar_promocao_transacional(plano: PlanoPromocao, caminho_geo: Path,
 
         # Finalização auditável AINDA sob o journal: grava manifesto e config,
         # roda a verificação unificada, avança até CONCLUIDA e limpa.
-        finalizar(j)
+        rel = finalizar(j)
+        pendente_limpeza = bool(getattr(rel, "limpeza_pendente", False))
         return (EstadoTransacao(backups={}, aplicado=True,
-                                rollback_executado=False),
+                                rollback_executado=False,
+                                limpeza_pendente=pendente_limpeza,
+                                detalhe=getattr(rel, "detalhe", "")),
                 hash_antes, hash_depois)
 
     except InterrupcaoSimulada:
@@ -342,8 +345,27 @@ def aplicar_promocao_transacional(plano: PlanoPromocao, caminho_geo: Path,
             return (EstadoTransacao(backups={}, aplicado=False,
                                     rollback_executado=False, detalhe=str(e)),
                     hash_antes, dict(hash_antes))
-        # Journal existe: ele é a única autoridade. Se o rollback falhar,
-        # journal e backups ficam no disco para inspeção.
+
+        # A promoção já foi confirmada? Depois de CONCLUIDA os quatro artefatos
+        # estão gravados, conferidos por hash e aprovados pela verificação
+        # unificada. Uma falha na faxina que vem DEPOIS disso não pode virar
+        # rollback: seria desfazer um resultado correto por causa de um backup
+        # que ninguém consome.
+        try:
+            atual = journal.ler(j, raiz)
+        except journal.JournalCorrompido:
+            atual = None
+        if atual is not None and atual["estado"] == journal.CONCLUIDA:
+            return (EstadoTransacao(
+                        backups={}, aplicado=True, rollback_executado=False,
+                        limpeza_pendente=True,
+                        detalhe=f"promoção CONCLUIDA; limpeza pendente: {e}"),
+                    hash_antes,
+                    {str(caminho_geo): hash_arquivo(caminho_geo),
+                     str(caminho_assoc): hash_arquivo(caminho_assoc)})
+
+        # Journal existe e a promoção não foi confirmada: ele é a única
+        # autoridade. Se o rollback falhar, journal e backups ficam no disco.
         journal.recuperar(dir_dados, raiz, lote)
         depois = {str(caminho_geo): hash_arquivo(caminho_geo),
                   str(caminho_assoc): hash_arquivo(caminho_assoc)}

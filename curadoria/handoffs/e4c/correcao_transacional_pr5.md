@@ -190,3 +190,95 @@ O mecanismo **não** promete commit atômico conjunto. Dois `os.replace`
 sequenciais não são um. A consistência do conjunto vem do journal, da
 recuperação e da finalização retomável — e agora essas três coisas fazem, de
 verdade, o que o journal e a documentação dizem que fazem.
+
+---
+
+# Segunda rodada — compatibilidade futura e fechamento
+
+Três pontos corrigidos depois da aprovação da implementação transacional.
+
+## A. Evento histórico separado de integridade atual
+
+`verificar_integridade_promocao_e4b()` exigia que os arquivos vivos tivessem
+exatamente o hash e a contagem do fim do E.4C. Uma promoção futura legítima
+acrescenta registros e muda o hash global — e passaria a ser lida como
+corrupção.
+
+Agora são duas funções:
+
+```text
+verificar_evento_historico_e4c(manifesto)
+    46 → 54, 245 → 253, hashes canônicos, oito IDs, oito associações,
+    commits, data e versão. Não olha para o disco.
+
+verificar_permanencia_atual_e4b(config, geometrias, associacoes, candidatos)
+    os oito GEOs presentes, contornos idênticos ponto a ponto, dimensões,
+    vazios, oito associações corretas, config declarando PROMOVIDO,
+    GEO-TMS-102 ausente.
+```
+
+A unificada soma as duas. A permanência **permite** geometrias e associações
+novas não relacionadas, contagens acima de 54/253 e hash global diferente do
+histórico.
+
+A transação não afrouxou: durante a promoção ou recuperação ativa, o journal
+continua exigindo os quatro hashes finais exatos.
+
+Provado por teste: com `GEO-FUTURO-001` e `FABRICANTE-FUTURO-001` adicionados
+(55/254), a verificação do E.4B **aprova**. Alterar um ponto do SU-001, remover
+o SU-041, apontar `ALCOA-SU-053` para outro GEO, alterar a dimensão do SU-102,
+criar `GEO-TMS-102` ou mexer no fato histórico `46 → 54`: todas **reprovam**.
+
+## B. Reconstrução do manifesto virou comando explícito
+
+O caminho silencioso dentro de `promover` decidia sucesso só porque os oito GEOs
+existiam. `promover` agora recusa e aponta:
+
+```bash
+python -m curadoria.promocao.cli reconstruir-manifesto --lote E4B --apply
+```
+
+O comando confirma ausência de journal pendente, recusa sobrescrever manifesto
+existente, valida config/dados/associações **sem depender do manifesto**,
+confirma os oito registros e as oito associações, grava por temporário +
+`fsync` + `os.replace`, relê, roda a verificação unificada e **remove o
+manifesto recém-criado** se ela reprovar. `dados/` e config nunca são tocados.
+
+Bloqueiam, com manifesto continuando ausente e zero outros arquivos alterados:
+config ainda não promovido, associação errada, GEO ausente, contorno alterado,
+`GEO-TMS-102` criado.
+
+## C. `CONCLUIDA` é o ponto de commit
+
+Alcançado `CONCLUIDA`, a promoção está confirmada. Falha ao apagar backup, ao
+remover o journal ou no `fsync` final **não** dispara rollback: seria trocar um
+resultado verificado por uma reversão, por causa de arquivo auxiliar que ninguém
+consome.
+
+```text
+promoção confirmada     → tentar limpeza
+limpeza falhou          → limpeza_pendente=True, quatro artefatos preservados
+recuperar (próxima vez) → confere os quatro hashes, repete a verificação
+                          unificada, termina a faxina, nunca reverte
+```
+
+`aplicar_promocao_transacional()` lê o journal antes de decidir rollback: em
+`CONCLUIDA` não reverte. A CLI informa e sai com código 3.
+
+O teste antigo que chamava `journal.limpar()` direto após um `CONCLUIDA`
+abandonado passou a usar o fluxo de retomada — chamar `limpar()` direto provaria
+apenas que `unlink` funciona.
+
+## Testes desta rodada
+
+```text
+229 em tests/test_promocao.py (eram 204)
+```
+
+Novos: geometria e associação futuras aprovadas; seis mutações de registro do
+E.4B reprovadas; fato histórico mutado reprovado enquanto a permanência atual
+continua aprovada (são perguntas diferentes); comando de reconstrução em caso
+íntegro, exigindo `--apply`, recusando sobrescrever e bloqueando cinco estados
+incoerentes; falha de limpeza em três pontos (backup, journal, `fsync`) sem
+desfazer a promoção, com a recuperação seguinte terminando a faxina e
+revalidando antes de apagar.

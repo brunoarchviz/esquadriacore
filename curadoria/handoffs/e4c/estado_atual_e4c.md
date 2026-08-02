@@ -165,8 +165,21 @@ estão promovidos, a auditoria não existe e nada no disco permite retomar.
 até AMBOS_SUBSTITUIDOS      desfazer os QUATRO artefatos (estratégia A)
 de DADOS_VALIDOS em diante  retomar a finalização marco a marco (estratégia B)
 CONCLUIDA                   conferir os quatro hashes e a verificação
-                            unificada ANTES de limpar
+                            unificada ANTES de limpar — nunca reverter
 ```
+
+### `CONCLUIDA` é o ponto de commit
+
+Alcançado `CONCLUIDA` — quatro artefatos gravados, quatro hashes conferidos,
+verificação unificada aprovada —, **a promoção está confirmada**. O que vem
+depois é faxina: apagar backups, remover o journal, sincronizar diretórios.
+
+Falha na faxina **não** dispara rollback. Trocar um resultado correto e
+verificado por um rollback, por causa de um arquivo auxiliar que ninguém
+consome, seria perder trabalho válido. O comando informa
+`promoção CONCLUÍDA, limpeza pendente` e sai com código 3; a execução seguinte
+de `recuperar` confere os quatro hashes, repete a verificação unificada e
+termina a limpeza — sem nunca reverter dados já concluídos.
 
 A partir de `DADOS_VALIDOS` os dados já passaram na validação pós-gravação;
 desfazê-los perderia trabalho verificado sem ganho de segurança. As duas
@@ -251,17 +264,54 @@ Uma reconstrução **nunca** muda os fatos do evento. Os valores vêm de
 observação do disco: derivá-los do estado promovido produziria `54 → 54` com
 `ids_criados: []`, descrevendo a própria reconstrução em vez da promoção.
 
-O verificador unificado compara `hash_depois` com os arquivos atuais **e**
-valida `hash_antes`, contagens e listas contra a baseline canônica. `54 → 54`
-nunca é aceito como promoção.
+O verificador valida `hash_antes`, `hash_depois`, contagens e listas contra a
+baseline canônica de `evento.py`. `54 → 54` nunca é aceito como promoção.
+
+### Fato histórico não trava a biblioteca
+
+São **duas** perguntas, e elas envelhecem de formas opostas:
+
+```text
+verificar_evento_historico_e4c(manifesto)
+    o manifesto descreve fielmente o que aconteceu — 46 → 54, 245 → 253,
+    hashes daquele instante, oito IDs, commits. Não olha para o disco.
+
+verificar_permanencia_atual_e4b(config, geometrias, associacoes, candidatos)
+    os oito registros continuam lá e íntegros HOJE — presença, contorno ponto
+    a ponto, dimensão, vazios, associação, config declarando PROMOVIDO,
+    GEO-TMS-102 ausente.
+```
+
+O hash global de `dados/geometrias.json` no fim do E.4C é **fato histórico**.
+Exigir que o arquivo vivo continue com esse hash transformaria a próxima
+promoção legítima em "corrupção". Por isso a permanência é verificada pelos
+registros do lote — geometrias e associações **novas** são evolução, e
+contagens acima de 54 e 253 são aprovadas.
+
+Isso **não** afrouxa a transação: durante a promoção ou a recuperação ativa, o
+journal continua exigindo que os quatro artefatos batam exatamente com o hash
+final esperado.
 
 ### Finalização auditável
 
-`dados/` promovido com manifesto ausente **não** é tratado como "nada a fazer":
-a CLI detecta e reconstrói fisicamente o arquivo, mas preserva
-`reconstruido_apos_gravacao: false` porque esse campo pertence ao evento
-canônico, não à operação de recuperação. Sem essa reconstrução, gravação e
-auditoria ficariam permanentemente dessincronizadas.
+`dados/` promovido com manifesto ausente **não** é tratado como "nada a fazer" —
+e também **não** é reconstruído em silêncio dentro de `promover`. Decidir
+sucesso porque os oito GEOs existem é fraco demais: o config pode não declarar a
+promoção, uma associação pode apontar para o GEO errado, um contorno pode ter
+sido alterado. `promover` recusa e aponta o comando próprio:
+
+```bash
+python -m curadoria.promocao.cli reconstruir-manifesto --lote E4B --apply
+```
+
+Ele recusa se houver journal pendente ou se o manifesto já existir (sobrescrever
+seria apagar o registro do evento), confere config, dados e associações **sem
+depender do manifesto**, grava por temporário + `fsync` + `os.replace`, relê o
+arquivo, roda a verificação unificada e **remove o manifesto recém-criado** se
+ela reprovar. `dados/` e config nunca são tocados.
+
+O manifesto reconstruído preserva `reconstruido_apos_gravacao: false`: o campo
+pertence ao evento canônico, não à operação de recuperação.
 
 ---
 

@@ -95,9 +95,18 @@ def planejar_documentos(simulacao, config_antes: dict, candidatos,
 
 @dataclass(frozen=True)
 class ResultadoRecuperacao:
+    """`concluida` é a promoção confirmada; `limpeza_pendente` é só faxina.
+
+    Depois de `CONCLUIDA` — quatro hashes conferidos e verificação unificada
+    aprovada — a promoção está feita. Falhar ao apagar um backup, ao remover o
+    journal ou no `fsync` final não pode desfazer isso: seria trocar um
+    resultado correto e verificado por um rollback, por causa de um arquivo
+    auxiliar que ninguém consome."""
     estado_encontrado: str
     passos: tuple[str, ...]
     ok: bool = True
+    concluida: bool = False
+    limpeza_pendente: bool = False
     detalhe: str = ""
 
 
@@ -213,6 +222,17 @@ def retomar_finalizacao(caminho_journal: Path, raiz: Path,
     # Só agora, com os quatro conteúdos confirmados e a verificação aprovada.
     for papel in journal.PAPEIS:
         _exigir_conteudo_final(d, papel, raiz, "antes de limpar")
-    journal.limpar(_destino(d, "geometrias", raiz).parent, raiz, lote)
+
+    # Ponto de commit: daqui em diante a promoção está confirmada. A limpeza é
+    # faxina — journal e backups não são consumidos por ninguém, e falhar ao
+    # removê-los não torna a promoção inválida.
+    try:
+        journal.limpar(_destino(d, "geometrias", raiz).parent, raiz, lote)
+    except Exception as e:
+        passos.append(f"LIMPEZA PENDENTE: {e}")
+        return ResultadoRecuperacao(
+            estado_encontrado=estado, passos=tuple(passos), ok=True,
+            concluida=True, limpeza_pendente=True, detalhe=str(e))
     passos.append("journal e backups removidos")
-    return ResultadoRecuperacao(estado_encontrado=estado, passos=tuple(passos))
+    return ResultadoRecuperacao(estado_encontrado=estado, passos=tuple(passos),
+                                concluida=True)

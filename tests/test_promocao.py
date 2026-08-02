@@ -406,7 +406,7 @@ class ArvoreIsolada:
             cfg, geo, assoc = self.carregar()
             man = json.loads(self.manifesto.read_text(encoding="utf-8"))
             return integridade.verificar_integridade_promocao_e4b(
-                cfg, geo, assoc, man, cands, raiz=self.raiz)
+                cfg, geo, assoc, man, cands)
         return verificar
 
 
@@ -459,7 +459,7 @@ def _aplicar(arvore, candidatos, **kw):
     finalizar = kw.pop("finalizar", None)
     if finalizar is None:
         def finalizar(j):
-            finalizacao.retomar_finalizacao(
+            return finalizacao.retomar_finalizacao(
                 j, arvore.raiz, docs, arvore.verificador(candidatos),
                 interrupcao=InterrupcaoSimulada,
                 falha_injetada=kw.get("falha_injetada", ""),
@@ -986,7 +986,12 @@ def test_journal_concluida_abandonado_nao_e_ignorado(arvore, candidatos):
         _aplicar(arvore, candidatos, interromper_em="apos_concluida")
     pend = journal.pendente(arvore.dir_dados)
     assert pend is not None and pend["estado"] == journal.CONCLUIDA
-    journal.limpar(arvore.dir_dados, arvore.raiz)
+    # a limpeza passa pelo fluxo de retomada, que revalida antes de apagar —
+    # chamar `journal.limpar()` direto provaria só que unlink funciona
+    rel = _recuperar(arvore, candidatos)
+    assert rel.estado_encontrado == journal.CONCLUIDA
+    assert rel.concluida and not rel.limpeza_pendente
+    assert "verificação unificada aprovada" in rel.passos
     assert journal.pendente(arvore.dir_dados) is None
     assert not journal.caminho_backup(g).exists()
 
@@ -1285,7 +1290,7 @@ def test_promocao_integral_a_partir_do_estado_pre_promocao(arvore, candidatos):
     assert man["reconstruido_apos_gravacao"] is False
 
     unif = integridade.verificar_integridade_promocao_e4b(
-        cfg, geo, assoc, man, candidatos, raiz=arvore.raiz)
+        cfg, geo, assoc, man, candidatos)
     assert unif.ok, unif.descrever()
 
     assert journal.pendente(arvore.dir_dados) is None
@@ -1456,7 +1461,7 @@ def test_crash_em_cada_marco_e_recuperado(arvore, candidatos, ponto, estado):
         man = json.loads(arvore.manifesto.read_text(encoding="utf-8"))
         assert man["quantidade_antes"] == {"geometrias": 46, "associacoes": 245}
         assert integridade.verificar_integridade_promocao_e4b(
-            cfg, geo, assoc, man, candidatos, raiz=arvore.raiz).ok
+            cfg, geo, assoc, man, candidatos).ok
 
     assert journal.pendente(arvore.dir_dados) is None
     for alvo in (arvore.geometrias, arvore.associacoes, arvore.config,
@@ -1597,3 +1602,335 @@ def test_limpeza_remove_backups_dos_tres_diretorios(arvore, candidatos):
     journal.recuperar(arvore.dir_dados, arvore.raiz)
     for alvo in (arvore.geometrias, arvore.associacoes, arvore.config):
         assert not journal.caminho_backup(alvo).exists(), alvo.name
+
+
+# ===========================================================================
+# Evento histórico × permanência atual — a biblioteca pode crescer
+# ===========================================================================
+
+def _promovida(arvore, candidatos):
+    """Árvore isolada já promovida, pronta para receber lotes futuros."""
+    _aplicar(arvore, candidatos)
+    return arvore.carregar()
+
+
+def _geometria_futura(gid="GEO-FUTURO-001"):
+    return {
+        "id": gid,
+        "contorno_externo": [[0.0, 0.0], [10.0, 0.0], [10.0, 5.0], [0.0, 5.0]],
+        "vazios_internos": [],
+        "nivel_contorno": "2_renderizavel_comercial",
+        "bounding_box": {"largura": 10.0, "altura": 5.0},
+    }
+
+
+def test_evento_historico_nao_olha_para_o_disco(manifesto_real):
+    """Os fatos do E.4C são imutáveis e independem do arquivo de hoje."""
+    r = integridade.verificar_evento_historico_e4c(manifesto_real)
+    assert r.ok, r.descrever()
+
+
+def test_biblioteca_pode_crescer_sem_reprovar_o_e4b(arvore, candidatos):
+    """Uma promoção futura legítima acrescenta registros. Isso não é corrupção
+    do E.4B, e o verificador não pode chamar de corrupção."""
+    cfg, geo, assoc = _promovida(arvore, candidatos)
+    geo["geometrias"].append(_geometria_futura())
+    assoc["associacoes"].append({"perfil_id": "FABRICANTE-FUTURO-001",
+                                 "geometria_padrao_id": "GEO-FUTURO-001"})
+    assert len(geo["geometrias"]) == 55
+    assert len(assoc["associacoes"]) == 254
+
+    man = json.loads(arvore.manifesto.read_text(encoding="utf-8"))
+    r = integridade.verificar_integridade_promocao_e4b(cfg, geo, assoc, man,
+                                                       candidatos)
+    assert r.ok, r.descrever()
+    # e o manifesto continua descrevendo 46 -> 54, sem tocar em nada
+    assert man["quantidade_depois"] == {"geometrias": 54, "associacoes": 253}
+
+
+def test_hash_global_diferente_do_historico_nao_reprova(arvore, candidatos):
+    """Depois de um lote novo o arquivo tem outro hash. O fato histórico
+    continua verdadeiro."""
+    cfg, geo, assoc = _promovida(arvore, candidatos)
+    assert hash_arquivo(arvore.geometrias) == \
+        evento.HASH_DEPOIS[evento.REL_GEOMETRIAS]
+    geo["geometrias"].append(_geometria_futura())
+    arvore.geometrias.write_text(
+        json.dumps(geo, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    assert hash_arquivo(arvore.geometrias) != \
+        evento.HASH_DEPOIS[evento.REL_GEOMETRIAS]
+
+    cfg, geo, assoc = arvore.carregar()
+    man = json.loads(arvore.manifesto.read_text(encoding="utf-8"))
+    assert integridade.verificar_integridade_promocao_e4b(
+        cfg, geo, assoc, man, candidatos).ok
+
+
+@pytest.mark.parametrize("mutacao", [
+    "contorno_alterado", "geo_removido", "associacao_apontando_errado",
+    "dimensao_alterada", "config_despromovido", "geo_tms102_criado",
+])
+def test_mutacao_de_registro_do_e4b_reprova(arvore, candidatos, mutacao):
+    cfg, geo, assoc = _promovida(arvore, candidatos)
+    if mutacao == "contorno_alterado":
+        for g in geo["geometrias"]:
+            if g["id"] == "GEO-SU-001":
+                g["contorno_externo"][0] = [g["contorno_externo"][0][0] + 1.0,
+                                            g["contorno_externo"][0][1]]
+    elif mutacao == "geo_removido":
+        geo["geometrias"] = [g for g in geo["geometrias"] if g["id"] != "GEO-SU-041"]
+    elif mutacao == "associacao_apontando_errado":
+        for a in assoc["associacoes"]:
+            if a["perfil_id"] == "ALCOA-SU-053":
+                a["geometria_padrao_id"] = "GEO-SU-005"
+    elif mutacao == "dimensao_alterada":
+        for g in geo["geometrias"]:
+            if g["id"] == "GEO-SU-102":
+                g["contorno_externo"] = [[0.0, 0.0], [40.0, 0.0], [40.0, 40.0]]
+    elif mutacao == "config_despromovido":
+        cfg["perfis"]["SU-002"]["promocao_oficial"]["status"] = "ainda_nao_autorizada"
+    elif mutacao == "geo_tms102_criado":
+        geo["geometrias"].append(_geometria_futura("GEO-TMS-102"))
+
+    man = json.loads(arvore.manifesto.read_text(encoding="utf-8"))
+    r = integridade.verificar_integridade_promocao_e4b(cfg, geo, assoc, man,
+                                                       candidatos)
+    assert not r.ok, f"{mutacao} passou sem ser detectada"
+    # e a permanência atual sozinha já pega — não depende do manifesto
+    assert not integridade.verificar_permanencia_atual_e4b(
+        cfg, geo, assoc, candidatos).ok
+
+
+def test_mutacao_do_fato_historico_reprova(arvore, candidatos):
+    """`46 → 54` virando outra coisa continua sendo reprovado."""
+    cfg, geo, assoc = _promovida(arvore, candidatos)
+    man = json.loads(arvore.manifesto.read_text(encoding="utf-8"))
+    man["quantidade_antes"] = {"geometrias": 54, "associacoes": 253}
+    assert not integridade.verificar_evento_historico_e4c(man).ok
+    assert not integridade.verificar_integridade_promocao_e4b(
+        cfg, geo, assoc, man, candidatos).ok
+    # mas a permanência atual continua aprovada: são perguntas diferentes
+    assert integridade.verificar_permanencia_atual_e4b(
+        cfg, geo, assoc, candidatos).ok
+
+
+def test_journal_continua_exigindo_os_quatro_hashes_finais(arvore, candidatos):
+    """A flexibilização é da auditoria durável, NÃO da transação ativa."""
+    _, _, docs = _documentos(arvore, candidatos)
+    with pytest.raises(InterrupcaoSimulada):
+        _aplicar(arvore, candidatos, interromper_em="apos_journal")
+    arq = journal.pendente(arvore.dir_dados)["arquivos"]
+    for papel in journal.PAPEIS:
+        assert arq[papel]["hash_esperado_depois"] == docs.hashes[papel], papel
+    journal.recuperar(arvore.dir_dados, arvore.raiz)
+
+
+# ===========================================================================
+# Reconstrução do manifesto: comando explícito, nunca silenciosa
+# ===========================================================================
+
+from curadoria.promocao import cli as cli_mod   # noqa: E402
+
+
+@pytest.fixture
+def cli_na_arvore(arvore, monkeypatch):
+    """Aponta a CLI para a árvore isolada, sem tocar no repositório."""
+    monkeypatch.setattr(cli_mod, "RAIZ", arvore.raiz)
+    monkeypatch.setattr(cli_mod, "CAMINHO_CONFIG", arvore.config)
+    monkeypatch.setattr(cli_mod, "CAMINHO_GEOMETRIAS", arvore.geometrias)
+    monkeypatch.setattr(cli_mod, "CAMINHO_ASSOCIACOES", arvore.associacoes)
+    monkeypatch.setattr(cli_mod, "DIR_DADOS", arvore.dir_dados)
+    monkeypatch.setattr(auditoria, "CAMINHO_MANIFESTO", arvore.manifesto)
+    return lambda *argv: cli_mod.main(list(argv))
+
+
+def _promover_e_apagar_manifesto(arvore, candidatos):
+    _aplicar(arvore, candidatos)
+    arvore.manifesto.unlink()
+    assert not arvore.manifesto.exists()
+
+
+def test_promover_nao_reconstroi_manifesto_em_silencio(arvore, candidatos,
+                                                       cli_na_arvore):
+    """Decidir sucesso só porque os oito GEOs existem é fraco demais."""
+    _promover_e_apagar_manifesto(arvore, candidatos)
+    codigo = cli_na_arvore("promover", "--apply", "--permitir-arvore-suja",
+                           "--lote", "E4B")
+    assert codigo == 2
+    assert not arvore.manifesto.exists(), "promover recriou em silêncio"
+
+
+def test_reconstruir_manifesto_exige_apply(arvore, candidatos, cli_na_arvore):
+    _promover_e_apagar_manifesto(arvore, candidatos)
+    assert cli_na_arvore("reconstruir-manifesto", "--lote", "E4B") == 2
+    assert not arvore.manifesto.exists()
+
+
+def test_reconstruir_manifesto_recusa_sobrescrever(arvore, candidatos,
+                                                   cli_na_arvore):
+    """Sobrescrever manifesto existente seria apagar o registro do evento."""
+    _aplicar(arvore, candidatos)
+    h = hash_arquivo(arvore.manifesto)
+    assert cli_na_arvore("reconstruir-manifesto", "--lote", "E4B", "--apply") == 2
+    assert hash_arquivo(arvore.manifesto) == h
+
+
+def test_reconstruir_manifesto_caso_integro(arvore, candidatos, cli_na_arvore):
+    _promover_e_apagar_manifesto(arvore, candidatos)
+    h_outros = {p: hash_arquivo(p) for p in (arvore.geometrias,
+                                             arvore.associacoes, arvore.config)}
+    assert cli_na_arvore("reconstruir-manifesto", "--lote", "E4B", "--apply") == 0
+    man = json.loads(arvore.manifesto.read_text(encoding="utf-8"))
+    assert man["quantidade_antes"] == {"geometrias": 46, "associacoes": 245}
+    assert man["quantidade_depois"] == {"geometrias": 54, "associacoes": 253}
+    assert man["reconstruido_apos_gravacao"] is False
+    cfg, geo, assoc = arvore.carregar()
+    assert integridade.verificar_integridade_promocao_e4b(
+        cfg, geo, assoc, man, candidatos).ok
+    for p, h in h_outros.items():
+        assert hash_arquivo(p) == h, f"{p.name} foi modificado"
+
+
+@pytest.mark.parametrize("incoerencia", [
+    "config_nao_promovido", "associacao_errada", "geo_ausente",
+    "contorno_alterado", "geo_tms102_criado",
+])
+def test_reconstruir_manifesto_bloqueia_estado_incoerente(
+        arvore, candidatos, cli_na_arvore, incoerencia):
+    """Reconstruir auditoria sobre `dados/` que não sustenta a promoção seria
+    fabricar evidência."""
+    _promover_e_apagar_manifesto(arvore, candidatos)
+
+    if incoerencia == "config_nao_promovido":
+        cfg = json.loads(arvore.config.read_text(encoding="utf-8"))
+        cfg["microlote_janela"]["promocao_oficial_realizada"] = False
+        arvore.config.write_text(json.dumps(cfg, ensure_ascii=False, indent=2)
+                                 + "\n", encoding="utf-8")
+    else:
+        geo = json.loads(arvore.geometrias.read_text(encoding="utf-8"))
+        assoc = json.loads(arvore.associacoes.read_text(encoding="utf-8"))
+        if incoerencia == "associacao_errada":
+            for a in assoc["associacoes"]:
+                if a["perfil_id"] == "ALCOA-SU-039":
+                    a["geometria_padrao_id"] = "GEO-SU-005"
+        elif incoerencia == "geo_ausente":
+            geo["geometrias"] = [g for g in geo["geometrias"]
+                                 if g["id"] != "GEO-SU-003"]
+        elif incoerencia == "contorno_alterado":
+            for g in geo["geometrias"]:
+                if g["id"] == "GEO-SU-053":
+                    g["contorno_externo"][2] = [999.0, 999.0]
+        elif incoerencia == "geo_tms102_criado":
+            geo["geometrias"].append(_geometria_futura("GEO-TMS-102"))
+        arvore.geometrias.write_text(
+            json.dumps(geo, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+        arvore.associacoes.write_text(
+            json.dumps(assoc, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+
+    h = {p: hash_arquivo(p) for p in (arvore.geometrias, arvore.associacoes,
+                                      arvore.config)}
+    assert cli_na_arvore("reconstruir-manifesto", "--lote", "E4B", "--apply") == 1
+    assert not arvore.manifesto.exists(), "manifesto criado sobre estado incoerente"
+    for p, hp in h.items():
+        assert hash_arquivo(p) == hp, f"{p.name} foi modificado"
+
+
+def test_reconstruir_manifesto_remove_o_arquivo_se_a_verificacao_final_reprovar(
+        arvore, candidatos, cli_na_arvore, monkeypatch):
+    """Última rede: gravou, releu, reprovou -> some."""
+    _promover_e_apagar_manifesto(arvore, candidatos)
+    from curadoria.promocao.modelos import ResultadoValidacao
+    monkeypatch.setattr(
+        cli_mod.integridade, "verificar_integridade_promocao_e4b",
+        lambda *a, **k: ResultadoValidacao.reprovado(
+            "-", "reprovação forçada", "x", "y", "teste"))
+    assert cli_na_arvore("reconstruir-manifesto", "--lote", "E4B", "--apply") == 1
+    assert not arvore.manifesto.exists()
+
+
+# ===========================================================================
+# CONCLUIDA é o ponto de commit: falha de limpeza não desfaz promoção
+# ===========================================================================
+
+def _quebrar_limpeza(monkeypatch, arvore, alvo: str):
+    """Falha só na faxina, depois de CONCLUIDA."""
+    if alvo == "fsync_do_diretorio":
+        real_sync, real_limpar = journal.sincronizar_diretorio, journal.limpar
+        na_faxina = []
+
+        def sync(p):
+            if na_faxina:
+                raise OSError("fsync do diretório falhou")
+            return real_sync(p)
+
+        def limpar(*a, **kw):
+            na_faxina.append(True)
+            return real_limpar(*a, **kw)
+        monkeypatch.setattr(journal, "sincronizar_diretorio", sync)
+        monkeypatch.setattr(journal, "limpar", limpar)
+        return
+    real = Path.unlink
+
+    def unlink(self, *a, **kw):
+        nome = self.name
+        if alvo == "primeiro_backup" and nome.endswith(".bak"):
+            raise OSError(f"falha ao apagar backup {nome}")
+        if alvo == "arquivo_journal" and nome.startswith(".promocao_"):
+            raise OSError(f"falha ao apagar journal {nome}")
+        return real(self, *a, **kw)
+    monkeypatch.setattr(Path, "unlink", unlink)
+
+
+@pytest.mark.parametrize("alvo", ["primeiro_backup", "arquivo_journal",
+                                  "fsync_do_diretorio"])
+def test_falha_na_limpeza_nao_desfaz_promocao_concluida(arvore, candidatos,
+                                                        monkeypatch, alvo):
+    """Depois de CONCLUIDA os quatro artefatos estão gravados, conferidos por
+    hash e aprovados. Trocar isso por rollback, por causa de um backup que
+    ninguém consome, seria perder trabalho correto."""
+    with monkeypatch.context() as m:
+        _quebrar_limpeza(m, arvore, alvo)
+        estado, _, _ = _aplicar(arvore, candidatos)
+
+    assert estado.aplicado, "promoção concluída foi desfeita por falha de faxina"
+    assert not estado.rollback_executado
+    assert estado.limpeza_pendente
+
+    # os quatro estão no estado FINAL, nenhum voltou
+    cfg, geo, assoc = arvore.carregar()
+    assert len(geo["geometrias"]) == 54 and len(assoc["associacoes"]) == 253
+    assert cfg["microlote_janela"]["promocao_oficial_realizada"] is True
+    assert hash_arquivo(arvore.geometrias) == \
+        evento.HASH_DEPOIS[evento.REL_GEOMETRIAS]
+    man = json.loads(arvore.manifesto.read_text(encoding="utf-8"))
+    assert man["quantidade_antes"] == {"geometrias": 46, "associacoes": 245}
+
+    # e a recuperação seguinte apenas termina a faxina — nunca reverte.
+    # (no caso do fsync final o journal já saiu do disco: sobrou só a barreira
+    # de durabilidade, e não há nada pendente para retomar)
+    if journal.pendente(arvore.dir_dados) is not None:
+        rel = _recuperar(arvore, candidatos)
+        assert rel.concluida and not rel.limpeza_pendente
+    assert journal.pendente(arvore.dir_dados) is None
+    for alvo_arq in (arvore.geometrias, arvore.associacoes, arvore.config,
+                     arvore.manifesto):
+        assert not journal.caminho_backup(alvo_arq).exists()
+    assert len(json.loads(arvore.geometrias.read_text())["geometrias"]) == 54
+
+
+def test_recuperar_apos_limpeza_pendente_revalida_antes_de_terminar(
+        arvore, candidatos, monkeypatch):
+    """A retomada da faxina não é cega: confere os quatro hashes e a
+    verificação unificada antes de apagar o que sobrou."""
+    with monkeypatch.context() as m:
+        _quebrar_limpeza(m, arvore, "arquivo_journal")
+        _aplicar(arvore, candidatos)
+    assert journal.pendente(arvore.dir_dados)["estado"] == journal.CONCLUIDA
+
+    arvore.manifesto.write_text('{"adulterado": true}\n', encoding="utf-8")
+    with pytest.raises(finalizacao.FinalizacaoBloqueada, match="manifesto"):
+        _recuperar(arvore, candidatos)
+    assert journal.caminho_journal(arvore.dir_dados).exists(), \
+        "faxina terminou sem revalidar"
+    # e os dados NÃO foram revertidos
+    assert len(json.loads(arvore.geometrias.read_text())["geometrias"]) == 54

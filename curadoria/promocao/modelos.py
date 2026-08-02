@@ -153,6 +153,7 @@ class EstadoTransacao:
     backups: dict
     aplicado: bool
     rollback_executado: bool
+    limpeza_pendente: bool = False
     detalhe: str = ""
 
 
