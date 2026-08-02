@@ -109,14 +109,17 @@ def _ok(valor, esquema, raiz, caminho):
 # 1-3, 5-6, 8: geometrias
 # ---------------------------------------------------------------------------
 
-def test_carrega_as_46_geometrias(bib):
-    assert len(bib.geometrias) == 46
+def test_carrega_as_54_geometrias(bib):
+    """46 originais + 8 promovidas na sprint E.4C."""
+    assert len(bib.geometrias) == 54
     assert all(isinstance(g, GeometriaConsumivel) for g in bib.geometrias)
 
 
-def test_dez_renderizaveis_36_brutas(bib):
+def test_dezoito_renderizaveis_36_brutas(bib):
+    """As 8 promovidas em E.4C entram como renderizáveis; as 36 brutas
+    continuam brutas — a promoção não mexeu em nenhuma delas."""
     rend = bib.renderizaveis()
-    assert len(rend) == 10
+    assert len(rend) == 18
     assert all(g.renderizavel for g in rend)
     assert all(g.nivel_contorno in NIVEIS_RENDERIZAVEIS for g in rend)
     brutas = [g for g in bib.geometrias if not g.renderizavel]
@@ -324,8 +327,9 @@ def test_codigos_duplicados_falham(tmp_path):
 # Associações (PerfilGeometria) — ADR-005
 # ---------------------------------------------------------------------------
 
-def test_carrega_as_245_associacoes(bib):
-    assert len(bib.associacoes) == 245
+def test_carrega_as_253_associacoes(bib):
+    """245 originais + 8 criadas na sprint E.4C."""
+    assert len(bib.associacoes) == 253
     assert all(isinstance(a, AssociacaoConsumivel) for a in bib.associacoes)
 
 
