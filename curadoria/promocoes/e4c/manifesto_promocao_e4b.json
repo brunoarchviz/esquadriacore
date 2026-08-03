@@ -1,0 +1,279 @@
+{
+  "lote": "E4B",
+  "versao_manifesto": "1.2",
+  "estado": "PROMOVIDO",
+  "data_utc": "2026-08-02T14:10:14Z",
+  "commit_base_main": "e356ba2c34b3c04711d97cbf576f3737be974af3",
+  "commit_pre_promocao": "53fcfaca7ba89ccc1c7a0fc8c52a7e6efc18dc76",
+  "commit_curadoria_fonte": "e356ba2c34b3c04711d97cbf576f3737be974af3",
+  "descricao_curadoria_fonte": "E.4B concluído e correção de identidade SU-102 × TMS-102 integrada.",
+  "sprint": "E.4C",
+  "perfis": [
+    "SU-001",
+    "SU-002",
+    "SU-003",
+    "SU-039",
+    "SU-040",
+    "SU-041",
+    "SU-053",
+    "SU-102"
+  ],
+  "geometrias": [
+    "GEO-SU-001",
+    "GEO-SU-002",
+    "GEO-SU-003",
+    "GEO-SU-039",
+    "GEO-SU-040",
+    "GEO-SU-041",
+    "GEO-SU-053",
+    "GEO-SU-102"
+  ],
+  "detalhe_perfis": [
+    {
+      "codigo_perfil": "SU-001",
+      "id_geometria": "GEO-SU-001",
+      "dimensao_nominal_mm": [
+        71.0,
+        33.0
+      ],
+      "pontos_contorno_externo": 187,
+      "quantidade_vazios": 0,
+      "nivel_contorno": "2_renderizavel_comercial",
+      "origem_dimensional": "COTA_DE_CATALOGO",
+      "decisao_curadoria": "COTA_DE_CATALOGO",
+      "estado_curadoria": "CANDIDATO_GEOMETRICO_APROVADO",
+      "hash_contorno": "c2817620f6a77d36564cf3c8f6aea92d34ce4d9ee371c89991c40a9cd5436a2e",
+      "hash_metricas": "1c017bfe6524def21f10cdd7abc1269dcbc40331c91b81a0c82d26eaa9af3364",
+      "hash_operacoes": "52133e01f7fcc5450b32dd506142a6712f8d6d6554b4df54abd725555ad924d5",
+      "arquivo_origem": "curadoria/contornos/SU-001/contorno_comercial.json"
+    },
+    {
+      "codigo_perfil": "SU-002",
+      "id_geometria": "GEO-SU-002",
+      "dimensao_nominal_mm": [
+        71.0,
+        47.0
+      ],
+      "pontos_contorno_externo": 163,
+      "quantidade_vazios": 0,
+      "nivel_contorno": "2_renderizavel_comercial",
+      "origem_dimensional": "COTA_DE_CATALOGO",
+      "decisao_curadoria": "COTA_DE_CATALOGO",
+      "estado_curadoria": "CANDIDATO_GEOMETRICO_APROVADO",
+      "hash_contorno": "76b9559158fb02b7c041d464b56414d093587b8dbb8c1bc55c8968bea6668749",
+      "hash_metricas": "a65d6d7542538ce1bdafd5743a1a7eb101a9462235ef1694dca167964fea3615",
+      "hash_operacoes": "52133e01f7fcc5450b32dd506142a6712f8d6d6554b4df54abd725555ad924d5",
+      "arquivo_origem": "curadoria/contornos/SU-002/contorno_comercial.json"
+    },
+    {
+      "codigo_perfil": "SU-003",
+      "id_geometria": "GEO-SU-003",
+      "dimensao_nominal_mm": [
+        71.0,
+        26.0
+      ],
+      "pontos_contorno_externo": 83,
+      "quantidade_vazios": 0,
+      "nivel_contorno": "2_renderizavel_comercial",
+      "origem_dimensional": "COTA_DE_CATALOGO",
+      "decisao_curadoria": "COTA_DE_CATALOGO",
+      "estado_curadoria": "CANDIDATO_GEOMETRICO_APROVADO",
+      "hash_contorno": "aab5fdd774eb4bce2a82962d1be6ac6a9f901a3d59b4673b65efbd1e407af17c",
+      "hash_metricas": "32f3857fa60a897a9af6c0867bf4f15df48acd62860af9eb72d4ae07a220b843",
+      "hash_operacoes": "52133e01f7fcc5450b32dd506142a6712f8d6d6554b4df54abd725555ad924d5",
+      "arquivo_origem": "curadoria/contornos/SU-003/contorno_comercial.json"
+    },
+    {
+      "codigo_perfil": "SU-039",
+      "id_geometria": "GEO-SU-039",
+      "dimensao_nominal_mm": [
+        52.6,
+        25.0
+      ],
+      "pontos_contorno_externo": 126,
+      "quantidade_vazios": 1,
+      "nivel_contorno": "2_renderizavel_comercial",
+      "origem_dimensional": "COTA_DE_CATALOGO",
+      "decisao_curadoria": "COTA_DE_CATALOGO",
+      "estado_curadoria": "CANDIDATO_GEOMETRICO_APROVADO",
+      "hash_contorno": "32d36c72c02169a93ba95f1f0c38968b188f6bd55f6375e4ac2e5fa83673e2fd",
+      "hash_metricas": "eb7f9f8a3600bb8c5e7602cd0a4304f71044f317b81b882d4e78f6ab1413648b",
+      "hash_operacoes": "98a3a4f7aa77603ce1dc36b1b6b69cdf939d0b3467a7dcd346d580043cd65837",
+      "arquivo_origem": "curadoria/contornos/SU-039/contorno_comercial.json"
+    },
+    {
+      "codigo_perfil": "SU-040",
+      "id_geometria": "GEO-SU-040",
+      "dimensao_nominal_mm": [
+        42.4,
+        30.7
+      ],
+      "pontos_contorno_externo": 82,
+      "quantidade_vazios": 1,
+      "nivel_contorno": "2_renderizavel_comercial",
+      "origem_dimensional": "COTA_DE_CATALOGO",
+      "decisao_curadoria": "COTA_DE_CATALOGO",
+      "estado_curadoria": "CANDIDATO_PREVIAMENTE_APROVADO",
+      "hash_contorno": "816d3018238850c70e4e75f4d46ab16adcb7be2464fae0aa3ed986be06f604e0",
+      "hash_metricas": "976afb296bfc2c8f6b7e6590f7577ea655f144e1944ee04c37440ae061253d2e",
+      "hash_operacoes": "c858d818c7d3a1f27a9929e9f6478376a890337d75012979d388ea560454531e",
+      "arquivo_origem": "curadoria/contornos/SU-040/30_contorno_comercial.json"
+    },
+    {
+      "codigo_perfil": "SU-041",
+      "id_geometria": "GEO-SU-041",
+      "dimensao_nominal_mm": [
+        42.4,
+        33.0
+      ],
+      "pontos_contorno_externo": 93,
+      "quantidade_vazios": 1,
+      "nivel_contorno": "2_renderizavel_comercial",
+      "origem_dimensional": "COTA_DE_CATALOGO",
+      "decisao_curadoria": "COTA_DE_CATALOGO",
+      "estado_curadoria": "CANDIDATO_GEOMETRICO_APROVADO",
+      "hash_contorno": "3a45e848013a9494b067e69816a8555b8920b756563bc128cfbfca119fb79a1c",
+      "hash_metricas": "f77001fa95866c14f2bad45fd5dcfe619b319c9651cf260d6d7e79b434a26b7d",
+      "hash_operacoes": "dc5cc7163f026c0b57bc3c7fef8d9e39ceb17b5e28528c58a42a327a9dbca1b5",
+      "arquivo_origem": "curadoria/contornos/SU-041/30_contorno_comercial.json"
+    },
+    {
+      "codigo_perfil": "SU-053",
+      "id_geometria": "GEO-SU-053",
+      "dimensao_nominal_mm": [
+        22.2,
+        51.0
+      ],
+      "pontos_contorno_externo": 163,
+      "quantidade_vazios": 0,
+      "nivel_contorno": "2_renderizavel_comercial",
+      "origem_dimensional": "COTA_DE_CATALOGO",
+      "decisao_curadoria": "COTA_DE_CATALOGO",
+      "estado_curadoria": "CANDIDATO_GEOMETRICO_APROVADO",
+      "hash_contorno": "a7193ca1410a87736c968ee4c3879e8b9e13dfe370804d28119c598550f1f8f7",
+      "hash_metricas": "0ab5d15b22a32f863614fecc4ea53e77b77d5e84fa3bba586cc7efcb301b5723",
+      "hash_operacoes": "52133e01f7fcc5450b32dd506142a6712f8d6d6554b4df54abd725555ad924d5",
+      "arquivo_origem": "curadoria/contornos/SU-053/contorno_comercial.json"
+    },
+    {
+      "codigo_perfil": "SU-102",
+      "id_geometria": "GEO-SU-102",
+      "dimensao_nominal_mm": [
+        17.0,
+        15.0
+      ],
+      "pontos_contorno_externo": 87,
+      "quantidade_vazios": 0,
+      "nivel_contorno": "2_renderizavel_comercial",
+      "origem_dimensional": "MEDICAO_FISICA_COM_NOMINALIZACAO_POR_DOMINIO",
+      "decisao_curadoria": "APROVADO_POR_ARBITRAGEM_DE_DOMINIO_COM_NOMINALIZACAO",
+      "estado_curadoria": "CANDIDATO_GEOMETRICO_APROVADO",
+      "hash_contorno": "8bfd785b4ce4123ae32a47e28eb915caa65857630eecc3c8fc8cad3cbfe00721",
+      "hash_metricas": "3ab30b1c230055ce701c488618a08f31d6fa3c216ef97a8ed21bf682df03bf59",
+      "hash_operacoes": "7128fb021f257d0809c239bd0fdf1f8e20997f43f1b9d4bc4762e9a0fc753ca5",
+      "arquivo_origem": "curadoria/contornos/SU-102/contorno_comercial.json"
+    }
+  ],
+  "arquivos_oficiais": [
+    "dados/geometrias.json",
+    "dados/perfil_geometria.json"
+  ],
+  "hash_antes": {
+    "dados/geometrias.json": "35f956799b492909f9b362493804d27b8a9abe8df067b9c9c5a071c3121bc769",
+    "dados/perfil_geometria.json": "5961bb42a90d8a5f52bf5bea6f6548fc3cf16d761907227f09d24724f24e3f4e"
+  },
+  "hash_depois": {
+    "dados/geometrias.json": "30bf2b7865d0aaae8e488beb048feac5da9ada932abd5c0e748b9f68254f5fa0",
+    "dados/perfil_geometria.json": "26f09d8d3bfe3b202aa46c500a4ba60ad1eef274927e8cc4f3d954de6d94a532"
+  },
+  "quantidade_antes": {
+    "geometrias": 46,
+    "associacoes": 245
+  },
+  "quantidade_depois": {
+    "geometrias": 54,
+    "associacoes": 253
+  },
+  "ids_criados": [
+    "GEO-SU-001",
+    "GEO-SU-002",
+    "GEO-SU-003",
+    "GEO-SU-039",
+    "GEO-SU-040",
+    "GEO-SU-041",
+    "GEO-SU-053",
+    "GEO-SU-102"
+  ],
+  "ids_reutilizados": [],
+  "associacoes_criadas": [
+    "ALCOA-SU-001",
+    "ALCOA-SU-002",
+    "ALCOA-SU-003",
+    "ALCOA-SU-039",
+    "ALCOA-SU-040",
+    "ALCOA-SU-041",
+    "ALCOA-SU-053",
+    "ALCOA-SU-102"
+  ],
+  "associacoes_reutilizadas": [],
+  "registros_antigos_alterados": [],
+  "gates": {
+    "registros_antigos_alterados": 0,
+    "bloqueios": 0,
+    "associacoes_orfas": 0,
+    "validacao_candidatos": "APROVADA",
+    "validacao_pos_gravacao": "APROVADA"
+  },
+  "resultado_idempotencia": "APROVADA",
+  "resultado_rollback_testado": "coberto por regressão (tests/test_promocao.py)",
+  "su102": {
+    "leitura_fisica_mm": [
+      16.9,
+      15.0
+    ],
+    "dimensao_nominal_mm": [
+      17.0,
+      15.0
+    ],
+    "gate_aspecto_fisico_bruto": "REPROVADO",
+    "gate_aspecto_nominal": "APROVADO",
+    "decisao": "APROVADO_POR_ARBITRAGEM_DE_DOMINIO_COM_NOMINALIZACAO",
+    "nominalizacao_anisotropica": true,
+    "identidade_su102_tms102": "CONFIRMADA",
+    "tms102_medido_separadamente": false,
+    "geo_tms102_criado": false,
+    "_nota": "A medição física pertence ao SU-102. O TMS-102 é o mesmo perfil físico e NÃO foi medido separadamente. Nenhuma geometria duplicada foi criada; como TMS-102 não existe como entidade de perfil na biblioteca, nenhuma associação foi criada para ele nesta sprint."
+  },
+  "mecanismo_transacional": {
+    "substituicao_atomica_por_arquivo": true,
+    "commit_atomico_conjunto": false,
+    "journal_persistente": true,
+    "journal_cobre_config_e_manifesto": true,
+    "hash_final_esperado_dos_quatro_papeis": true,
+    "config_gravado_pela_transacao": true,
+    "rollback_unico_pelo_journal": true,
+    "rollback_compensatorio_para_excecoes": true,
+    "recuperacao_apos_encerramento_abrupto": true,
+    "retomada_orientada_por_estado": true,
+    "concluida_validada_antes_da_limpeza": true,
+    "concluida_e_o_ponto_de_commit": true,
+    "falha_de_limpeza_nao_desfaz_promocao": true,
+    "preflight_antes_de_restaurar": true,
+    "_nota": "dois os.replace sequenciais NAO sao commit atomico conjunto; o journal persiste ate a finalizacao auditavel (manifesto + config + verificacao unificada) e e a unica autoridade de rollback depois de criado."
+  },
+  "capacidade_reconstrucao_manifesto": {
+    "testada": true,
+    "resultado": "APROVADA",
+    "comando": "curadoria.promocao.cli reconstruir-manifesto --apply",
+    "silenciosa_dentro_de_promover": false,
+    "_nota": "o manifesto pode ser recriado a partir dos fatos canonicos sem alterar o evento original. E operacao EXPLICITA: confere config, dados e associacoes antes de gravar, releh o arquivo, roda a verificacao unificada e remove o manifesto recem-criado se ela reprovar."
+  },
+  "escopo_da_auditoria_duravel": {
+    "hash_global_e_fato_historico": true,
+    "integridade_atual_por_registros_do_lote": true,
+    "_nota": "o hash de dados/geometrias.json no fim do E.4C descreve aquele instante. Uma promocao futura legitima acrescenta registros e muda o hash global; a permanencia do E.4B e verificada pelos oito registros, nao pela contagem total nem pelo hash do arquivo inteiro."
+  },
+  "reconstruido_apos_gravacao": false,
+  "avisos": [],
+  "resultado": "PROMOVIDO"
+}

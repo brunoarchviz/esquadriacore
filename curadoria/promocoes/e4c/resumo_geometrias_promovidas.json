@@ -1,0 +1,105 @@
+{
+  "lote": "E4B",
+  "sprint": "E.4C",
+  "fonte": "dados/ via contrato/consumo.carregar_biblioteca",
+  "geometrias": [
+    {
+      "id": "GEO-SU-001",
+      "perfil_id": "ALCOA-SU-001",
+      "largura_mm": 71.0,
+      "altura_mm": 33.0,
+      "pontos_externo": 187,
+      "vazios": 0,
+      "nivel_contorno": "2_renderizavel_comercial",
+      "renderizavel": true,
+      "associacao_presente": true,
+      "geometria_da_associacao": "GEO-SU-001"
+    },
+    {
+      "id": "GEO-SU-002",
+      "perfil_id": "ALCOA-SU-002",
+      "largura_mm": 71.0,
+      "altura_mm": 47.0,
+      "pontos_externo": 163,
+      "vazios": 0,
+      "nivel_contorno": "2_renderizavel_comercial",
+      "renderizavel": true,
+      "associacao_presente": true,
+      "geometria_da_associacao": "GEO-SU-002"
+    },
+    {
+      "id": "GEO-SU-003",
+      "perfil_id": "ALCOA-SU-003",
+      "largura_mm": 71.0,
+      "altura_mm": 26.0,
+      "pontos_externo": 83,
+      "vazios": 0,
+      "nivel_contorno": "2_renderizavel_comercial",
+      "renderizavel": true,
+      "associacao_presente": true,
+      "geometria_da_associacao": "GEO-SU-003"
+    },
+    {
+      "id": "GEO-SU-039",
+      "perfil_id": "ALCOA-SU-039",
+      "largura_mm": 52.6,
+      "altura_mm": 25.0,
+      "pontos_externo": 126,
+      "vazios": 1,
+      "nivel_contorno": "2_renderizavel_comercial",
+      "renderizavel": true,
+      "associacao_presente": true,
+      "geometria_da_associacao": "GEO-SU-039"
+    },
+    {
+      "id": "GEO-SU-040",
+      "perfil_id": "ALCOA-SU-040",
+      "largura_mm": 42.4,
+      "altura_mm": 30.7,
+      "pontos_externo": 82,
+      "vazios": 1,
+      "nivel_contorno": "2_renderizavel_comercial",
+      "renderizavel": true,
+      "associacao_presente": true,
+      "geometria_da_associacao": "GEO-SU-040"
+    },
+    {
+      "id": "GEO-SU-041",
+      "perfil_id": "ALCOA-SU-041",
+      "largura_mm": 42.4,
+      "altura_mm": 33.0,
+      "pontos_externo": 93,
+      "vazios": 1,
+      "nivel_contorno": "2_renderizavel_comercial",
+      "renderizavel": true,
+      "associacao_presente": true,
+      "geometria_da_associacao": "GEO-SU-041"
+    },
+    {
+      "id": "GEO-SU-053",
+      "perfil_id": "ALCOA-SU-053",
+      "largura_mm": 22.2,
+      "altura_mm": 51.0,
+      "pontos_externo": 163,
+      "vazios": 0,
+      "nivel_contorno": "2_renderizavel_comercial",
+      "renderizavel": true,
+      "associacao_presente": true,
+      "geometria_da_associacao": "GEO-SU-053"
+    },
+    {
+      "id": "GEO-SU-102",
+      "perfil_id": "ALCOA-SU-102",
+      "largura_mm": 17.0,
+      "altura_mm": 15.0,
+      "pontos_externo": 87,
+      "vazios": 0,
+      "nivel_contorno": "2_renderizavel_comercial",
+      "renderizavel": true,
+      "associacao_presente": true,
+      "geometria_da_associacao": "GEO-SU-102"
+    }
+  ],
+  "total_geometrias_biblioteca": 54,
+  "total_associacoes_biblioteca": 253
+}

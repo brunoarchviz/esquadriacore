@@ -247,11 +247,26 @@ def _valida_microlote_janela(cfg) -> list[str]:
                 e.append(_erro_ml("_nota_contagem",
                                   f"SU-102 está fechado mas a nota ainda diz "
                                   f"{frase!r}"))
-    # 7. fechar a curadoria não promove nada
-    if ml.get("promocao_oficial_realizada") is not False:
+    # 7. promoção declarada exige evidência; fechar a curadoria não promove nada
+    promovido = ml.get("promocao_oficial_realizada")
+    if promovido not in (True, False):
         e.append(_erro_ml("promocao_oficial_realizada",
-                          "tem de ser explicitamente false — o fechamento da "
-                          "curadoria não é promoção oficial"))
+                          f"tem de ser booleano explícito, está {promovido!r}"))
+    elif promovido is True:
+        # Marcar promovido sem que cada perfil aponte para o próprio GEO seria
+        # afirmar um estado que dados/ não sustenta.
+        sem = [c for c in fechados
+               if (cfg.get("perfis", {}).get(c, {})
+                   .get("promocao_oficial", {}).get("status") != "PROMOVIDO")]
+        if sem:
+            e.append(_erro_ml("promocao_oficial_realizada",
+                              f"declarada true, mas sem promocao_oficial."
+                              f"status=PROMOVIDO em: {sem}"))
+        for c in fechados:
+            po = cfg.get("perfis", {}).get(c, {}).get("promocao_oficial", {})
+            if po.get("id_geometria") != f"GEO-{c}":
+                e.append(_erro_ml(f"perfis.{c}.promocao_oficial.id_geometria",
+                                  f"esperado GEO-{c}, está {po.get('id_geometria')!r}"))
     # 8. equivalência dimensional SU-102 × TMS-102
     e += _valida_equivalencia_su102_tms102(cfg)
     return e
