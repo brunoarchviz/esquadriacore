@@ -8,11 +8,23 @@
 #   - Medidas em milímetros, sem unidade no valor (ex.: 1500, 1500.5).
 #   - `fonte` é como você sabe: "catalogo", "medicao_fisica",
 #     "especialista_de_dominio", "lista_de_corte_real", "software_externo",
-#     "foto", "croqui", "tabela_de_fabricacao".
+#     "foto", "croqui", "tabela_de_fabricacao", "manifesto_promocao",
+#     "biblioteca_oficial".
+#   - Nome de campo com erro de digitação REPROVA a ficha, com sugestão do nome
+#     certo. Nada é ignorado em silêncio.
+#   - Datas no formato AAAA-MM-DD.
+#
+# PREENCHER NÃO É CONFIRMAR. Um campo vira "decisão confirmada" só quando tem
+# valor, uma fonte declarada em `fontes:` com estado confirmado e — quando a
+# decisão é sua, como especialista — `responsavel` e `data`.
 #
 # Copie este arquivo antes de preencher, por exemplo para
 # composicao/insumos/suprema_2f_caso_a.yaml, e valide com:
 #   python -m composicao.cli validar-ficha composicao/insumos/suprema_2f_caso_a.yaml
+
+# Versão do formato desta ficha. Não altere: o validador recusa versão que não
+# conhece, em vez de ler campos com significado diferente do esperado.
+versao_ficha: 1
 
 tipologia:
   codigo: SUPREMA_CORRER_2F
@@ -119,6 +131,11 @@ croquis: []
 # Ex.: - {tipo: foto, referencia: "curadoria/campo/caso_a/frente.jpg",
 #         descricao: "janela montada, vista interna", estado: CONFIRMADO_CASO_REAL,
 #         responsavel: Bruno, data: "2026-08-10"}
+#
+# `referencia` é caminho RELATIVO à raiz do repositório. Caminho absoluto
+# (/home/..., C:\...) e travessia com ".." são recusados: a evidência tem de
+# sobreviver ao clone em outra máquina. Para algo que não é arquivo, declare
+# forma_referencia: identificador_externo  (ou: url).
 fontes: []
 
 # O que ficou em aberto na visita, com suas palavras.
