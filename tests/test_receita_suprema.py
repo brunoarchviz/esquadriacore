@@ -17,11 +17,16 @@ from pathlib import Path
 import pytest
 
 from composicao import fontes, prontidao, receita as receita_mod, validar
-from composicao.modelos import (ESTADO_CASO_RECEBIDO, ESTADO_CASO_VALIDADO,
-                                ESTADO_RECEITA_PRELIMINAR, CasoRealFabricacao,
-                                ComponenteReceita, EstadoConhecimento,
-                                FonteEvidencia, PapelComponente, ReceitaErro,
-                                ReceitaTipologia, RegraDimensional)
+from composicao.modelos import (ESCOPO_APROVACAO_FORMULAS,
+                                ESCOPO_APROVACAO_RECEITA,
+                                ESTADO_CASO_AGUARDANDO, ESTADO_CASO_PARCIAL,
+                                ESTADO_CASO_RECEBIDO, ESTADO_CASO_VALIDADO,
+                                ESTADO_RECEITA_PRELIMINAR,
+                                AprovacaoEspecialista, CasoRealFabricacao,
+                                ComponenteReceita, CorteReal,
+                                EstadoConhecimento, FonteEvidencia,
+                                PapelComponente, ReceitaErro, ReceitaTipologia,
+                                RegraAcessorio, RegraDimensional, VidroReal)
 
 RAIZ = Path(__file__).resolve().parent.parent
 MODELO_FICHA = RAIZ / "composicao/insumos/suprema_2f_modelo_preenchimento.yaml"
@@ -44,12 +49,38 @@ def ficha_em_branco():
     return fontes.carregar_ficha_campo(MODELO_FICHA)
 
 
-def _fonte(estado=EstadoConhecimento.CONFIRMADO_ESPECIALISTA, responsavel="Bruno"):
+def _fonte(estado=EstadoConhecimento.CONFIRMADO_ESPECIALISTA, responsavel="Bruno",
+           data="2026-08-03"):
     return FonteEvidencia(
         tipo="especialista_de_dominio",
         referencia="curadoria/handoffs/e4d/estado_inicial_e4d.md",
         descricao="decisão registrada em teste", estado=estado,
-        responsavel=responsavel, data="2026-08-03")
+        responsavel=responsavel, data=data)
+
+
+def _regra_acessorio_confirmada(item="roldanas"):
+    return RegraAcessorio(
+        identificador=f"TESTE:acessorio:{item}", item=item,
+        quantidade_expressao="PLACEHOLDER_DE_TESTE", posicao="base da folha",
+        estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
+        fontes=(_fonte(estado=EstadoConhecimento.CONFIRMADO_CASO_REAL),))
+
+
+def _aprovacao(escopo):
+    return AprovacaoEspecialista(
+        decisao="aprovado", responsavel="Bruno", data="2026-08-10",
+        fonte=_fonte(), escopo=escopo)
+
+
+def _caso_validado(ident, largura, altura):
+    return CasoRealFabricacao(
+        identificador=ident, largura_total_mm=Decimal(largura),
+        altura_total_mm=Decimal(altura),
+        cortes=(CorteReal(perfil="SU-001", comprimento_mm=Decimal("1000")),),
+        vidros=(VidroReal(folha="1", largura_mm=Decimal("500"),
+                          altura_mm=Decimal("900")),),
+        fontes=(_fonte(estado=EstadoConhecimento.CONFIRMADO_CASO_REAL),),
+        estado_validacao=ESTADO_CASO_VALIDADO)
 
 
 def _componente_confirmado(codigo="SU-001", **kw):
@@ -180,7 +211,7 @@ def test_exige_fonte_para_regra_confirmada():
 
 
 def test_aceita_pendencia_sem_formula(receita):
-    for regra in receita.todas_as_regras:
+    for regra in receita.regras_dimensionais:
         assert regra.expressao is None
         assert regra.estado is EstadoConhecimento.PENDENTE
         assert not regra.calculavel
@@ -211,7 +242,7 @@ def test_preserva_autoria_da_decisao_do_especialista(biblioteca, receita):
 
 
 def test_fonte_recusa_caminho_absoluto():
-    with pytest.raises(ReceitaErro, match="absoluta"):
+    with pytest.raises(ReceitaErro, match="absoluto"):
         FonteEvidencia(tipo="foto", referencia="/home/bruno/foto.jpg",
                        descricao="", estado=EstadoConhecimento.PENDENTE)
 
@@ -233,12 +264,14 @@ def test_carrega_ficha_estruturalmente_valida(ficha_em_branco):
 
 
 def test_rejeita_ficha_sem_tipologia():
-    r = fontes.validar_estrutura_ficha({"caso_real": {}}, "x")
-    assert not r.ok and "tipologia" in r.falhas[0]["regra"]
+    r = fontes.validar_estrutura_ficha(
+        {"versao_ficha": 1, "caso_real": {}}, "x")
+    assert not r.ok
+    assert any("tipologia" in f["alvo"] for f in r.falhas)
 
 
 @pytest.mark.parametrize("campo", ["largura_total_mm", "altura_total_mm"])
-@pytest.mark.parametrize("valor", [0, -1, "0", "abc"])
+@pytest.mark.parametrize("valor", [0, -1, "0", "abc"])  # noqa: PT006
 def test_rejeita_medida_nao_positiva_ou_nao_numerica(ficha_em_branco, campo, valor):
     d = copy.deepcopy(ficha_em_branco)
     d["caso_real"][campo] = valor
@@ -260,7 +293,7 @@ def test_rejeita_campo_inventado_no_perfil(ficha_em_branco):
     d["perfis"]["SU-001"] = {"funcao": "MARCO_SUPERIOR", "peso_kg_m": 1.2}
     r = fontes.validar_estrutura_ficha(d, "x")
     assert not r.ok
-    assert any("campos desconhecidos" in f["regra"] for f in r.falhas)
+    assert any("campo desconhecido" in f["regra"] for f in r.falhas)
 
 
 def test_nao_inventa_campo_ausente(ficha_em_branco):
@@ -270,7 +303,7 @@ def test_nao_inventa_campo_ausente(ficha_em_branco):
     assert caso.largura_total_mm is None
     assert caso.altura_total_mm is None
     assert caso.cortes == () and caso.vidros == () and caso.acessorios == ()
-    assert caso.estado_validacao != ESTADO_CASO_VALIDADO
+    assert caso.estado_validacao == ESTADO_CASO_AGUARDANDO
 
 
 def test_extrai_pendencias(ficha_em_branco):
@@ -283,13 +316,13 @@ def test_extrai_pendencias(ficha_em_branco):
 
 
 def test_extrai_confirmacoes(ficha_em_branco):
-    assert fontes.extrair_decisoes_confirmadas(ficha_em_branco) == ()
+    assert fontes.extrair_campos_preenchidos(ficha_em_branco) == ()
     d = copy.deepcopy(ficha_em_branco)
     d["vista"]["lado_de_referencia"] = "interno"
     d["perfis"]["SU-001"] = {"funcao": "MARCO_SUPERIOR", "quantidade": 1,
                              "orientacao": "horizontal", "observacoes": None,
                              "fonte": "especialista_de_dominio"}
-    dec = fontes.extrair_decisoes_confirmadas(d)
+    dec = fontes.extrair_campos_preenchidos(d)
     campos = {(x["escopo"], x["campo"]) for x in dec}
     assert ("vista", "lado_de_referencia") in campos
     assert ("perfis.SU-001", "funcao") in campos
@@ -306,8 +339,8 @@ def test_ficha_preenchida_vira_caso_real(ficha_em_branco):
     assert caso.identificador == "CASO_B_MEDIO"
     assert caso.largura_total_mm == Decimal("1500")
     assert caso.altura_total_mm == Decimal("1200.5")
-    assert caso.estado_validacao == ESTADO_CASO_RECEBIDO, \
-        "receber não é validar"
+    assert caso.estado_validacao == ESTADO_CASO_PARCIAL, \
+        "sem lista de corte, o caso ainda é parcial"
 
 
 def test_ficha_em_json_equivale_a_yaml(ficha_em_branco, tmp_path):
@@ -358,6 +391,26 @@ def test_gate_de_producao_bloqueado_inicialmente(receita, biblioteca):
     assert rel["gates"]["producao"]["aberto"] is False
 
 
+_TRES_CASOS = (_caso_validado("CASO_A_PEQUENO", "800", "600"),
+               _caso_validado("CASO_B_MEDIO", "1500", "1200"),
+               _caso_validado("CASO_C_GRANDE", "2400", "2100"))
+
+
+def _receita_completa(regra=None):
+    """Receita com tudo confirmado — o ponto de partida dos testes de gate."""
+    regra = regra or RegraDimensional(
+        identificador="R", descricao="d", alvo="largura_folha",
+        expressao="PLACEHOLDER_DE_TESTE", variaveis=("largura_total_mm",),
+        estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
+        fontes=(_fonte(estado=EstadoConhecimento.CONFIRMADO_CASO_REAL),))
+    return ReceitaTipologia(
+        codigo="TESTE", nome="t", sistema="Suprema", quantidade_folhas=2,
+        componentes=tuple(_componente_confirmado(p) for p in PERFIS),
+        regras_corte=(regra,), regras_vidro=(),
+        regras_acessorios=(_regra_acessorio_confirmada(),),
+        estado="CONFIRMADA")
+
+
 def test_producao_exige_casos_reais_validados_e_aprovacao(biblioteca):
     """Mesmo com tudo confirmado, sem janela real fabricada não há produção."""
     from dataclasses import replace
@@ -366,27 +419,23 @@ def test_producao_exige_casos_reais_validados_e_aprovacao(biblioteca):
         expressao="PLACEHOLDER_DE_TESTE", variaveis=("largura_total_mm",),
         estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
         fontes=(_fonte(estado=EstadoConhecimento.CONFIRMADO_CASO_REAL),))
-    completa = ReceitaTipologia(
-        codigo="TESTE", nome="t", sistema="Suprema", quantidade_folhas=2,
-        componentes=tuple(_componente_confirmado(p) for p in PERFIS),
-        regras_corte=(regra,), regras_vidro=(), estado="CONFIRMADA")
+    completa = _receita_completa(regra)
     assert validar.validar_prontidao_para_calculo(completa, biblioteca).ok
     r = validar.validar_prontidao_para_producao(completa, biblioteca)
     assert not r.ok
-    assert any("casos reais" in f["regra"] for f in r.falhas)
-    assert any("especialista" in f["regra"] for f in r.falhas)
+    assert any("canônicos ausentes" in f["regra"] for f in r.falhas)
+    assert any("aprovação do especialista" in f["regra"] for f in r.falhas)
 
-    casos = tuple(CasoRealFabricacao(identificador=i,
-                                     estado_validacao=ESTADO_CASO_VALIDADO)
-                  for i in ("CASO_A_PEQUENO", "CASO_B_MEDIO", "CASO_C_GRANDE"))
-    com_casos = replace(completa, casos_reais=casos,
-                        decisoes_do_especialista=("aprovado em 2026-08-10",))
+    com_casos = replace(completa, casos_reais=_TRES_CASOS,
+                        aprovacoes=(_aprovacao(ESCOPO_APROVACAO_RECEITA),
+                                    _aprovacao(ESCOPO_APROVACAO_FORMULAS)))
     assert validar.validar_prontidao_para_producao(com_casos, biblioteca).ok
 
 
 def test_relatorio_lista_todas_as_pendencias(receita, biblioteca):
     rel = prontidao.gerar_relatorio_prontidao(receita, biblioteca)
     assert len(rel["componentes"]["pendentes"]) == 8
+    assert len(rel["acessorios"]["pendentes"]) == len(receita.regras_acessorios)
     assert len(rel["regras"]["pendentes"]) == 9
     assert rel["componentes"]["confirmados"] == []
     assert rel["regras"]["confirmadas"] == []
@@ -478,11 +527,14 @@ def test_receita_preliminar_e_imutavel(receita):
 
 def test_nenhuma_formula_de_fabricacao_foi_declarada(receita):
     """A prova explícita de que esta sprint não inventou engenharia."""
-    for regra in receita.todas_as_regras:
+    for regra in receita.regras_dimensionais:
         assert regra.expressao is None, regra.identificador
         assert regra.variaveis == ()
         assert regra.estado is EstadoConhecimento.PENDENTE
-    assert receita.regras_acessorios == ()
+    for acessorio in receita.regras_acessorios:
+        assert acessorio.quantidade_expressao is None, acessorio.identificador
+        assert acessorio.posicao is None
+        assert acessorio.estado is EstadoConhecimento.PENDENTE
     assert receita.estado == ESTADO_RECEITA_PRELIMINAR
 
 
@@ -508,3 +560,462 @@ def test_cli_roda_sem_erro(argv, capsys):
     from composicao import cli
     assert cli.main(argv) == 0
     assert capsys.readouterr().out.strip()
+
+
+# ===========================================================================
+# Regressões da auditoria corretiva
+#
+# Cada teste aqui trava um erro que a auditoria encontrou. O padrão comum:
+# dado desconhecido virando informação, dado real sendo descartado, ou
+# "preenchido" sendo lido como "confirmado".
+# ===========================================================================
+
+def test_ficha_vazia_nao_cria_caso_a_pequeno(ficha_em_branco):
+    """O bug em uma linha: identificador vazio virava CASO_A_PEQUENO — o
+    conversor inventava justamente o dado que a ficha existe para coletar."""
+    caso = fontes.converter_ficha_em_caso_real(ficha_em_branco, "modelo")
+    assert caso.identificador is None
+    assert caso.identificador != "CASO_A_PEQUENO"
+
+
+def test_identificador_vazio_continua_pendencia(ficha_em_branco):
+    pend = fontes.extrair_pendencias(ficha_em_branco)
+    assert {"escopo": "caso_real", "campo": "identificador"} in [
+        {"escopo": p["escopo"], "campo": p["campo"]} for p in pend]
+
+
+def test_cli_mostra_nao_informado_para_caso_sem_identificador(capsys):
+    from composicao import cli
+    assert cli.main(["validar-ficha", str(MODELO_FICHA)]) == 0
+    saida = capsys.readouterr().out
+    assert "caso real: NAO_INFORMADO" in saida
+    assert "CASO_A_PEQUENO" not in saida
+
+
+def test_caso_real_recusa_identificador_desconhecido():
+    with pytest.raises(ReceitaErro, match="identificador de caso desconhecido"):
+        CasoRealFabricacao(identificador="CASO_Z")
+
+
+def test_codigo_de_tipologia_diferente_reprova(ficha_em_branco):
+    d = copy.deepcopy(ficha_em_branco)
+    d["tipologia"]["codigo"] = "SUPREMA_CORRER_3F"
+    r = fontes.validar_estrutura_ficha(d, "x")
+    assert not r.ok
+    assert any("código de tipologia divergente" in f["regra"] for f in r.falhas)
+
+
+@pytest.mark.parametrize("versao", [None, 0, 2, "1"])
+def test_versao_de_ficha_desconhecida_reprova(ficha_em_branco, versao):
+    d = copy.deepcopy(ficha_em_branco)
+    if versao is None:
+        d.pop("versao_ficha")
+    else:
+        d["versao_ficha"] = versao
+    r = fontes.validar_estrutura_ficha(d, "x")
+    assert not r.ok
+    assert any("versao_ficha" in f["alvo"] for f in r.falhas)
+
+
+def test_campo_desconhecido_na_raiz_reprova(ficha_em_branco):
+    d = copy.deepcopy(ficha_em_branco)
+    d["cortess"] = []
+    r = fontes.validar_estrutura_ficha(d, "x")
+    assert not r.ok
+    falha = next(f for f in r.falhas if "cortess" in str(f["alvo"]))
+    assert falha["esperado"] == "cortes", "a mensagem tem de sugerir o nome certo"
+
+
+def test_campo_desconhecido_em_vista_reprova(ficha_em_branco):
+    d = copy.deepcopy(ficha_em_branco)
+    d["vista"]["lado_de_referencias"] = "interno"
+    r = fontes.validar_estrutura_ficha(d, "x")
+    assert not r.ok
+    falha = next(f for f in r.falhas if "lado_de_referencias" in str(f["alvo"]))
+    assert falha["esperado"] == "lado_de_referencia"
+
+
+def test_campo_desconhecido_em_item_de_corte_reprova(ficha_em_branco):
+    d = copy.deepcopy(ficha_em_branco)
+    d["cortes"] = [{"perfil": "SU-001", "comprimento_mmm": 1000}]
+    r = fontes.validar_estrutura_ficha(d, "x")
+    assert not r.ok
+    falha = next(f for f in r.falhas if "comprimento_mmm" in str(f["alvo"]))
+    assert falha["esperado"] == "comprimento_mm"
+
+
+def test_funcao_de_perfil_invalida_reprova(ficha_em_branco):
+    d = copy.deepcopy(ficha_em_branco)
+    d["perfis"]["SU-001"] = {"funcao": "MARCO_SUPERIORR"}
+    r = fontes.validar_estrutura_ficha(d, "x")
+    assert not r.ok
+    falha = next(f for f in r.falhas if "funcao" in str(f["alvo"]))
+    assert falha["esperado"] == "MARCO_SUPERIOR"
+
+
+@pytest.mark.parametrize("secao,valor", [
+    ("vista", "interno"), ("vista", ["a"]),
+    ("perfis", ["SU-001"]), ("perfis", "SU-001"),
+    ("caso_real", "1500x1200"), ("cortes", {"perfil": "SU-001"}),
+])
+def test_ficha_malformada_nao_derruba_a_cli(ficha_em_branco, secao, valor,
+                                            tmp_path, capsys):
+    """Erro de preenchimento comum não pode virar traceback: quem preenche a
+    ficha é o especialista, não um programador."""
+    d = copy.deepcopy(ficha_em_branco)
+    d[secao] = valor
+    p = tmp_path / "ficha.json"
+    p.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+
+    # extratores defensivos por contrato
+    assert isinstance(fontes.extrair_campos_preenchidos(d), tuple)
+    assert isinstance(fontes.extrair_pendencias(d), tuple)
+    assert isinstance(fontes.extrair_decisoes_confirmadas(d), tuple)
+
+    from composicao import cli
+    assert cli.main(["validar-ficha", str(p)]) != 0
+    assert "Traceback" not in capsys.readouterr().out
+
+
+def test_fonte_com_estado_invalido_nao_gera_traceback(ficha_em_branco, tmp_path,
+                                                      capsys):
+    d = copy.deepcopy(ficha_em_branco)
+    d["fontes"] = [{"tipo": "foto", "referencia": "curadoria/x.jpg",
+                    "estado": "CONFIRMADISSIMO"}]
+    p = tmp_path / "ficha.json"
+    p.write_text(json.dumps(d, ensure_ascii=False), encoding="utf-8")
+    from composicao import cli
+    assert cli.main(["validar-ficha", str(p)]) != 0
+    assert "Traceback" not in capsys.readouterr().out
+    r = fontes.validar_estrutura_ficha(d, "x")
+    assert any("estado de conhecimento desconhecido" in f["regra"]
+               for f in r.falhas)
+
+
+def test_conversao_preserva_todas_as_secoes(ficha_em_branco):
+    """A conversão antiga descartava vista, perfis, baguetes, folgas,
+    sobreposições e dúvidas — exatamente o que a visita à serralheria produz."""
+    d = copy.deepcopy(ficha_em_branco)
+    d["caso_real"] = {"identificador": "CASO_A_PEQUENO",
+                      "largura_total_mm": 800, "altura_total_mm": 600}
+    d["vista"] = {"lado_de_referencia": "interno",
+                  "folha_trilho_interno": "folha 1",
+                  "folha_trilho_externo": "folha 2",
+                  "sentidos_de_movimento": "folha 1 abre à direita",
+                  "posicao_do_fecho": "montante central da folha 1"}
+    d["perfis"]["SU-001"] = {"funcao": "MARCO_SUPERIOR", "quantidade": 1,
+                             "orientacao": "horizontal",
+                             "observacoes": "trilho duplo",
+                             "fonte": "lista_de_corte_real"}
+    d["cortes"] = [{"perfil": "SU-001", "comprimento_mm": 760,
+                    "quantidade": 1, "angulo": "90"}]
+    d["vidros"] = [{"folha": "1", "largura_mm": 350, "altura_mm": 520,
+                    "espessura_mm": 6}]
+    d["baguetes"] = [{"perfil": "SU-053", "comprimento_mm": 340,
+                      "quantidade": 2, "lado_de_encaixe": "interno"}]
+    d["acessorios"] = [{"item": "roldana", "quantidade": 4,
+                        "posicao": "base de cada folha"}]
+    d["folgas"] = [{"entre": "folha e marco lateral", "valor_mm": 3,
+                    "medido_por": "paquimetro"}]
+    d["sobreposicoes"] = [{"entre": "folha 1 e folha 2", "valor_mm": 25}]
+    d["croquis"] = [{"tipo": "croqui", "referencia": "curadoria/campo/a.jpg",
+                     "descricao": "rabisco do serralheiro"}]
+    d["fontes"] = [{"tipo": "lista_de_corte_real",
+                    "referencia": "curadoria/campo/lista_a.pdf",
+                    "descricao": "lista real", "estado": "CONFIRMADO_CASO_REAL",
+                    "responsavel": "Bruno", "data": "2026-08-10"}]
+    d["duvidas"] = ["confirmar se a escova é a mesma nos dois trilhos"]
+
+    caso = fontes.converter_ficha_em_caso_real(d, "x")
+    assert caso.vista.lado_de_referencia == "interno"
+    assert caso.vista.posicao_do_fecho == "montante central da folha 1"
+    su001 = next(p for p in caso.perfis if p.codigo_perfil == "SU-001")
+    assert su001.funcao is PapelComponente.MARCO_SUPERIOR
+    assert su001.quantidade == 1 and su001.orientacao == "horizontal"
+    assert caso.cortes[0].comprimento_mm == Decimal("760")
+    assert caso.vidros[0].espessura_mm == Decimal("6")
+    assert caso.baguetes[0].lado_de_encaixe == "interno"
+    assert caso.acessorios[0].quantidade == 4
+    assert caso.folgas[0].valor_mm == Decimal("3")
+    assert caso.sobreposicoes[0].valor_mm == Decimal("25")
+    assert caso.croquis and caso.fontes and caso.duvidas
+    assert caso.estado_validacao == ESTADO_CASO_RECEBIDO
+    # nada se perdeu no caminho
+    for secao in ("vista", "perfis", "cortes", "vidros", "baguetes",
+                  "acessorios", "folgas", "sobreposicoes", "croquis",
+                  "fontes", "duvidas"):
+        assert secao in caso.secoes_preenchidas, secao
+
+
+def test_dado_fora_do_schema_vai_para_dados_adicionais():
+    """Item de lista com campo extra reprova a estrutura; mas se a conversão
+    for chamada com ele, o dado é preservado, nunca descartado."""
+    item = {"perfil": "SU-001", "comprimento_mm": 700, "medido_com": "trena"}
+    from composicao.fontes import CAMPOS_CORTE, _extras
+    assert _extras(item, CAMPOS_CORTE) == (("medido_com", "trena"),)
+
+
+def test_ficha_apenas_com_folga_e_recebido_parcial(ficha_em_branco):
+    """Uma ficha só com folgas medidas trouxe dado de campo real. Chamá-la de
+    AGUARDANDO_DADOS apagaria a visita à serralheria."""
+    d = copy.deepcopy(ficha_em_branco)
+    d["folgas"] = [{"entre": "folha e marco", "valor_mm": 3,
+                    "medido_por": "paquimetro"}]
+    caso = fontes.converter_ficha_em_caso_real(d, "x")
+    assert caso.estado_validacao == ESTADO_CASO_PARCIAL
+    assert "folgas" in caso.secoes_preenchidas
+
+
+def test_ficha_apenas_com_foto_e_recebido_parcial(ficha_em_branco):
+    d = copy.deepcopy(ficha_em_branco)
+    d["fontes"] = [{"tipo": "foto", "referencia": "curadoria/campo/frente.jpg",
+                    "descricao": "vista interna", "estado": "CONFIRMADO_CASO_REAL",
+                    "responsavel": "Bruno", "data": "2026-08-10"}]
+    caso = fontes.converter_ficha_em_caso_real(d, "x")
+    assert caso.estado_validacao == ESTADO_CASO_PARCIAL
+    assert caso.fontes and caso.fontes[0].tipo == "foto"
+
+
+def test_preenchido_nao_e_confirmado(ficha_em_branco):
+    """Sem fonte declarada, um campo preenchido é rascunho — não decisão."""
+    d = copy.deepcopy(ficha_em_branco)
+    d["perfis"]["SU-001"] = {"funcao": "MARCO_SUPERIOR", "quantidade": 2,
+                             "orientacao": "horizontal"}
+    assert len(fontes.extrair_campos_preenchidos(d)) >= 3
+    assert fontes.extrair_decisoes_confirmadas(d) == ()
+
+    d["perfis"]["SU-001"]["fonte"] = "especialista_de_dominio"
+    d["fontes"] = [{"tipo": "especialista_de_dominio",
+                    "referencia": "curadoria/handoffs/e4d/estado_inicial_e4d.md",
+                    "descricao": "arbitragem", "estado": "CONFIRMADO_ESPECIALISTA",
+                    "responsavel": "Bruno", "data": "2026-08-10"}]
+    confirmadas = fontes.extrair_decisoes_confirmadas(d)
+    assert {c["campo"] for c in confirmadas} == {"funcao", "quantidade",
+                                                 "orientacao"}
+    assert all(c["responsavel"] == "Bruno" for c in confirmadas)
+
+
+def test_confirmacao_do_especialista_sem_autoria_nao_conta(ficha_em_branco):
+    d = copy.deepcopy(ficha_em_branco)
+    d["perfis"]["SU-001"] = {"funcao": "MARCO_SUPERIOR",
+                             "fonte": "especialista_de_dominio"}
+    d["fontes"] = [{"tipo": "especialista_de_dominio",
+                    "referencia": "curadoria/handoffs/e4d/estado_inicial_e4d.md",
+                    "descricao": "sem autor", "estado": "CONFIRMADO_ESPECIALISTA"}]
+    assert fontes.extrair_decisoes_confirmadas(d) == ()
+
+
+def test_componente_confirmado_pelo_especialista_sem_autoria_reprova(biblioteca):
+    """Papel de perfil "confirmado pelo especialista" sem dizer quem confirmou
+    não pode abrir o cálculo."""
+    from dataclasses import replace
+    sem_autor = _componente_confirmado(
+        fontes=(_fonte(responsavel=None),))
+    assert not sem_autor.confirmado
+    assert any("autoria" in p for p in sem_autor.pendencias())
+
+    receita = replace(_receita_completa(),
+                      componentes=(sem_autor,) + tuple(
+                          _componente_confirmado(p) for p in PERFIS[1:]))
+    r = validar.validar_prontidao_para_calculo(receita, biblioteca)
+    assert not r.ok
+    assert any("autoria" in f["regra"] for f in r.falhas)
+
+
+def test_calculo_bloqueado_sem_regras_de_acessorios(biblioteca):
+    """Lista de fabricação completa em perfis e vidro, e silenciosa sobre
+    quantas roldanas a janela leva, não é lista de fabricação."""
+    from dataclasses import replace
+    sem_acessorios = replace(_receita_completa(), regras_acessorios=())
+    r = validar.validar_prontidao_para_calculo(sem_acessorios, biblioteca)
+    assert not r.ok
+    assert any("acessório" in f["regra"] for f in r.falhas)
+
+    pendente = replace(_receita_completa(),
+                       regras_acessorios=(RegraAcessorio(
+                           identificador="X", item="roldanas"),))
+    r = validar.validar_prontidao_para_calculo(pendente, biblioteca)
+    assert not r.ok
+    assert any("quantidade ou posição" in f["regra"] for f in r.falhas)
+
+
+def test_acessorio_confirmado_exige_quantidade_e_posicao():
+    with pytest.raises(ReceitaErro, match="sem quantidade"):
+        RegraAcessorio(identificador="X", item="roldanas",
+                       estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
+                       fontes=(_fonte(estado=EstadoConhecimento.CONFIRMADO_CASO_REAL),))
+    with pytest.raises(ReceitaErro, match="sem posição"):
+        RegraAcessorio(identificador="X", item="roldanas",
+                       quantidade_expressao="PLACEHOLDER",
+                       estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
+                       fontes=(_fonte(estado=EstadoConhecimento.CONFIRMADO_CASO_REAL),))
+
+
+def test_tres_casos_duplicados_nao_abrem_producao(biblioteca):
+    """Uma fórmula conferida três vezes contra a mesma janela não foi
+    conferida."""
+    from dataclasses import replace
+    repetido = _caso_validado("CASO_A_PEQUENO", "800", "600")
+    receita = replace(_receita_completa(),
+                      casos_reais=(repetido, repetido, repetido),
+                      aprovacoes=(_aprovacao(ESCOPO_APROVACAO_RECEITA),
+                                  _aprovacao(ESCOPO_APROVACAO_FORMULAS)))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("duplicados" in f["regra"] for f in r.falhas)
+    assert any("canônicos ausentes" in f["regra"] for f in r.falhas)
+
+
+def test_tres_casos_sem_a_b_c_nao_abrem_producao(biblioteca):
+    from dataclasses import replace
+    receita = replace(_receita_completa(),
+                      casos_reais=(_caso_validado("CASO_A_PEQUENO", "800", "600"),
+                                   _caso_validado("CASO_B_MEDIO", "1500", "1200")),
+                      aprovacoes=(_aprovacao(ESCOPO_APROVACAO_RECEITA),
+                                  _aprovacao(ESCOPO_APROVACAO_FORMULAS)))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    falha = next(f for f in r.falhas if "canônicos ausentes" in f["regra"])
+    assert falha["encontrado"] == ["CASO_C_GRANDE"]
+
+
+def test_casos_com_dimensoes_identicas_nao_abrem_producao(biblioteca):
+    from dataclasses import replace
+    receita = replace(_receita_completa(),
+                      casos_reais=(_caso_validado("CASO_A_PEQUENO", "1500", "1200"),
+                                   _caso_validado("CASO_B_MEDIO", "1500", "1200"),
+                                   _caso_validado("CASO_C_GRANDE", "2400", "2100")),
+                      aprovacoes=(_aprovacao(ESCOPO_APROVACAO_RECEITA),
+                                  _aprovacao(ESCOPO_APROVACAO_FORMULAS)))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("dimensões idênticas" in f["regra"] for f in r.falhas)
+
+
+def test_caso_validado_sem_lista_de_corte_nao_abre_producao(biblioteca):
+    from dataclasses import replace
+    incompleto = replace(_caso_validado("CASO_C_GRANDE", "2400", "2100"),
+                         cortes=())
+    receita = replace(_receita_completa(),
+                      casos_reais=_TRES_CASOS[:2] + (incompleto,),
+                      aprovacoes=(_aprovacao(ESCOPO_APROVACAO_RECEITA),
+                                  _aprovacao(ESCOPO_APROVACAO_FORMULAS)))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("sem lista de corte" in f["regra"] for f in r.falhas)
+
+
+def test_aprovacao_como_string_solta_nao_abre_producao(biblioteca):
+    """Aprovação sem autor, data e escopo não pode liberar corte de alumínio."""
+    from dataclasses import replace
+    receita = replace(_receita_completa(), casos_reais=_TRES_CASOS,
+                      aprovacoes=())
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert sum("aprovação do especialista" in f["regra"] for f in r.falhas) == 2
+
+    so_receita = replace(receita, aprovacoes=(_aprovacao(ESCOPO_APROVACAO_RECEITA),))
+    r = validar.validar_prontidao_para_producao(so_receita, biblioteca)
+    assert not r.ok, "aprovar a receita não aprova as fórmulas"
+
+
+@pytest.mark.parametrize("campo", ["decisao", "responsavel", "data", "escopo"])
+def test_aprovacao_exige_todos_os_campos(campo):
+    base = dict(decisao="ok", responsavel="Bruno", data="2026-08-10",
+                fonte=_fonte(), escopo=ESCOPO_APROVACAO_RECEITA)
+    base[campo] = ""
+    with pytest.raises(ReceitaErro):
+        AprovacaoEspecialista(**base)
+
+
+@pytest.mark.parametrize("referencia", [
+    "/home/bruno/foto.jpg", "C:/dados/foto.jpg", "C:\\dados\\foto.jpg",
+    "../fora-do-repositorio/foto.jpg", "curadoria/../../fora/foto.jpg",
+    "~/foto.jpg",
+])
+def test_referencia_de_arquivo_insegura_e_rejeitada(referencia):
+    with pytest.raises(ReceitaErro):
+        FonteEvidencia(tipo="foto", referencia=referencia, descricao="",
+                       estado=EstadoConhecimento.PENDENTE)
+
+
+@pytest.mark.parametrize("referencia,forma", [
+    ("https://exemplo.com/catalogo.pdf", "url"),
+    ("PEDIDO-2026-0451", "identificador_externo"),
+])
+def test_identificador_externo_e_url_nao_sao_tratados_como_caminho(referencia,
+                                                                   forma):
+    """A regra de caminho relativo vale para arquivo; um DOI ou uma URL não são
+    caminhos e não podem ser recusados por isso."""
+    f = FonteEvidencia(tipo="software_externo", referencia=referencia,
+                       descricao="", estado=EstadoConhecimento.PENDENTE,
+                       forma_referencia=forma)
+    assert f.referencia == referencia
+
+
+def test_referencia_relativa_e_aceita():
+    f = FonteEvidencia(tipo="foto", referencia="curadoria/campo/a/frente.jpg",
+                       descricao="", estado=EstadoConhecimento.PENDENTE)
+    assert f.forma_referencia == "arquivo"
+
+
+def test_ficha_rejeita_referencia_insegura(ficha_em_branco):
+    d = copy.deepcopy(ficha_em_branco)
+    d["fontes"] = [{"tipo": "foto", "referencia": "../fora/foto.jpg"}]
+    r = fontes.validar_estrutura_ficha(d, "x")
+    assert not r.ok
+    assert any("referência insegura" in f["regra"] for f in r.falhas)
+
+
+def test_data_fora_do_formato_reprova(ficha_em_branco):
+    d = copy.deepcopy(ficha_em_branco)
+    d["fontes"] = [{"tipo": "foto", "referencia": "curadoria/a.jpg",
+                    "data": "10/08/2026"}]
+    r = fontes.validar_estrutura_ficha(d, "x")
+    assert not r.ok
+    assert any("data fora do formato" in f["regra"] for f in r.falhas)
+
+
+def test_manifesto_e4c_nao_e_catalogo_nem_tabela_de_fabricacao():
+    """O manifesto prova que os perfis existem — não diz nada sobre corte,
+    montagem ou papel na janela. Classificá-lo como catálogo criaria
+    procedência enganosa."""
+    fonte = receita_mod.FONTE_PROMOCAO_E4C
+    assert fonte.tipo == "manifesto_promocao"
+    assert fonte.tipo not in ("catalogo", "tabela_de_fabricacao")
+    assert fonte.estado is EstadoConhecimento.CONFIRMADO_BIBLIOTECA_OFICIAL
+    assert "NÃO PROVA" in fonte.descricao
+    for palavra in ("papel", "quantidade", "orientação", "corte", "vidro",
+                    "acessório"):
+        assert palavra in fonte.descricao
+
+
+def test_pyyaml_declarado_na_fronteira_correta():
+    """`composicao/` é pacote de aplicação; declarar sua dependência num
+    arquivo que diz "nunca dependências de runtime" seria contradição."""
+    runtime = (RAIZ / "requirements.txt").read_text(encoding="utf-8").lower()
+    curadoria = (RAIZ / "requirements-curadoria.txt").read_text(encoding="utf-8").lower()
+    assert "pyyaml" in runtime
+    assert "pyyaml" not in curadoria
+
+
+def test_cli_recomendada_funciona_com_as_dependencias_documentadas():
+    """Prova de ambiente: o comando que o handoff recomenda roda de verdade."""
+    import importlib
+    assert importlib.import_module("yaml")
+    from composicao import cli
+    assert cli.main(["validar-ficha", str(MODELO_FICHA)]) == 0
+
+
+def test_modelo_de_ficha_continua_valido_e_totalmente_pendente(ficha_em_branco):
+    """O modelo distribuído tem de continuar válido e sem nenhuma resposta —
+    um modelo com campo preenchido induziria resposta."""
+    assert ficha_em_branco["versao_ficha"] == fontes.VERSAO_FICHA_SUPORTADA
+    assert ficha_em_branco["tipologia"]["codigo"] == fontes.CODIGO_TIPOLOGIA_ESPERADO
+    r = fontes.validar_estrutura_ficha(ficha_em_branco, "modelo")
+    assert r.ok, r.descrever()
+    assert fontes.extrair_campos_preenchidos(ficha_em_branco) == ()
+    assert fontes.extrair_decisoes_confirmadas(ficha_em_branco) == ()
+    caso = fontes.converter_ficha_em_caso_real(ficha_em_branco, "modelo")
+    assert caso.secoes_preenchidas == ()
+    assert caso.estado_validacao == ESTADO_CASO_AGUARDANDO

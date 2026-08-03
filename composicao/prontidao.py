@@ -10,8 +10,7 @@ conhecimento numa lista de perguntas objetivas.
 """
 from __future__ import annotations
 
-from .modelos import (ESTADOS_CONFIRMADOS, ReceitaTipologia,
-                      ESTADO_CASO_VALIDADO)
+from .modelos import ESTADO_CASO_VALIDADO, ReceitaTipologia
 from .receita import PERGUNTAS_ABERTAS, variaveis_disponiveis
 from .validar import (validar_prontidao_para_calculo,
                       validar_prontidao_para_producao,
@@ -61,12 +60,20 @@ def gerar_relatorio_prontidao(receita: ReceitaTipologia,
                   "pendencias": list(c.pendencias())}
                  for c in receita.componentes if c.pendencias()]
 
-    regras_confirmadas = [r.identificador for r in receita.todas_as_regras
+    regras_confirmadas = [r.identificador for r in receita.regras_dimensionais
                           if r.calculavel]
     regras_pendentes = [{"regra": r.identificador, "alvo": r.alvo,
                          "estado": r.estado.value,
                          "expressao": r.expressao}
-                        for r in receita.todas_as_regras if not r.calculavel]
+                        for r in receita.regras_dimensionais if not r.calculavel]
+    acessorios_confirmados = [a.identificador for a in receita.regras_acessorios
+                              if a.calculavel]
+    acessorios_pendentes = [{"regra": a.identificador, "item": a.item,
+                             "estado": a.estado.value,
+                             "quantidade": a.quantidade_expressao,
+                             "posicao": a.posicao}
+                            for a in receita.regras_acessorios
+                            if not a.calculavel]
 
     visual = validar_prontidao_para_visualizacao(receita, biblioteca)
     calculo = validar_prontidao_para_calculo(receita, biblioteca)
@@ -83,7 +90,10 @@ def gerar_relatorio_prontidao(receita: ReceitaTipologia,
                         "total": len(receita.componentes)},
         "regras": {"confirmadas": regras_confirmadas,
                    "pendentes": regras_pendentes,
-                   "total": len(receita.todas_as_regras)},
+                   "total": len(receita.regras_dimensionais)},
+        "acessorios": {"confirmados": acessorios_confirmados,
+                       "pendentes": acessorios_pendentes,
+                       "total": len(receita.regras_acessorios)},
         "casos_reais": {
             "recebidos": [c.identificador for c in receita.casos_reais],
             "validados": [c.identificador for c in receita.casos_reais
@@ -94,7 +104,8 @@ def gerar_relatorio_prontidao(receita: ReceitaTipologia,
             "calculo": _resumo_gate(calculo, "calculo"),
             "producao": _resumo_gate(producao, "producao"),
         },
-        "decisoes_do_especialista": list(receita.decisoes_do_especialista),
+        "aprovacoes_do_especialista": [a.para_dict() for a in receita.aprovacoes],
+        "casos_reais_detalhe": [c.para_dict() for c in receita.casos_reais],
         "perguntas_abertas": list(receita.perguntas_abertas),
         "variaveis_disponiveis": list(variaveis_disponiveis()),
         "checklist_serralheria": list(CHECKLIST_SERRALHERIA),
@@ -141,6 +152,14 @@ def relatorio_em_markdown(relatorio: dict) -> str:
                f"- pendentes: {len(r['pendentes'])}", ""]
     for p in r["pendentes"]:
         linhas.append(f"  - `{p['alvo']}` — {p['estado']}, sem fórmula")
+
+    a = relatorio["acessorios"]
+    linhas += ["", "## Acessórios", "",
+               f"- confirmados: {len(a['confirmados'])} de {a['total']}",
+               f"- pendentes: {len(a['pendentes'])}", ""]
+    for p in a["pendentes"]:
+        linhas.append(f"  - `{p['item']}` — {p['estado']}, sem quantidade "
+                      f"nem posição")
 
     cr = relatorio["casos_reais"]
     linhas += ["", "## Casos reais", "",

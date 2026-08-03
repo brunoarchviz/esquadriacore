@@ -14,9 +14,10 @@ erro só apareceria no alumínio cortado.
 from __future__ import annotations
 
 from .fontes import PERFIS_SUPREMA_E4C, referencia_oficial
-from .modelos import (ESTADO_RECEITA_PRELIMINAR, ComponenteReceita,
-                      EstadoConhecimento, FonteEvidencia, PapelComponente,
-                      ReceitaTipologia, RegraDimensional)
+from .modelos import (ESTADO_RECEITA_PRELIMINAR, ITENS_DE_ACESSORIO,
+                      ComponenteReceita, EstadoConhecimento, FonteEvidencia,
+                      PapelComponente, ReceitaTipologia, RegraAcessorio,
+                      RegraDimensional)
 
 CODIGO_TIPOLOGIA = "SUPREMA_CORRER_2F"
 NOME_TIPOLOGIA = "Janela Suprema de correr com duas folhas"
@@ -25,13 +26,19 @@ QUANTIDADE_FOLHAS = 2
 
 # A única coisa CONFIRMADA nesta rodada: que os oito perfis existem na
 # biblioteca oficial, promovidos e auditados no E.4C.
+#
+# O manifesto NÃO é catálogo nem tabela de fabricação — chamá-lo assim daria a
+# entender que ele diz algo sobre corte ou montagem. Ele é o registro do evento
+# de promoção, e prova exatamente duas coisas: que os oito perfis existem na
+# biblioteca oficial, e que os IDs GEO e as associações estão aprovados.
 FONTE_PROMOCAO_E4C = FonteEvidencia(
-    tipo="tabela_de_fabricacao",
+    tipo="manifesto_promocao",
     referencia="curadoria/promocoes/e4c/manifesto_promocao_e4b.json",
     descricao=("Promoção oficial E.4C: oito geometrias e oito associações "
-               "ALCOA-SU-xxx na biblioteca. Confirma existência e identidade "
-               "dos perfis — NÃO confirma papel funcional na tipologia."),
-    estado=EstadoConhecimento.CONFIRMADO_CATALOGO,
+               "ALCOA-SU-xxx na biblioteca. PROVA: os perfis existem, com IDs "
+               "e associações aprovados. NÃO PROVA: papel na janela, "
+               "quantidade, orientação, corte, vidro ou acessório."),
+    estado=EstadoConhecimento.CONFIRMADO_BIBLIOTECA_OFICIAL,
     data="2026-08-02",
 )
 
@@ -61,7 +68,8 @@ PERGUNTAS_ABERTAS = (
     "Quais as folgas de montagem entre folha e marco, e entre as duas folhas?",
     "Qual a sobreposição no encontro central?",
     "Como o vidro é dimensionado a partir da folha (folga de encaixe, calços)?",
-    "Que acessórios entram, em que quantidade e em que posição?",
+    "Que acessórios entram (roldanas, fecho, contra-fecho, escovas, vedações, "
+    "fixações), em que quantidade e em que posição?",
     "Qual folha corre no trilho interno e qual no externo, vista de que lado?",
     "Onde fica o fecho e qual o sentido de movimento de cada folha?",
 )
@@ -102,6 +110,21 @@ def _regra_pendente(alvo: str, descricao: str, grupo: str) -> RegraDimensional:
     )
 
 
+def _regra_acessorio_pendente(item: str) -> RegraAcessorio:
+    """Registra a PERGUNTA sobre um acessório, sem afirmar modelo ou quantidade.
+
+    Deixar a lista vazia seria pior: o gate de cálculo poderia abrir sem que
+    ninguém tivesse perguntado quantas roldanas a janela leva."""
+    return RegraAcessorio(
+        identificador=f"{CODIGO_TIPOLOGIA}:acessorio:{item}",
+        item=item,
+        quantidade_expressao=None,
+        posicao=None,
+        estado=EstadoConhecimento.PENDENTE,
+        fontes=(),
+    )
+
+
 def construir_receita_preliminar() -> ReceitaTipologia:
     """Receita preliminar — determinística e sem efeito colateral.
 
@@ -117,11 +140,12 @@ def construir_receita_preliminar() -> ReceitaTipologia:
         componentes=componentes,
         regras_corte=regras_corte,
         regras_vidro=regras_vidro,
-        regras_acessorios=(),
+        regras_acessorios=tuple(_regra_acessorio_pendente(i)
+                                for i in ITENS_DE_ACESSORIO),
         casos_reais=(),
         fontes=(FONTE_PROMOCAO_E4C,),
         estado=ESTADO_RECEITA_PRELIMINAR,
-        decisoes_do_especialista=(),
+        aprovacoes=(),
         perguntas_abertas=PERGUNTAS_ABERTAS,
     )
 

@@ -79,13 +79,20 @@ def cmd_validar_ficha(args) -> int:
     if not estrutura.ok:
         print(estrutura.descrever())
 
+    # Preenchido nao e confirmado: sao contagens diferentes de proposito.
+    preenchidos = fontes.extrair_campos_preenchidos(dados)
     confirmadas = fontes.extrair_decisoes_confirmadas(dados)
     pendencias = fontes.extrair_pendencias(dados)
-    print(f"decisões preenchidas: {len(confirmadas)}")
-    for d in confirmadas[:20]:
+    print(f"campos preenchidos  : {len(preenchidos)}")
+    for d in preenchidos[:20]:
         print(f"  {d['escopo']}.{d['campo']} = {d['valor']!r}")
-    if len(confirmadas) > 20:
-        print(f"  ... e mais {len(confirmadas) - 20}")
+    if len(preenchidos) > 20:
+        print(f"  ... e mais {len(preenchidos) - 20}")
+    print(f"decisões confirmadas: {len(confirmadas)}"
+          f"  (valor + estado confirmado + fonte + autoria)")
+    for d in confirmadas[:20]:
+        print(f"  {d['escopo']}.{d['campo']} = {d['valor']!r} "
+              f"[{d['estado']}]")
     print(f"pendências: {len(pendencias)}")
     for p in pendencias[:20]:
         print(f"  {p['escopo']}.{p['campo']}")
@@ -93,8 +100,15 @@ def cmd_validar_ficha(args) -> int:
         print(f"  ... e mais {len(pendencias) - 20}")
 
     if estrutura.ok:
-        caso = fontes.converter_ficha_em_caso_real(dados, str(caminho))
-        print(f"caso real: {caso.identificador} — {caso.estado_validacao}")
+        try:
+            caso = fontes.converter_ficha_em_caso_real(dados, str(caminho))
+        except ReceitaErro as e:
+            print(f"erro na conversão: {e}", file=sys.stderr)
+            return 1
+        ident = caso.identificador or "NAO_INFORMADO"
+        print(f"caso real: {ident} — {caso.estado_validacao}")
+        print(f"  seções preenchidas: "
+              f"{', '.join(caso.secoes_preenchidas) or 'nenhuma'}")
         largura = ("NAO_INFORMADO" if caso.largura_total_mm is None
                    else f"{caso.largura_total_mm} mm")
         altura = ("NAO_INFORMADO" if caso.altura_total_mm is None
@@ -103,7 +117,8 @@ def cmd_validar_ficha(args) -> int:
         print(f"  altura : {altura}")
     if args.json:
         print(json.dumps({"estrutura_valida": estrutura.ok,
-                          "decisoes": len(confirmadas),
+                          "campos_preenchidos": len(preenchidos),
+                          "decisoes_confirmadas": len(confirmadas),
                           "pendencias": [f"{p['escopo']}.{p['campo']}"
                                          for p in pendencias]},
                          ensure_ascii=False, indent=2))
@@ -128,7 +143,8 @@ def cmd_prontidao(args) -> int:
     print(f"papéis funcionais: {len(c['pendentes'])} pendentes de {c['total']}")
     print(f"regras de corte  : {len([x for x in r['pendentes'] if 'corte' in x['alvo'] or 'folha' in x['alvo']])} pendentes")
     print(f"regras de vidro  : {len([x for x in r['pendentes'] if 'vidro' in x['alvo']])} pendentes")
-    print(f"acessórios       : pendentes (nenhuma regra declarada)")
+    a = rel["acessorios"]
+    print(f"acessórios       : {len(a['pendentes'])} pendentes de {a['total']}")
     print(f"casos reais      : {len(rel['casos_reais']['recebidos'])} recebidos, "
           f"{len(rel['casos_reais']['validados'])} validados")
     print()

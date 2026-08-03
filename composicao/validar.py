@@ -15,18 +15,19 @@ sistema. Sem eles, a única saída seria inventar um número.
 """
 from __future__ import annotations
 
-from .modelos import (ESTADOS_CONFIRMADOS, CasoRealFabricacao, ComponenteReceita,
-                      EstadoConhecimento, PapelComponente, ReceitaTipologia,
-                      RegraDimensional, ResultadoValidacao,
-                      ESTADO_CASO_VALIDADO)
+from .modelos import (ESCOPO_APROVACAO_FORMULAS, ESCOPO_APROVACAO_RECEITA,
+                      ESTADO_CASO_VALIDADO, ESTADOS_CONFIRMADOS,
+                      IDENTIFICADORES_DE_CASO, EstadoConhecimento,
+                      ReceitaTipologia, ResultadoValidacao,
+                      autoria_de_especialista_ausente)
 
 ORIGEM_BIBLIOTECA = "dados/ (via contrato de consumo)"
 ORIGEM_RECEITA = "composicao/receita.py"
 
-# Quantos casos reais independentes o gate de produção exige. Não é chute de
-# engenharia: é o mínimo para que uma fórmula tenha sido conferida em mais de
-# uma medida — pequeno, médio e grande.
-MINIMO_CASOS_PARA_PRODUCAO = 3
+# O gate de produção exige EXATAMENTE os três casos canônicos, distintos entre
+# si. Contar "três validados" aceitaria o mesmo caso repetido — e uma fórmula
+# conferida três vezes contra a mesma janela não foi conferida.
+CASOS_EXIGIDOS_PARA_PRODUCAO = IDENTIFICADORES_DE_CASO
 
 
 def _reprovar(alvo, regra, encontrado, esperado, origem):
@@ -96,13 +97,26 @@ def validar_fontes(receita: ReceitaTipologia) -> ResultadoValidacao:
                                   "regra confirmada sem evidência",
                                   regra.estado.value, "ao menos uma fonte",
                                   ORIGEM_RECEITA))
-        if regra.estado == EstadoConhecimento.CONFIRMADO_ESPECIALISTA:
-            sem_autor = [f for f in regra.fontes if not f.responsavel]
-            if sem_autor:
-                r = r.somar(_reprovar(
-                    regra.identificador,
-                    "decisão de especialista sem autoria registrada",
-                    None, "responsavel preenchido", ORIGEM_RECEITA))
+
+    # Autoria vale para TUDO que o especialista confirma: componente, regra
+    # dimensional, regra de acessório e aprovação final. Uma decisão de domínio
+    # sem autor não pode ser auditada nem revogada.
+    for item in tuple(receita.componentes) + receita.todas_as_regras:
+        if autoria_de_especialista_ausente(item.estado, item.fontes):
+            r = r.somar(_reprovar(
+                item.identificador,
+                "decisão de especialista sem autoria registrada",
+                [f.para_dict() for f in item.fontes],
+                "fonte especialista_de_dominio com responsavel, data e "
+                "referencia", ORIGEM_RECEITA))
+    for aprov in receita.aprovacoes:
+        if autoria_de_especialista_ausente(
+                EstadoConhecimento.CONFIRMADO_ESPECIALISTA, (aprov.fonte,)):
+            r = r.somar(_reprovar(
+                f"aprovacao:{aprov.escopo}",
+                "aprovação sem autoria completa na fonte",
+                aprov.fonte.para_dict(),
+                "responsavel, data e referencia", ORIGEM_RECEITA))
     return r
 
 
@@ -124,17 +138,40 @@ def validar_componentes_confirmados(receita: ReceitaTipologia) -> ResultadoValid
 
 
 def validar_regras_dimensionais(receita: ReceitaTipologia) -> ResultadoValidacao:
-    """Reprova enquanto qualquer regra não tiver fórmula confirmada."""
+    """Reprova enquanto qualquer regra dimensional não tiver fórmula confirmada."""
     r = ResultadoValidacao.aprovado()
-    if not receita.todas_as_regras:
+    if not receita.regras_dimensionais:
         return _reprovar(receita.codigo, "nenhuma regra dimensional declarada",
                          0, "> 0", ORIGEM_RECEITA)
-    for regra in receita.todas_as_regras:
+    for regra in receita.regras_dimensionais:
         if not regra.calculavel:
             r = r.somar(_reprovar(
                 regra.identificador, "regra sem fórmula confirmada",
                 {"estado": regra.estado.value, "expressao": regra.expressao},
                 "expressão confirmada com evidência", ORIGEM_RECEITA))
+    return r
+
+
+def validar_regras_de_acessorios(receita: ReceitaTipologia) -> ResultadoValidacao:
+    """Acessório sem quantidade e posição confirmadas bloqueia o cálculo.
+
+    Deixar acessórios fora do gate daria uma lista de fabricação completa em
+    perfis e vidro, e silenciosa sobre quantas roldanas a janela leva."""
+    r = ResultadoValidacao.aprovado()
+    if not receita.regras_acessorios:
+        return _reprovar(receita.codigo, "nenhuma regra de acessório declarada",
+                         0, f"> 0 (ao menos os itens necessários)",
+                         ORIGEM_RECEITA)
+    for regra in receita.regras_acessorios:
+        if not regra.calculavel:
+            r = r.somar(_reprovar(
+                regra.identificador, "acessório sem quantidade ou posição "
+                "confirmada",
+                {"estado": regra.estado.value,
+                 "quantidade": regra.quantidade_expressao,
+                 "posicao": regra.posicao},
+                "quantidade e posição confirmadas com evidência",
+                ORIGEM_RECEITA))
     return r
 
 
@@ -171,6 +208,7 @@ def validar_prontidao_para_calculo(receita: ReceitaTipologia,
     r = r.somar(validar_fontes(receita))
     r = r.somar(validar_componentes_confirmados(receita))
     r = r.somar(validar_regras_dimensionais(receita))
+    r = r.somar(validar_regras_de_acessorios(receita))
     if receita.preliminar:
         r = r.somar(_reprovar(
             receita.codigo, "receita ainda é preliminar", receita.estado,
@@ -185,15 +223,72 @@ def validar_prontidao_para_producao(receita: ReceitaTipologia,
     Fórmula que fecha na aritmética e nunca foi conferida contra uma janela
     fabricada não autoriza corte de alumínio."""
     r = validar_prontidao_para_calculo(receita, biblioteca)
+    r = r.somar(validar_casos_reais_independentes(receita))
+    for escopo in (ESCOPO_APROVACAO_RECEITA, ESCOPO_APROVACAO_FORMULAS):
+        if receita.aprovacao(escopo) is None:
+            r = r.somar(_reprovar(
+                receita.codigo, f"sem aprovação do especialista para {escopo}",
+                [a.escopo for a in receita.aprovacoes],
+                f"AprovacaoEspecialista com escopo={escopo!r}, responsável, "
+                f"data e fonte", ORIGEM_RECEITA))
+    return r
+
+
+def validar_casos_reais_independentes(receita: ReceitaTipologia) -> ResultadoValidacao:
+    """Os três casos canônicos, distintos, completos e validados.
+
+    Três casos com as mesmas medidas não distinguem constante de proporção: a
+    fórmula passaria por acidente."""
+    r = ResultadoValidacao.aprovado()
     validados = [c for c in receita.casos_reais
                  if c.estado_validacao == ESTADO_CASO_VALIDADO]
-    if len(validados) < MINIMO_CASOS_PARA_PRODUCAO:
+    por_id = {}
+    for c in validados:
+        por_id.setdefault(c.identificador, []).append(c)
+
+    duplicados = sorted(i for i, cs in por_id.items() if len(cs) > 1)
+    if duplicados:
+        r = r.somar(_reprovar(receita.codigo, "casos reais duplicados",
+                              duplicados, "um caso por identificador",
+                              ORIGEM_RECEITA))
+    faltando = [i for i in CASOS_EXIGIDOS_PARA_PRODUCAO if i not in por_id]
+    if faltando:
         r = r.somar(_reprovar(
-            receita.codigo, "casos reais validados insuficientes",
-            len(validados), f">= {MINIMO_CASOS_PARA_PRODUCAO} "
-            f"(pequeno, médio e grande)", ORIGEM_RECEITA))
-    if not receita.decisoes_do_especialista:
-        r = r.somar(_reprovar(
-            receita.codigo, "sem aprovação registrada do especialista",
-            [], "ao menos uma decisão registrada", ORIGEM_RECEITA))
+            receita.codigo, "casos reais canônicos ausentes", faltando,
+            list(CASOS_EXIGIDOS_PARA_PRODUCAO), ORIGEM_RECEITA))
+
+    dimensoes = []
+    for c in validados:
+        if c.identificador is None:
+            r = r.somar(_reprovar(receita.codigo,
+                                  "caso validado sem identificador", None,
+                                  list(CASOS_EXIGIDOS_PARA_PRODUCAO),
+                                  ORIGEM_RECEITA))
+            continue
+        if not c.tem_medidas:
+            r = r.somar(_reprovar(c.identificador, "caso sem medidas completas",
+                                  {"largura": str(c.largura_total_mm),
+                                   "altura": str(c.altura_total_mm)},
+                                  "largura e altura em mm", ORIGEM_RECEITA))
+        if not c.cortes:
+            r = r.somar(_reprovar(c.identificador, "caso sem lista de corte",
+                                  0, "> 0 peças", ORIGEM_RECEITA))
+        if not c.vidros:
+            r = r.somar(_reprovar(c.identificador, "caso sem vidros",
+                                  0, "> 0 chapas", ORIGEM_RECEITA))
+        if not c.fontes:
+            r = r.somar(_reprovar(c.identificador, "caso sem fonte registrada",
+                                  0, "ao menos uma fonte", ORIGEM_RECEITA))
+        if c.tem_medidas:
+            dimensoes.append((c.identificador,
+                              (c.largura_total_mm, c.altura_total_mm)))
+
+    vistos = {}
+    for ident, dim in dimensoes:
+        if dim in vistos:
+            r = r.somar(_reprovar(
+                receita.codigo, "casos reais com dimensões idênticas",
+                [vistos[dim], ident],
+                "medidas distintas (pequeno, médio e grande)", ORIGEM_RECEITA))
+        vistos[dim] = ident
     return r
