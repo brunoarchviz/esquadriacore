@@ -83,15 +83,32 @@ PENDÊNCIA DE DOMÍNIO      ninguém respondeu
 REGRA DE FABRICAÇÃO       confirmada E conferida contra janela real
 ```
 
-**Valor desconhecido não vira número.** `None` significa "não informado" e
-nunca é lido como zero; papel não confirmado é `NAO_CONFIRMADO`; regra sem
-evidência fica `PENDENTE` com `expressao=None`.
+**Valor desconhecido não vira informação.** `None` significa "não informado" e
+nunca é lido como zero, como string vazia nem como um default plausível; papel
+não confirmado é `NAO_CONFIRMADO`; regra sem evidência fica `PENDENTE` com
+`expressao=None`; ficha sem identificador fica com `identificador=None` — nunca
+`CASO_A_PEQUENO`.
 
-Um `0` no lugar de um desconhecido produziria uma peça com medida errada sem
-nenhum aviso — o erro só apareceria no alumínio já cortado.
+Um `0` — ou um identificador chutado — no lugar de um desconhecido produziria
+um dado inventado com aparência de resposta, e o erro só apareceria no alumínio
+já cortado.
 
-Regra confirmada **sem fonte** é reprovada. Decisão de especialista sem autoria
-registrada é reprovada.
+### Quatro palavras que não são sinônimas
+
+```text
+campo preenchido   alguém escreveu algo na ficha
+decisão confirmada valor + estado confirmado + fonte + autoria do especialista
+regra aprovada     decisão confirmada + fórmula + evidência
+caso validado      janela real medida, com lista de corte e vidros conferidos
+```
+
+A CLI conta as duas primeiras separadamente, de propósito: tratar preenchimento
+como confirmação faria um rascunho virar ordem de corte.
+
+Regra confirmada **sem fonte** é recusada na construção. Decisão de
+especialista sem autoria — responsável, data e referência — reprova o gate de
+cálculo, valha ela para componente, regra dimensional, regra de acessório ou
+aprovação final.
 
 ---
 
@@ -104,15 +121,27 @@ visualização preliminar   ABERTO
 
 cálculo                   BLOQUEADO
     exige todos os componentes confirmados (papel, quantidade, orientação,
-    fonte) e todas as regras com fórmula confirmada e evidência
+    fonte e autoria), todas as regras dimensionais com fórmula confirmada, e
+    todas as regras de ACESSÓRIO com quantidade e posição confirmadas
 
 produção                  BLOQUEADO
-    exige o gate de cálculo aberto, três casos reais validados
-    (pequeno, médio e grande) e aprovação registrada do especialista
+    exige o gate de cálculo aberto; os TRÊS casos canônicos
+    (CASO_A_PEQUENO, CASO_B_MEDIO, CASO_C_GRANDE), sem duplicata, com medidas
+    completas, lista de corte, vidros e fonte, e com dimensões distintas entre
+    si; e duas aprovações estruturadas do especialista — da receita e das
+    fórmulas — cada uma com responsável, data, escopo e evidência
 ```
 
-Estado atual: 0 de 8 papéis confirmados, 0 de 9 regras dimensionais
-confirmadas, 0 casos reais recebidos.
+Acessórios entram no gate de cálculo: uma lista de fabricação completa em
+perfis e vidro, e silenciosa sobre quantas roldanas a janela leva, não é lista
+de fabricação.
+
+Três casos com as mesmas medidas não distinguem constante de proporção — por
+isso as dimensões têm de ser diferentes, e o mesmo caso repetido três vezes não
+conta como três.
+
+Estado atual: nenhum papel confirmado, nenhuma regra dimensional confirmada,
+nenhuma regra de acessório confirmada, nenhum caso real recebido.
 
 Os gates existem para que "ainda não sabemos" seja uma resposta possível do
 sistema. Sem eles, a única saída seria inventar um número.
@@ -145,10 +174,34 @@ Regras de preenchimento:
 
 - campo que você não souber: **deixe em branco** — em branco vira pendência;
 - nunca escreva `0`, `n/a` ou um chute para preencher espaço;
-- medidas em milímetros;
+- medidas em milímetros; datas em `AAAA-MM-DD`;
 - `fonte` diz **como** você sabe: catálogo, medição física, especialista,
-  lista de corte real, software externo, foto, croqui, tabela de fabricação;
-- caminho de foto ou croqui sempre **relativo** à raiz do repositório.
+  lista de corte real, software externo, foto, croqui, tabela de fabricação,
+  manifesto de promoção, biblioteca oficial;
+- caminho de foto ou croqui sempre **relativo** à raiz do repositório —
+  caminho absoluto (`/home/...`, `C:\...`) e travessia com `..` são recusados,
+  porque a evidência precisa sobreviver ao clone em outra máquina; para algo
+  que não é arquivo, declare `forma_referencia: identificador_externo` ou `url`;
+- a ficha é **versionada** (`versao_ficha: 1`); versão desconhecida é recusada
+  em vez de lida com significado errado;
+- nome de campo com erro de digitação **reprova**, com sugestão do nome certo:
+  `largura_totall_mm` seria uma medida perdida em silêncio, e a ficha pareceria
+  completa.
+
+O conversor **preserva todas as seções**: vista, perfis, cortes, vidros,
+baguetes, acessórios, folgas, sobreposições, croquis, fontes e dúvidas. Nada do
+que a visita produziu é descartado; o que vier fora do schema fica guardado em
+`dados_adicionais`.
+
+Uma ficha só com folgas medidas e fotos já conta como `RECEBIDO_PARCIAL` — ela
+trouxe dado de campo real. Os estados são:
+
+```text
+AGUARDANDO_DADOS       nada preenchido
+RECEBIDO_PARCIAL       trouxe dado, mas falta medida, corte ou identificação
+RECEBIDO_NAO_VALIDADO  identificada, com medidas, lista de corte e vidros
+VALIDADO               conferida e aceita como prova
+```
 
 Copie o modelo antes de preencher (um arquivo por janela real) e valide:
 
