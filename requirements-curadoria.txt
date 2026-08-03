@@ -16,3 +16,8 @@ openpyxl==3.1.5
 # Leitura/desenho dos cards e evidências. Chega transitivamente por matplotlib,
 # mas curadoria/ importa PIL diretamente — por isso é declarada aqui.
 pillow==12.3.0
+
+# Ficha de campo da composição (E.4D) — composicao/fontes.py. YAML porque a
+# ficha é preenchida à mão pelo especialista, com comentários explicando cada
+# campo; JSON não comporta comentário e induziria erro de preenchimento.
+pyyaml==6.0.3

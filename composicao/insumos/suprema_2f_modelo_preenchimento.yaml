@@ -1,0 +1,125 @@
+# Ficha de campo — Janela Suprema de correr com DUAS folhas
+#
+# COMO PREENCHER
+#   - Campo que você não souber: DEIXE EM BRANCO. Em branco significa
+#     "não informado" e o sistema trata como pendência.
+#   - Nunca escreva 0, "n/a" ou um chute para preencher espaço: o sistema
+#     leria como decisão tomada.
+#   - Medidas em milímetros, sem unidade no valor (ex.: 1500, 1500.5).
+#   - `fonte` é como você sabe: "catalogo", "medicao_fisica",
+#     "especialista_de_dominio", "lista_de_corte_real", "software_externo",
+#     "foto", "croqui", "tabela_de_fabricacao".
+#
+# Copie este arquivo antes de preencher, por exemplo para
+# composicao/insumos/suprema_2f_caso_a.yaml, e valide com:
+#   python -m composicao.cli validar-ficha composicao/insumos/suprema_2f_caso_a.yaml
+
+tipologia:
+  codigo: SUPREMA_CORRER_2F
+
+# Uma janela REAL, medida. Identificador: CASO_A_PEQUENO, CASO_B_MEDIO
+# ou CASO_C_GRANDE.
+caso_real:
+  identificador:
+  largura_total_mm:
+  altura_total_mm:
+
+# Sem isto não dá para saber o que é "esquerda" nem qual folha passa na frente.
+vista:
+  lado_de_referencia:        # de onde se olha: interno ou externo
+  folha_trilho_interno:      # qual folha corre no trilho de dentro
+  folha_trilho_externo:      # qual folha corre no trilho de fora
+  sentidos_de_movimento:     # ex.: folha 1 abre para a direita
+  posicao_do_fecho:          # onde fica o fecho / mão-de-amigo
+
+# Os oito perfis oficiais promovidos no E.4C.
+# `funcao`: MARCO_SUPERIOR, MARCO_INFERIOR, MARCO_LATERAL_ESQUERDO,
+#           MARCO_LATERAL_DIREITO, TRAVESSA_SUPERIOR_FOLHA,
+#           TRAVESSA_INFERIOR_FOLHA, MONTANTE_LATERAL_FOLHA, ENCONTRO_CENTRAL,
+#           MAO_DE_AMIGO, BAGUETE
+# `quantidade`: quantas peças deste perfil entram numa janela de duas folhas
+# `orientacao`: vertical, horizontal, ou como você descreve o corte
+perfis:
+  SU-001:
+    funcao:
+    quantidade:
+    orientacao:
+    observacoes:
+    fonte:
+  SU-002:
+    funcao:
+    quantidade:
+    orientacao:
+    observacoes:
+    fonte:
+  SU-003:
+    funcao:
+    quantidade:
+    orientacao:
+    observacoes:
+    fonte:
+  SU-039:
+    funcao:
+    quantidade:
+    orientacao:
+    observacoes:
+    fonte:
+  SU-040:
+    funcao:
+    quantidade:
+    orientacao:
+    observacoes:
+    fonte:
+  SU-041:
+    funcao:
+    quantidade:
+    orientacao:
+    observacoes:
+    fonte:
+  SU-053:
+    funcao:
+    quantidade:
+    orientacao:
+    observacoes:
+    fonte:
+  SU-102:
+    funcao:
+    quantidade:
+    orientacao:
+    observacoes:
+    fonte:
+
+# Lista de corte REAL da janela acima. Uma entrada por peça cortada.
+# Ex.: - {perfil: SU-001, comprimento_mm: 1460, quantidade: 1, angulo: 90,
+#         observacao: "desconta 40 mm do vão"}
+cortes: []
+
+# Chapas de vidro efetivamente usadas.
+# Ex.: - {folha: 1, largura_mm: 690, altura_mm: 1180, espessura_mm: 6}
+vidros: []
+
+# Baguetes cortadas. A baguete Suprema tem DOIS lados de encaixe — registre
+# qual lado encaixa em quê.
+baguetes: []
+
+# Ex.: - {item: roldana, quantidade: 4, posicao: "base de cada folha"}
+acessorios: []
+
+# Folgas medidas, não estimadas.
+# Ex.: - {entre: "folha e marco lateral", valor_mm: 3, medido_por: paquimetro}
+folgas: []
+
+# Sobreposição no encontro central e onde mais houver.
+# Ex.: - {entre: "folha 1 e folha 2", valor_mm: 25}
+sobreposicoes: []
+
+# Fotos, croquis e documentos — caminho RELATIVO à raiz do repositório.
+croquis: []
+
+# Ex.: - {tipo: foto, referencia: "curadoria/campo/caso_a/frente.jpg",
+#         descricao: "janela montada, vista interna", estado: CONFIRMADO_CASO_REAL,
+#         responsavel: Bruno, data: "2026-08-10"}
+fontes: []
+
+# O que ficou em aberto na visita, com suas palavras.
+duvidas: []
