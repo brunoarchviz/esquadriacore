@@ -22,6 +22,18 @@
 #     DERIVADO_DE_REGRA_APROVADA, HIPOTESE, PENDENTE
 #   Uma fonte solta no fim do documento NÃO confirma o resto da ficha.
 #
+# FONTE EXISTENTE NÃO É FONTE APTA
+#   O estado da fonte precisa sustentar o estado da afirmação:
+#     CONFIRMADO_CATALOGO            <- catalogo, tabela_de_fabricacao
+#     CONFIRMADO_BIBLIOTECA_OFICIAL  <- manifesto_promocao, biblioteca_oficial
+#     CONFIRMADO_ESPECIALISTA        <- especialista_de_dominio, com responsavel
+#                                       e data
+#     CONFIRMADO_CASO_REAL           <- medicao_fisica, foto, croqui,
+#                                       lista_de_corte_real, software_externo,
+#                                       tabela_de_fabricacao
+#   Nenhuma fonte citada pode estar PENDENTE ou HIPOTESE. Uma foto não confirma
+#   cota de catálogo, e um catálogo não prova o que foi medido na janela.
+#
 # PREENCHER NÃO É CONFIRMAR
 #   Um campo vira "decisão confirmada" só com valor + `estado` confirmado +
 #   `fontes_ids` que existem — e, quando o estado é CONFIRMADO_ESPECIALISTA, a

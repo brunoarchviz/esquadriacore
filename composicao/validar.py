@@ -16,9 +16,14 @@ sistema. Sem eles, a única saída seria inventar um número.
 from __future__ import annotations
 
 from .modelos import (ESCOPOS_DE_APROVACAO, ESTADOS_CONFIRMADOS,
-                      IDENTIFICADORES_DE_CASO, EstadoConhecimento,
-                      ReceitaTipologia, ResultadoAprovacao, ResultadoValidacao,
-                      aprovacoes_por_escopo, autoria_de_especialista_ausente)
+                      IDENTIFICADORES_DE_CASO, CasoRealFabricacao,
+                      EstadoConhecimento, ReceitaErro, ReceitaTipologia,
+                      ResultadoAprovacao, ResultadoValidacao,
+                      aprovacoes_por_escopo, autoria_de_especialista_ausente,
+                      incompatibilidades_da_afirmacao, indice_fontes_receita,
+                      problemas_da_fonte_de_aprovacao)
+
+from .fontes import PERFIS_SUPREMA_E4C as PERFIS_OFICIAIS
 
 ORIGEM_BIBLIOTECA = "dados/ (via contrato de consumo)"
 ORIGEM_RECEITA = "composicao/receita.py"
@@ -27,6 +32,20 @@ ORIGEM_RECEITA = "composicao/receita.py"
 # si. Contar "três validados" aceitaria o mesmo caso repetido — e uma fórmula
 # conferida três vezes contra a mesma janela não foi conferida.
 CASOS_EXIGIDOS_PARA_PRODUCAO = IDENTIFICADORES_DE_CASO
+
+
+ORIGEM_CASO = "caso real de fabricação"
+
+# Campos sem os quais o item não descreve uma peça: uma lista de corte com
+# `CorteReal()` vazio tem comprimento zero de informação.
+MINIMOS_POR_SECAO = {
+    "cortes": ("perfil", "comprimento_mm", "quantidade"),
+    "vidros": ("folha", "largura_mm", "altura_mm", "espessura_mm"),
+    "baguetes": ("perfil", "comprimento_mm", "quantidade"),
+    "acessorios": ("item", "quantidade", "posicao"),
+    "folgas": ("entre", "valor_mm"),
+    "sobreposicoes": ("entre", "valor_mm"),
+}
 
 
 def _reprovar(alvo, regra, encontrado, esperado, origem):
@@ -108,14 +127,8 @@ def validar_fontes(receita: ReceitaTipologia) -> ResultadoValidacao:
                 [f.para_dict() for f in item.fontes],
                 "fonte especialista_de_dominio com responsavel, data e "
                 "referencia", ORIGEM_RECEITA))
-    for aprov in receita.aprovacoes:
-        if autoria_de_especialista_ausente(
-                EstadoConhecimento.CONFIRMADO_ESPECIALISTA, (aprov.fonte,)):
-            r = r.somar(_reprovar(
-                f"aprovacao:{aprov.escopo}",
-                "aprovação sem autoria completa na fonte",
-                aprov.fonte.para_dict(),
-                "responsavel, data e referencia", ORIGEM_RECEITA))
+    # A autoria da aprovação é conferida contra o registro central de fontes
+    # em `validar_aprovacoes`: aqui a fonte é só um ID.
     return r
 
 
@@ -178,6 +191,114 @@ def validar_regras_de_acessorios(receita: ReceitaTipologia) -> ResultadoValidaca
 # Gates
 # ---------------------------------------------------------------------------
 
+def _validar_item_de_caso(item, alvo: str, minimos, indice) -> ResultadoValidacao:
+    """Campos mínimos, estado coerente e evidência apta.
+
+    Um item parcial pode ficar no caso como dado recebido; o que ele não pode é
+    ser contado como prova para produção."""
+    r = ResultadoValidacao.aprovado()
+    faltando = [c for c in minimos if getattr(item, c, None) is None]
+    if faltando:
+        r = r.somar(_reprovar(alvo, "item sem campos mínimos", faltando,
+                              list(minimos), ORIGEM_CASO))
+    problemas = incompatibilidades_da_afirmacao(item.estado, item.fontes_ids,
+                                                indice)
+    if problemas:
+        r = r.somar(_reprovar(alvo, "item sem evidência apta", list(problemas),
+                              "estado confirmado com fonte compatível",
+                              ORIGEM_CASO))
+    return r
+
+
+def validar_integridade_caso_real(caso: CasoRealFabricacao,
+                                  perfis_oficiais=()) -> ResultadoValidacao:
+    """O caso realmente prova o que diz provar.
+
+    `bool(caso.cortes)` aceitava uma lista com objetos vazios: o gate abriria
+    porque a tupla não estava vazia, sem que existisse uma única peça descrita.
+    Aqui cada item é conferido — campos mínimos, estado e evidência apta."""
+    r = ResultadoValidacao.aprovado()
+    ident = caso.identificador or "caso sem identificador"
+    indice = caso.indice_fontes
+
+    if not caso.tem_medidas:
+        r = r.somar(_reprovar(ident, "caso sem medidas completas",
+                              {"largura": str(caso.largura_total_mm),
+                               "altura": str(caso.altura_total_mm)},
+                              "largura e altura em mm", ORIGEM_CASO))
+    problemas = incompatibilidades_da_afirmacao(
+        caso.estado_dimensoes, caso.fontes_ids_dimensoes, indice)
+    if problemas:
+        r = r.somar(_reprovar(ident, "dimensões sem evidência apta",
+                              list(problemas),
+                              "estado confirmado com fonte compatível",
+                              ORIGEM_CASO))
+
+    if not caso.cortes:
+        r = r.somar(_reprovar(ident, "caso sem lista de corte", 0,
+                              "> 0 peças", ORIGEM_CASO))
+    for i, corte in enumerate(caso.cortes):
+        alvo = f"{ident}.cortes[{i}]"
+        r = r.somar(_validar_item_de_caso(corte, alvo,
+                                          MINIMOS_POR_SECAO["cortes"], indice))
+        if (perfis_oficiais and corte.perfil is not None
+                and corte.perfil not in perfis_oficiais):
+            r = r.somar(_reprovar(alvo, "perfil fora do microlote oficial",
+                                  corte.perfil, list(perfis_oficiais),
+                                  ORIGEM_CASO))
+
+    if not caso.vidros:
+        r = r.somar(_reprovar(ident, "caso sem vidros", 0, "> 0 chapas",
+                              ORIGEM_CASO))
+    for i, vidro in enumerate(caso.vidros):
+        r = r.somar(_validar_item_de_caso(vidro, f"{ident}.vidros[{i}]",
+                                          MINIMOS_POR_SECAO["vidros"], indice))
+
+    # Demais seções: só os itens PREENCHIDOS são cobrados. Seção vazia é
+    # pendência de campo, não erro de integridade.
+    for secao in ("baguetes", "acessorios", "folgas", "sobreposicoes"):
+        for i, item in enumerate(getattr(caso, secao)):
+            r = r.somar(_validar_item_de_caso(
+                item, f"{ident}.{secao}[{i}]", MINIMOS_POR_SECAO[secao], indice))
+    if not caso.vista.vazia:
+        r = r.somar(_validar_item_de_caso(caso.vista, f"{ident}.vista",
+                                          (), indice))
+    for perfil in caso.perfis:
+        if not perfil.vazio:
+            r = r.somar(_validar_item_de_caso(
+                perfil, f"{ident}.perfis.{perfil.codigo_perfil}",
+                ("funcao", "quantidade", "orientacao"), indice))
+
+    val = caso.validacao
+    if val is None:
+        r = r.somar(_reprovar(ident, "caso sem validação estruturada", None,
+                              "ValidacaoCasoReal APROVADA", ORIGEM_CASO))
+    else:
+        ausentes = [i for i in val.fontes_ids if i not in indice]
+        if ausentes:
+            r = r.somar(_reprovar(ident, "validação cita fonte inexistente",
+                                  ausentes, sorted(indice) or "nenhuma",
+                                  ORIGEM_CASO))
+        else:
+            autores = {indice[i].responsavel for i in val.fontes_ids
+                       if indice[i].responsavel}
+            if autores and val.responsavel.strip() not in autores:
+                r = r.somar(_reprovar(
+                    ident, "responsável da validação divergente da evidência",
+                    val.responsavel, sorted(autores), ORIGEM_CASO))
+            datas = {indice[i].data for i in val.fontes_ids if indice[i].data}
+            if datas and val.data not in datas:
+                r = r.somar(_reprovar(
+                    ident, "data da validação divergente da evidência",
+                    val.data, sorted(datas), ORIGEM_CASO))
+        if not val.aprovada:
+            r = r.somar(_reprovar(ident, "validação do caso não é APROVADO",
+                                  val.resultado.value,
+                                  ResultadoAprovacao.APROVADO.value,
+                                  ORIGEM_CASO))
+    return r
+
+
 def validar_prontidao_para_visualizacao(receita: ReceitaTipologia,
                                         biblioteca) -> ResultadoValidacao:
     """Visualização PRELIMINAR: mostrar os perfis que existem, sem montá-los.
@@ -234,6 +355,11 @@ def validar_aprovacoes(receita: ReceitaTipologia) -> ResultadoValidacao:
     conflitante, e a ordem da tupla decidiria se a produção abre. Um parecer
     REPROVADO ou REVOGADO não é aprovação nenhuma."""
     r = ResultadoValidacao.aprovado()
+    try:
+        indice = indice_fontes_receita(receita)
+    except ReceitaErro as e:
+        return _reprovar(receita.codigo, "registro de fontes inconsistente",
+                         str(e), "um id_fonte por evidência", ORIGEM_RECEITA)
 
     desconhecidos = [a.escopo for a in receita.aprovacoes
                      if a.escopo not in ESCOPOS_DE_APROVACAO]
@@ -263,6 +389,13 @@ def validar_aprovacoes(receita: ReceitaTipologia) -> ResultadoValidacao:
             r = r.somar(_reprovar(
                 receita.codigo, f"aprovação de {escopo} não é APROVADO",
                 aprovacao.resultado.value, ResultadoAprovacao.APROVADO.value,
+                ORIGEM_RECEITA))
+        problemas = problemas_da_fonte_de_aprovacao(aprovacao, indice)
+        if problemas:
+            r = r.somar(_reprovar(
+                receita.codigo, f"evidência da aprovação de {escopo} inválida",
+                list(problemas),
+                "fonte registrada, de especialista, confirmada e coerente",
                 ORIGEM_RECEITA))
     return r
 
@@ -304,23 +437,12 @@ def validar_casos_reais_independentes(receita: ReceitaTipologia) -> ResultadoVal
                                   {"largura": str(c.largura_total_mm),
                                    "altura": str(c.altura_total_mm)},
                                   "largura e altura em mm", ORIGEM_RECEITA))
-        if not c.cortes:
-            r = r.somar(_reprovar(c.identificador, "caso sem lista de corte",
-                                  0, "> 0 peças", ORIGEM_RECEITA))
-        if not c.vidros:
-            r = r.somar(_reprovar(c.identificador, "caso sem vidros",
-                                  0, "> 0 chapas", ORIGEM_RECEITA))
         if not c.fontes:
             r = r.somar(_reprovar(c.identificador, "caso sem fonte registrada",
                                   0, "ao menos uma fonte", ORIGEM_RECEITA))
-        val = c.validacao
-        if val is not None:
-            ausentes = [i for i in val.fontes_ids if i not in c.indice_fontes]
-            if ausentes:
-                r = r.somar(_reprovar(
-                    c.identificador, "validação cita fonte inexistente",
-                    ausentes, sorted(c.indice_fontes) or "nenhuma",
-                    ORIGEM_RECEITA))
+        # Aprovar a validação não salva um caso incompleto: as duas condições
+        # são necessárias ao mesmo tempo.
+        r = r.somar(validar_integridade_caso_real(c, PERFIS_OFICIAIS))
         if c.tem_medidas:
             dimensoes.append((c.identificador,
                               (c.largura_total_mm, c.altura_total_mm)))
