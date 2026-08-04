@@ -32,6 +32,7 @@ QUANTIDADE_FOLHAS = 2
 # de promoção, e prova exatamente duas coisas: que os oito perfis existem na
 # biblioteca oficial, e que os IDs GEO e as associações estão aprovados.
 FONTE_PROMOCAO_E4C = FonteEvidencia(
+    id_fonte="FONTE-MANIFESTO-E4C",
     tipo="manifesto_promocao",
     referencia="curadoria/promocoes/e4c/manifesto_promocao_e4b.json",
     descricao=("Promoção oficial E.4C: oito geometrias e oito associações "

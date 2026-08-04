@@ -11,18 +11,24 @@ evidência fica `PENDENTE` com `expressao=None`. Um `0` — ou um
 `CASO_A_PEQUENO` — no lugar de um desconhecido produziria um dado inventado com
 aparência de resposta, e o erro só apareceria na serralheria.
 
-Três palavras que **não** são sinônimas, e que o código mantém separadas:
+Quatro palavras que **não** são sinônimas, e que o código mantém separadas:
 
 ```text
 campo preenchido     alguém escreveu algo na ficha
-decisão confirmada   estado confirmado + fonte + autoria quando é do especialista
-regra aprovada       decisão confirmada + fórmula + conferida contra caso real
+decisão confirmada   estado confirmado + fontes existentes + autoria quando é
+                     do especialista
+regra aprovada       decisão confirmada + fórmula + evidência
+caso validado        registro estruturado de validação com resultado APROVADO
 ```
+
+Evidência é citada por **ID**, nunca por tipo: duas fotos são duas fontes
+distintas, e um índice por tipo faria a segunda apagar a primeira.
 """
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass, field
+from datetime import date
 from decimal import Decimal
 from enum import Enum
 
@@ -50,6 +56,16 @@ ESTADOS_CONFIRMADOS = frozenset({
 # arbitrada. Nunca autoriza cálculo, e por isso fica fora do conjunto acima.
 ESTADOS_NAO_CALCULAVEIS = frozenset({EstadoConhecimento.HIPOTESE,
                                      EstadoConhecimento.PENDENTE})
+
+
+class ResultadoAprovacao(str, Enum):
+    """O que o especialista decidiu. `REPROVADO` nunca é aprovação.
+
+    Sem isto, uma aprovação era só a existência de um registro — e um parecer
+    negativo abriria o mesmo portão que um positivo."""
+    APROVADO = "APROVADO"
+    REPROVADO = "REPROVADO"
+    REVOGADO = "REVOGADO"
 
 
 class PapelComponente(str, Enum):
@@ -91,6 +107,11 @@ FORMAS_DE_REFERENCIA = frozenset({FORMA_ARQUIVO, FORMA_IDENTIFICADOR_EXTERNO,
 FORMATO_DATA = "AAAA-MM-DD"
 _RE_DATA = re.compile(r"\d{4}-\d{2}-\d{2}")
 
+# Identidade da evidência. Duas fotos da mesma janela são duas fontes; um
+# índice por `tipo` faria a segunda sobrescrever a primeira em silêncio.
+FORMATO_ID_FONTE = "FONTE-[A-Z0-9_-]+"
+_RE_ID_FONTE = re.compile(r"FONTE-[A-Z0-9_-]+")
+
 # Alvos que uma regra dimensional pode governar. Declarar o alvo não cria a
 # fórmula: é só o vocabulário do que ainda falta responder.
 ALVOS_DIMENSIONAIS = (
@@ -106,6 +127,20 @@ ALVOS_DIMENSIONAIS = (
 )
 
 ESTADO_RECEITA_PRELIMINAR = "PRELIMINAR_AGUARDANDO_DADOS_DE_CAMPO"
+
+
+def data_invalida(valor: str) -> str | None:
+    """Motivo pelo qual a data é inválida, ou None se for uma data real.
+
+    Conferir só o formato aceitaria `2026-02-30` — que parece uma data e não
+    é. Uma evidência datada num dia inexistente não pode ser auditada."""
+    if not _RE_DATA.fullmatch(valor or ""):
+        return f"fora do formato {FORMATO_DATA}"
+    try:
+        date.fromisoformat(valor)
+    except ValueError:
+        return "não é uma data real do calendário"
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -183,7 +218,12 @@ def _referencia_de_arquivo_insegura(referencia: str) -> str | None:
 
 @dataclass(frozen=True)
 class FonteEvidencia:
-    """De onde veio a afirmação. Sem isto, `CONFIRMADO` seria só uma palavra."""
+    """De onde veio a afirmação. Sem isto, `CONFIRMADO` seria só uma palavra.
+
+    `id_fonte` é obrigatório e único. Citar evidência por `tipo` era ambíguo:
+    com duas fontes `especialista_de_dominio`, a afirmação não dizia a qual das
+    duas se referia — e o índice por tipo escolhia uma delas em silêncio."""
+    id_fonte: str
     tipo: str
     referencia: str
     descricao: str
@@ -193,38 +233,64 @@ class FonteEvidencia:
     forma_referencia: str = FORMA_ARQUIVO
 
     def __post_init__(self):
+        if not _RE_ID_FONTE.fullmatch(self.id_fonte or ""):
+            raise ReceitaErro(
+                f"id_fonte inválido: {self.id_fonte!r} — esperado "
+                f"{FORMATO_ID_FONTE}. Fonte sem identificação não recebe ID "
+                f"automático: duas fontes iguais ficariam indistinguíveis.")
         if self.tipo not in TIPOS_DE_FONTE:
             raise ReceitaErro(
-                f"tipo de fonte desconhecido: {self.tipo!r} "
+                f"{self.id_fonte}: tipo de fonte desconhecido: {self.tipo!r} "
                 f"(conhecidos: {sorted(TIPOS_DE_FONTE)})")
         if self.forma_referencia not in FORMAS_DE_REFERENCIA:
             raise ReceitaErro(
-                f"forma_referencia desconhecida: {self.forma_referencia!r} "
+                f"{self.id_fonte}: forma_referencia desconhecida: "
+                f"{self.forma_referencia!r} "
                 f"(conhecidas: {sorted(FORMAS_DE_REFERENCIA)})")
         if not self.referencia:
-            raise ReceitaErro(f"fonte {self.tipo}: referência vazia")
+            raise ReceitaErro(f"{self.id_fonte}: referência vazia")
         if self.forma_referencia == FORMA_ARQUIVO:
             motivo = _referencia_de_arquivo_insegura(self.referencia)
             if motivo:
                 raise ReceitaErro(
-                    f"fonte {self.tipo}: {motivo} ({self.referencia!r}) — use "
+                    f"{self.id_fonte}: {motivo} ({self.referencia!r}) — use "
                     f"caminho relativo à raiz do repo, ou declare "
                     f"forma_referencia={FORMA_IDENTIFICADOR_EXTERNO!r} / "
                     f"{FORMA_URL!r}")
-        if self.data is not None and not _RE_DATA.fullmatch(self.data):
-            raise ReceitaErro(
-                f"fonte {self.tipo}: data {self.data!r} fora do formato "
-                f"{FORMATO_DATA}")
+        if self.data is not None:
+            motivo = data_invalida(self.data)
+            if motivo:
+                raise ReceitaErro(
+                    f"{self.id_fonte}: data {self.data!r} {motivo}")
 
     @property
     def tem_autoria(self) -> bool:
         return bool(self.responsavel and self.responsavel.strip())
 
+    @property
+    def autoria_completa(self) -> bool:
+        """Autoria auditável: quem, quando e onde."""
+        return bool(self.tem_autoria and self.data and self.referencia)
+
     def para_dict(self) -> dict:
-        return {"tipo": self.tipo, "referencia": self.referencia,
+        return {"id_fonte": self.id_fonte, "tipo": self.tipo,
+                "referencia": self.referencia,
                 "descricao": self.descricao, "estado": self.estado.value,
                 "responsavel": self.responsavel, "data": self.data,
                 "forma_referencia": self.forma_referencia}
+
+
+def indexar_fontes(fontes) -> dict:
+    """`id_fonte` -> fonte. Recusa IDs repetidos.
+
+    Um índice por tipo perderia a segunda fonte do mesmo tipo; por ID, duas
+    fotos continuam sendo duas fotos."""
+    indice = {}
+    for f in fontes:
+        if f.id_fonte in indice:
+            raise ReceitaErro(f"id_fonte duplicado: {f.id_fonte}")
+        indice[f.id_fonte] = f
+    return indice
 
 
 def autoria_de_especialista_ausente(estado: EstadoConhecimento,
@@ -236,8 +302,26 @@ def autoria_de_especialista_ausente(estado: EstadoConhecimento,
     revogada."""
     if estado is not EstadoConhecimento.CONFIRMADO_ESPECIALISTA:
         return False
-    return not any(f.tipo == "especialista_de_dominio" and f.tem_autoria
-                   and f.data and f.referencia for f in fontes)
+    return not any(f.tipo == "especialista_de_dominio" and f.autoria_completa
+                   for f in fontes)
+
+
+def afirmacao_confirmada(estado, fontes_ids, indice_fontes) -> bool:
+    """Uma afirmação só é confirmada com estado, evidência existente e autoria.
+
+    Uma fonte global no documento não confirma seção nenhuma: a evidência tem
+    de estar ligada à afirmação específica."""
+    if estado is None or estado in ESTADOS_NAO_CALCULAVEIS:
+        return False
+    if estado not in ESTADOS_CONFIRMADOS:
+        return False
+    ids = tuple(fontes_ids or ())
+    if not ids or len(set(ids)) != len(ids):
+        return False
+    if any(i not in indice_fontes for i in ids):
+        return False
+    fontes = tuple(indice_fontes[i] for i in ids)
+    return not autoria_de_especialista_ausente(estado, fontes)
 
 
 # ---------------------------------------------------------------------------
@@ -419,7 +503,7 @@ class RegraAcessorio:
 
 
 # ---------------------------------------------------------------------------
-# Caso real de fabricação — a ficha inteira, sem perder seção
+# Caso real de fabricação — cada afirmação com seu próprio estado e evidência
 # ---------------------------------------------------------------------------
 
 ESTADO_CASO_AGUARDANDO = "AGUARDANDO_DADOS"
@@ -427,11 +511,35 @@ ESTADO_CASO_PARCIAL = "RECEBIDO_PARCIAL"
 ESTADO_CASO_RECEBIDO = "RECEBIDO_NAO_VALIDADO"
 ESTADO_CASO_VALIDADO = "VALIDADO"
 
+ESTADOS_DE_RECEBIMENTO = (ESTADO_CASO_AGUARDANDO, ESTADO_CASO_PARCIAL,
+                          ESTADO_CASO_RECEBIDO)
+
 IDENTIFICADORES_DE_CASO = ("CASO_A_PEQUENO", "CASO_B_MEDIO", "CASO_C_GRANDE")
 
 
 @dataclass(frozen=True)
-class VistaCasoReal:
+class Afirmacao:
+    """Base das afirmações da ficha: estado, evidência e extensão explícita.
+
+    `dados_adicionais` é o ÚNICO lugar onde conteúdo livre é aceito. Fora dele,
+    campo desconhecido reprova — senão um erro de digitação viraria dado
+    perdido, e a ficha pareceria completa."""
+    estado: EstadoConhecimento | None = None
+    fontes_ids: tuple[str, ...] = ()
+    dados_adicionais: dict = field(default_factory=dict)
+
+    def confirmada(self, indice_fontes) -> bool:
+        return afirmacao_confirmada(self.estado, self.fontes_ids, indice_fontes)
+
+    def _base_dict(self) -> dict:
+        return {"estado": self.estado.value if self.estado else None,
+                "fontes_ids": list(self.fontes_ids),
+                "dados_adicionais": dict(self.dados_adicionais),
+                "dados_adicionais_interpretados": False}
+
+
+@dataclass(frozen=True)
+class VistaCasoReal(Afirmacao):
     """Sem isto não há como saber o que é "esquerda" nem qual folha passa na
     frente. Todos os campos são opcionais e nenhum tem default de conteúdo."""
     lado_de_referencia: str | None = None
@@ -440,46 +548,50 @@ class VistaCasoReal:
     sentidos_de_movimento: str | None = None
     posicao_do_fecho: str | None = None
 
+    CAMPOS = ("lado_de_referencia", "folha_trilho_interno",
+              "folha_trilho_externo", "sentidos_de_movimento",
+              "posicao_do_fecho")
+
     @property
     def vazia(self) -> bool:
-        return not any((self.lado_de_referencia, self.folha_trilho_interno,
-                        self.folha_trilho_externo, self.sentidos_de_movimento,
-                        self.posicao_do_fecho))
+        return not any(getattr(self, c) for c in self.CAMPOS) \
+            and not self.dados_adicionais
 
     def para_dict(self) -> dict:
-        return {"lado_de_referencia": self.lado_de_referencia,
-                "folha_trilho_interno": self.folha_trilho_interno,
-                "folha_trilho_externo": self.folha_trilho_externo,
-                "sentidos_de_movimento": self.sentidos_de_movimento,
-                "posicao_do_fecho": self.posicao_do_fecho}
+        d = {c: getattr(self, c) for c in self.CAMPOS}
+        d.update(self._base_dict())
+        return d
 
 
 @dataclass(frozen=True)
-class PerfilNoCasoReal:
+class PerfilNoCasoReal(Afirmacao):
     """O que a ficha diz sobre um perfil. `funcao` chega como texto e só vira
     `PapelComponente` depois de validada — texto inválido não é convertido em
     palpite."""
-    codigo_perfil: str
+    codigo_perfil: str = ""
     funcao: PapelComponente | None = None
     quantidade: int | None = None
     orientacao: str | None = None
     observacoes: str | None = None
-    fonte: str | None = None
+
+    CAMPOS = ("funcao", "quantidade", "orientacao", "observacoes")
 
     @property
     def vazio(self) -> bool:
-        return not any((self.funcao, self.quantidade, self.orientacao,
-                        self.observacoes, self.fonte))
+        return not any(getattr(self, c) for c in self.CAMPOS) \
+            and not self.fontes_ids and not self.dados_adicionais
 
     def para_dict(self) -> dict:
-        return {"codigo_perfil": self.codigo_perfil,
-                "funcao": self.funcao.value if self.funcao else None,
-                "quantidade": self.quantidade, "orientacao": self.orientacao,
-                "observacoes": self.observacoes, "fonte": self.fonte}
+        d = {"codigo_perfil": self.codigo_perfil,
+             "funcao": self.funcao.value if self.funcao else None,
+             "quantidade": self.quantidade, "orientacao": self.orientacao,
+             "observacoes": self.observacoes}
+        d.update(self._base_dict())
+        return d
 
 
 @dataclass(frozen=True)
-class CorteReal:
+class CorteReal(Afirmacao):
     """Uma peça efetivamente cortada. É o dado do qual uma fórmula futura
     poderá ser DERIVADA — nunca o contrário."""
     perfil: str | None = None
@@ -487,38 +599,38 @@ class CorteReal:
     quantidade: int | None = None
     angulo: str | None = None
     observacao: str | None = None
-    dados_adicionais: tuple = ()
 
     def para_dict(self) -> dict:
-        return {"perfil": self.perfil,
-                "comprimento_mm": (str(self.comprimento_mm)
-                                   if self.comprimento_mm is not None else None),
-                "quantidade": self.quantidade, "angulo": self.angulo,
-                "observacao": self.observacao,
-                "dados_adicionais": list(self.dados_adicionais)}
+        d = {"perfil": self.perfil,
+             "comprimento_mm": (str(self.comprimento_mm)
+                                if self.comprimento_mm is not None else None),
+             "quantidade": self.quantidade, "angulo": self.angulo,
+             "observacao": self.observacao}
+        d.update(self._base_dict())
+        return d
 
 
 @dataclass(frozen=True)
-class VidroReal:
+class VidroReal(Afirmacao):
     folha: str | None = None
     largura_mm: Decimal | None = None
     altura_mm: Decimal | None = None
     espessura_mm: Decimal | None = None
     observacao: str | None = None
-    dados_adicionais: tuple = ()
 
     def para_dict(self) -> dict:
-        return {"folha": self.folha,
-                "largura_mm": str(self.largura_mm) if self.largura_mm is not None else None,
-                "altura_mm": str(self.altura_mm) if self.altura_mm is not None else None,
-                "espessura_mm": (str(self.espessura_mm)
-                                 if self.espessura_mm is not None else None),
-                "observacao": self.observacao,
-                "dados_adicionais": list(self.dados_adicionais)}
+        d = {"folha": self.folha,
+             "largura_mm": str(self.largura_mm) if self.largura_mm is not None else None,
+             "altura_mm": str(self.altura_mm) if self.altura_mm is not None else None,
+             "espessura_mm": (str(self.espessura_mm)
+                              if self.espessura_mm is not None else None),
+             "observacao": self.observacao}
+        d.update(self._base_dict())
+        return d
 
 
 @dataclass(frozen=True)
-class BagueteReal:
+class BagueteReal(Afirmacao):
     """A baguete Suprema tem DOIS lados de encaixe — qual encaixa em quê é
     parte do dado, não detalhe."""
     perfil: str | None = None
@@ -526,59 +638,111 @@ class BagueteReal:
     quantidade: int | None = None
     lado_de_encaixe: str | None = None
     observacao: str | None = None
-    dados_adicionais: tuple = ()
 
     def para_dict(self) -> dict:
-        return {"perfil": self.perfil,
-                "comprimento_mm": (str(self.comprimento_mm)
-                                   if self.comprimento_mm is not None else None),
-                "quantidade": self.quantidade,
-                "lado_de_encaixe": self.lado_de_encaixe,
-                "observacao": self.observacao,
-                "dados_adicionais": list(self.dados_adicionais)}
+        d = {"perfil": self.perfil,
+             "comprimento_mm": (str(self.comprimento_mm)
+                                if self.comprimento_mm is not None else None),
+             "quantidade": self.quantidade,
+             "lado_de_encaixe": self.lado_de_encaixe,
+             "observacao": self.observacao}
+        d.update(self._base_dict())
+        return d
 
 
 @dataclass(frozen=True)
-class AcessorioReal:
+class AcessorioReal(Afirmacao):
     item: str | None = None
     quantidade: int | None = None
     posicao: str | None = None
     observacao: str | None = None
-    dados_adicionais: tuple = ()
 
     def para_dict(self) -> dict:
-        return {"item": self.item, "quantidade": self.quantidade,
-                "posicao": self.posicao, "observacao": self.observacao,
-                "dados_adicionais": list(self.dados_adicionais)}
+        d = {"item": self.item, "quantidade": self.quantidade,
+             "posicao": self.posicao, "observacao": self.observacao}
+        d.update(self._base_dict())
+        return d
 
 
 @dataclass(frozen=True)
-class FolgaReal:
+class FolgaReal(Afirmacao):
     entre: str | None = None
     valor_mm: Decimal | None = None
     medido_por: str | None = None
     observacao: str | None = None
-    dados_adicionais: tuple = ()
 
     def para_dict(self) -> dict:
-        return {"entre": self.entre,
-                "valor_mm": str(self.valor_mm) if self.valor_mm is not None else None,
-                "medido_por": self.medido_por, "observacao": self.observacao,
-                "dados_adicionais": list(self.dados_adicionais)}
+        d = {"entre": self.entre,
+             "valor_mm": str(self.valor_mm) if self.valor_mm is not None else None,
+             "medido_por": self.medido_por, "observacao": self.observacao}
+        d.update(self._base_dict())
+        return d
 
 
 @dataclass(frozen=True)
-class SobreposicaoReal:
+class SobreposicaoReal(Afirmacao):
     entre: str | None = None
     valor_mm: Decimal | None = None
     observacao: str | None = None
-    dados_adicionais: tuple = ()
 
     def para_dict(self) -> dict:
-        return {"entre": self.entre,
-                "valor_mm": str(self.valor_mm) if self.valor_mm is not None else None,
-                "observacao": self.observacao,
-                "dados_adicionais": list(self.dados_adicionais)}
+        d = {"entre": self.entre,
+             "valor_mm": str(self.valor_mm) if self.valor_mm is not None else None,
+             "observacao": self.observacao}
+        d.update(self._base_dict())
+        return d
+
+
+@dataclass(frozen=True)
+class CroquiCasoReal:
+    """Evidência visual, não decisão dimensional.
+
+    Croqui é matéria-prima de fonte: ele vira uma `FonteEvidencia` própria (com
+    `id_fonte`) quando alguém quiser citá-lo. Por isso não carrega `estado` nem
+    `responsavel` — duas representações do mesmo fato entrariam em conflito."""
+    tipo: str | None = None
+    referencia: str | None = None
+    descricao: str | None = None
+
+    def para_dict(self) -> dict:
+        return {"tipo": self.tipo, "referencia": self.referencia,
+                "descricao": self.descricao}
+
+
+@dataclass(frozen=True)
+class ValidacaoCasoReal:
+    """Registro estruturado de que alguém conferiu o caso e o aceitou.
+
+    Antes, `estado_validacao="VALIDADO"` era uma string que qualquer código
+    podia escrever — e o gate de produção acreditava. Validar é um ato com
+    autor, data e evidência."""
+    resultado: ResultadoAprovacao
+    responsavel: str
+    data: str
+    fontes_ids: tuple[str, ...] = ()
+    observacao: str | None = None
+
+    def __post_init__(self):
+        if not isinstance(self.resultado, ResultadoAprovacao):
+            raise ReceitaErro(
+                f"validação com resultado inválido: {self.resultado!r}")
+        if not str(self.responsavel or "").strip():
+            raise ReceitaErro("validação de caso sem responsável")
+        motivo = data_invalida(self.data or "")
+        if motivo:
+            raise ReceitaErro(f"validação de caso: data {self.data!r} {motivo}")
+        if not self.fontes_ids:
+            raise ReceitaErro("validação de caso sem fontes")
+
+    @property
+    def aprovada(self) -> bool:
+        return self.resultado is ResultadoAprovacao.APROVADO
+
+    def para_dict(self) -> dict:
+        return {"resultado": self.resultado.value,
+                "responsavel": self.responsavel, "data": self.data,
+                "fontes_ids": list(self.fontes_ids),
+                "observacao": self.observacao}
 
 
 @dataclass(frozen=True)
@@ -599,6 +763,8 @@ class CasoRealFabricacao:
     identificador: str | None = None
     largura_total_mm: Decimal | None = None
     altura_total_mm: Decimal | None = None
+    estado_dimensoes: EstadoConhecimento | None = None
+    fontes_ids_dimensoes: tuple[str, ...] = ()
     vista: VistaCasoReal = field(default_factory=VistaCasoReal)
     perfis: tuple[PerfilNoCasoReal, ...] = ()
     cortes: tuple[CorteReal, ...] = ()
@@ -607,10 +773,12 @@ class CasoRealFabricacao:
     acessorios: tuple[AcessorioReal, ...] = ()
     folgas: tuple[FolgaReal, ...] = ()
     sobreposicoes: tuple[SobreposicaoReal, ...] = ()
-    croquis: tuple = ()
+    croquis: tuple[CroquiCasoReal, ...] = ()
     fontes: tuple[FonteEvidencia, ...] = ()
     duvidas: tuple[str, ...] = ()
-    estado_validacao: str = ESTADO_CASO_AGUARDANDO
+    dados_adicionais: dict = field(default_factory=dict)
+    estado_recebimento: str = ESTADO_CASO_AGUARDANDO
+    validacao: ValidacaoCasoReal | None = None
 
     def __post_init__(self):
         if (self.identificador is not None
@@ -619,6 +787,12 @@ class CasoRealFabricacao:
                 f"identificador de caso desconhecido: {self.identificador!r} "
                 f"(conhecidos: {list(IDENTIFICADORES_DE_CASO)}; "
                 f"não identificado é None)")
+        if self.estado_recebimento not in ESTADOS_DE_RECEBIMENTO:
+            raise ReceitaErro(
+                f"estado_recebimento inválido: {self.estado_recebimento!r} "
+                f"(conhecidos: {list(ESTADOS_DE_RECEBIMENTO)}). "
+                f"'{ESTADO_CASO_VALIDADO}' NÃO se escreve: é derivado de uma "
+                f"ValidacaoCasoReal aprovada.")
         for campo in ("largura_total_mm", "altura_total_mm"):
             v = getattr(self, campo)
             if v is None:
@@ -631,6 +805,25 @@ class CasoRealFabricacao:
                 raise ReceitaErro(
                     f"{self.identificador}: {campo}={v} — medida real é "
                     f"positiva; desconhecida é None")
+        try:
+            indexar_fontes(self.fontes)
+        except ReceitaErro as e:
+            raise ReceitaErro(f"{self.identificador}: {e}") from e
+
+    @property
+    def indice_fontes(self) -> dict:
+        return {f.id_fonte: f for f in self.fontes}
+
+    @property
+    def estado_validacao(self) -> str:
+        """`VALIDADO` só existe com registro estruturado aprovado."""
+        if self.validacao is not None and self.validacao.aprovada:
+            return ESTADO_CASO_VALIDADO
+        return self.estado_recebimento
+
+    @property
+    def validado(self) -> bool:
+        return self.estado_validacao == ESTADO_CASO_VALIDADO
 
     @property
     def tem_medidas(self) -> bool:
@@ -658,6 +851,8 @@ class CasoRealFabricacao:
                      "sobreposicoes", "croquis", "fontes", "duvidas"):
             if getattr(self, nome):
                 preenchidas.append(nome)
+        if self.dados_adicionais:
+            preenchidas.append("dados_adicionais")
         return tuple(preenchidas)
 
     @property
@@ -673,6 +868,9 @@ class CasoRealFabricacao:
                                  if self.largura_total_mm is not None else None),
             "altura_total_mm": (str(self.altura_total_mm)
                                 if self.altura_total_mm is not None else None),
+            "estado_dimensoes": (self.estado_dimensoes.value
+                                 if self.estado_dimensoes else None),
+            "fontes_ids_dimensoes": list(self.fontes_ids_dimensoes),
             "vista": self.vista.para_dict(),
             "perfis": [p.para_dict() for p in self.perfis],
             "cortes": [c.para_dict() for c in self.cortes],
@@ -681,10 +879,14 @@ class CasoRealFabricacao:
             "acessorios": [a.para_dict() for a in self.acessorios],
             "folgas": [f.para_dict() for f in self.folgas],
             "sobreposicoes": [s.para_dict() for s in self.sobreposicoes],
-            "croquis": list(self.croquis),
+            "croquis": [c.para_dict() for c in self.croquis],
             "fontes": [f.para_dict() for f in self.fontes],
             "duvidas": list(self.duvidas),
+            "dados_adicionais": dict(self.dados_adicionais),
+            "dados_adicionais_interpretados": False,
+            "estado_recebimento": self.estado_recebimento,
             "estado_validacao": self.estado_validacao,
+            "validacao": self.validacao.para_dict() if self.validacao else None,
             "secoes_preenchidas": list(self.secoes_preenchidas),
         }
 
@@ -693,37 +895,61 @@ class CasoRealFabricacao:
 # Aprovação do especialista
 # ---------------------------------------------------------------------------
 
+ESCOPO_APROVACAO_RECEITA = "receita"
+ESCOPO_APROVACAO_FORMULAS = "formulas"
+ESCOPOS_DE_APROVACAO = (ESCOPO_APROVACAO_RECEITA, ESCOPO_APROVACAO_FORMULAS)
+
+
 @dataclass(frozen=True)
 class AprovacaoEspecialista:
-    """Aprovação com autor, data, escopo e evidência.
+    """Aprovação com resultado, autor, data, escopo e evidência.
 
-    Uma string solta em `decisoes_do_especialista` não diz quem aprovou o quê,
-    nem permite revogar depois. Produção é a única porta que libera corte de
-    alumínio: ela exige assinatura, não anotação."""
-    decisao: str
+    `resultado` é um enum, não texto livre: antes, a mera existência de um
+    registro abria o portão, e um parecer NEGATIVO abriria o mesmo portão que
+    um positivo."""
+    resultado: ResultadoAprovacao
     responsavel: str
     data: str
     fonte: FonteEvidencia
     escopo: str
+    observacao: str | None = None
 
     def __post_init__(self):
-        for campo in ("decisao", "responsavel", "data", "escopo"):
+        if not isinstance(self.resultado, ResultadoAprovacao):
+            raise ReceitaErro(f"aprovação com resultado inválido: "
+                              f"{self.resultado!r}")
+        for campo in ("responsavel", "data", "escopo"):
             if not str(getattr(self, campo) or "").strip():
                 raise ReceitaErro(f"aprovação sem {campo}")
-        if not _RE_DATA.fullmatch(self.data):
+        if self.escopo not in ESCOPOS_DE_APROVACAO:
             raise ReceitaErro(
-                f"aprovação: data {self.data!r} fora do formato {FORMATO_DATA}")
-        if not self.fonte.tem_autoria:
-            raise ReceitaErro("aprovação com fonte sem responsável")
+                f"escopo de aprovação desconhecido: {self.escopo!r} "
+                f"(conhecidos: {list(ESCOPOS_DE_APROVACAO)})")
+        motivo = data_invalida(self.data)
+        if motivo:
+            raise ReceitaErro(f"aprovação: data {self.data!r} {motivo}")
+        if self.fonte.tipo != "especialista_de_dominio":
+            raise ReceitaErro(
+                f"aprovação com fonte {self.fonte.tipo!r} — a aprovação final é "
+                f"decisão de domínio e exige fonte especialista_de_dominio")
+        if not self.fonte.autoria_completa:
+            raise ReceitaErro("aprovação com fonte sem autoria completa")
+        if self.fonte.responsavel.strip() != self.responsavel.strip():
+            raise ReceitaErro(
+                f"aprovação assinada por {self.responsavel!r} com evidência de "
+                f"{self.fonte.responsavel!r} — a assinatura e a evidência têm "
+                f"de ser da mesma pessoa")
+
+    @property
+    def aprovada(self) -> bool:
+        return self.resultado is ResultadoAprovacao.APROVADO
 
     def para_dict(self) -> dict:
-        return {"decisao": self.decisao, "responsavel": self.responsavel,
+        return {"resultado": self.resultado.value,
+                "responsavel": self.responsavel,
                 "data": self.data, "escopo": self.escopo,
+                "observacao": self.observacao,
                 "fonte": self.fonte.para_dict()}
-
-
-ESCOPO_APROVACAO_RECEITA = "receita"
-ESCOPO_APROVACAO_FORMULAS = "formulas"
 
 
 # ---------------------------------------------------------------------------
@@ -773,8 +999,11 @@ class ReceitaTipologia:
                 return c
         raise ReceitaErro(f"{self.codigo}: sem componente para {codigo_perfil}")
 
-    def aprovacao(self, escopo: str) -> AprovacaoEspecialista | None:
-        for a in self.aprovacoes:
-            if a.escopo == escopo:
-                return a
-        return None
+
+def aprovacoes_por_escopo(receita: ReceitaTipologia,
+                          escopo: str) -> tuple[AprovacaoEspecialista, ...]:
+    """TODAS as aprovações daquele escopo — nunca só a primeira.
+
+    Devolver a primeira encontrada esconderia um segundo parecer conflitante, e
+    a ordem da tupla decidiria se a produção abre."""
+    return tuple(a for a in receita.aprovacoes if a.escopo == escopo)
