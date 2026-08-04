@@ -15,13 +15,16 @@ sistema. Sem eles, a única saída seria inventar um número.
 """
 from __future__ import annotations
 
-from .modelos import (ESCOPOS_DE_APROVACAO, ESTADOS_CONFIRMADOS,
-                      IDENTIFICADORES_DE_CASO, CasoRealFabricacao,
-                      EstadoConhecimento, ReceitaErro, ReceitaTipologia,
-                      ResultadoAprovacao, ResultadoValidacao,
-                      aprovacoes_por_escopo, autoria_de_especialista_ausente,
-                      incompatibilidades_da_afirmacao, indice_fontes_receita,
-                      problemas_da_fonte_de_aprovacao)
+from .modelos import (ALVOS_DIMENSIONAIS, ESCOPOS_DE_APROVACAO,
+                      ESTADO_CASO_VALIDADO, ESTADOS_CONFIRMADOS,
+                      ESTADOS_NAO_CALCULAVEIS, IDENTIFICADORES_DE_CASO,
+                      ITENS_DE_ACESSORIO, TIPOS_APTOS_PARA_VALIDAR_CASO,
+                      CasoRealFabricacao, EstadoConhecimento, ReceitaErro,
+                      ReceitaTipologia, ResultadoAprovacao, ResultadoValidacao,
+                      aprovacoes_por_escopo,
+                      incompatibilidades_da_afirmacao,
+                      incompatibilidades_das_fontes_embutidas,
+                      indice_fontes_receita, problemas_da_fonte_de_aprovacao)
 
 from .fontes import PERFIS_SUPREMA_E4C as PERFIS_OFICIAIS
 
@@ -101,35 +104,188 @@ def validar_referencias_geometricas(receita: ReceitaTipologia,
 # ---------------------------------------------------------------------------
 
 def validar_fontes(receita: ReceitaTipologia) -> ResultadoValidacao:
-    """`CONFIRMADO` sem evidência é só uma palavra — aqui isso reprova."""
-    r = ResultadoValidacao.aprovado()
-    for comp in receita.componentes:
-        if comp.estado in ESTADOS_CONFIRMADOS and not comp.fontes:
-            r = r.somar(_reprovar(comp.identificador,
-                                  "componente confirmado sem fonte",
-                                  comp.estado.value, "ao menos uma fonte",
-                                  ORIGEM_RECEITA))
-    for regra in receita.todas_as_regras:
-        if regra.estado in ESTADOS_CONFIRMADOS and not regra.fontes:
-            r = r.somar(_reprovar(regra.identificador,
-                                  "regra confirmada sem evidência",
-                                  regra.estado.value, "ao menos uma fonte",
-                                  ORIGEM_RECEITA))
+    """A evidência de cada item sustenta o que ele afirma.
 
-    # Autoria vale para TUDO que o especialista confirma: componente, regra
-    # dimensional, regra de acessório e aprovação final. Uma decisão de domínio
-    # sem autor não pode ser auditada nem revogada.
+    A mesma matriz cobrada da ficha do especialista vale para componentes e
+    regras: sem isso a receita teria dois pesos, e um componente
+    `CONFIRMADO_CASO_REAL` apoiado só num catálogo passaria."""
+    r = ResultadoValidacao.aprovado()
     for item in tuple(receita.componentes) + receita.todas_as_regras:
-        if autoria_de_especialista_ausente(item.estado, item.fontes):
+        if item.estado in ESTADOS_NAO_CALCULAVEIS:
+            continue                 # pendente é estado legítimo, não erro
+        problemas = incompatibilidades_das_fontes_embutidas(item.estado,
+                                                            item.fontes)
+        if problemas:
             r = r.somar(_reprovar(
-                item.identificador,
-                "decisão de especialista sem autoria registrada",
-                [f.para_dict() for f in item.fontes],
-                "fonte especialista_de_dominio com responsavel, data e "
-                "referencia", ORIGEM_RECEITA))
+                item.identificador, "evidência não sustenta o estado",
+                {"estado": item.estado.value,
+                 "fontes": [f"{f.id_fonte}:{f.tipo}/{f.estado.value}"
+                            for f in item.fontes],
+                 "motivos": list(problemas)},
+                "fonte com estado e tipo compatíveis (e autoria, se for do "
+                "especialista)", ORIGEM_RECEITA))
     # A autoria da aprovação é conferida contra o registro central de fontes
     # em `validar_aprovacoes`: aqui a fonte é só um ID.
     return r
+
+
+# ---------------------------------------------------------------------------
+# Cobertura estrutural
+# ---------------------------------------------------------------------------
+
+def validar_cobertura_estrutural_receita(receita: ReceitaTipologia) -> ResultadoValidacao:
+    """A receita tem as peças que uma correr de duas folhas exige.
+
+    Independe dos estados de conhecimento: uma receita preliminar pode ter tudo
+    pendente, mas não pode estar INCOMPLETA. Sem esta checagem, apagar um perfil
+    ou um alvo dimensional deixaria os gates satisfeitos com menos do que a
+    tipologia precisa."""
+    r = ResultadoValidacao.aprovado()
+
+    if receita.sistema != "Suprema":
+        r = r.somar(_reprovar(receita.codigo, "sistema divergente",
+                              receita.sistema, "Suprema", ORIGEM_RECEITA))
+    if receita.quantidade_folhas != 2:
+        r = r.somar(_reprovar(receita.codigo, "quantidade de folhas divergente",
+                              receita.quantidade_folhas, 2, ORIGEM_RECEITA))
+
+    # --- componentes: exatamente os oito perfis oficiais
+    codigos = [c.perfil.codigo_perfil for c in receita.componentes]
+    faltando = [p for p in PERFIS_OFICIAIS if p not in codigos]
+    if faltando:
+        r = r.somar(_reprovar(receita.codigo, "perfis oficiais ausentes",
+                              faltando, list(PERFIS_OFICIAIS), ORIGEM_RECEITA))
+    duplicados = sorted({c for c in codigos if codigos.count(c) > 1})
+    if duplicados:
+        r = r.somar(_reprovar(receita.codigo, "perfil duplicado na receita",
+                              duplicados, "um componente por perfil",
+                              ORIGEM_RECEITA))
+    intrusos = sorted({c for c in codigos if c not in PERFIS_OFICIAIS})
+    if intrusos:
+        r = r.somar(_reprovar(receita.codigo, "perfil fora do microlote oficial",
+                              intrusos, list(PERFIS_OFICIAIS), ORIGEM_RECEITA))
+    ids = [c.identificador for c in receita.componentes]
+    ids_dup = sorted({i for i in ids if ids.count(i) > 1})
+    if ids_dup:
+        r = r.somar(_reprovar(receita.codigo,
+                              "identificador de componente duplicado", ids_dup,
+                              "identificadores únicos", ORIGEM_RECEITA))
+    for c in receita.componentes:
+        if c.perfil.id_geometria != f"GEO-{c.perfil.codigo_perfil}":
+            r = r.somar(_reprovar(c.identificador, "referência GEO divergente",
+                                  c.perfil.id_geometria,
+                                  f"GEO-{c.perfil.codigo_perfil}",
+                                  ORIGEM_RECEITA))
+        if c.perfil.perfil_id_oficial != f"ALCOA-{c.perfil.codigo_perfil}":
+            r = r.somar(_reprovar(c.identificador,
+                                  "associação oficial divergente",
+                                  c.perfil.perfil_id_oficial,
+                                  f"ALCOA-{c.perfil.codigo_perfil}",
+                                  ORIGEM_RECEITA))
+
+    # --- regras dimensionais: exatamente um registro por alvo
+    alvos = [g.alvo for g in receita.regras_dimensionais]
+    ausentes = [a for a in ALVOS_DIMENSIONAIS if a not in alvos]
+    if ausentes:
+        r = r.somar(_reprovar(receita.codigo, "alvo dimensional ausente",
+                              ausentes, list(ALVOS_DIMENSIONAIS),
+                              ORIGEM_RECEITA))
+    alvo_dup = sorted({a for a in alvos if alvos.count(a) > 1})
+    if alvo_dup:
+        r = r.somar(_reprovar(receita.codigo, "alvo dimensional duplicado",
+                              alvo_dup, "uma regra por alvo", ORIGEM_RECEITA))
+    extras = sorted({a for a in alvos if a not in ALVOS_DIMENSIONAIS})
+    if extras:
+        r = r.somar(_reprovar(receita.codigo, "alvo dimensional desconhecido",
+                              extras, list(ALVOS_DIMENSIONAIS), ORIGEM_RECEITA))
+    ids_regra = [g.identificador for g in receita.todas_as_regras]
+    regra_dup = sorted({i for i in ids_regra if ids_regra.count(i) > 1})
+    if regra_dup:
+        r = r.somar(_reprovar(receita.codigo,
+                              "identificador de regra duplicado", regra_dup,
+                              "identificadores únicos", ORIGEM_RECEITA))
+
+    # --- acessórios: exatamente um requisito por item necessário
+    itens = [a.item for a in receita.regras_acessorios]
+    falta_acess = [i for i in ITENS_DE_ACESSORIO if i not in itens]
+    if falta_acess:
+        r = r.somar(_reprovar(receita.codigo, "requisito de acessório ausente",
+                              falta_acess, list(ITENS_DE_ACESSORIO),
+                              ORIGEM_RECEITA))
+    acess_dup = sorted({i for i in itens if itens.count(i) > 1})
+    if acess_dup:
+        r = r.somar(_reprovar(receita.codigo, "acessório duplicado", acess_dup,
+                              "um requisito por item", ORIGEM_RECEITA))
+    acess_extra = sorted({i for i in itens if i not in ITENS_DE_ACESSORIO})
+    if acess_extra:
+        r = r.somar(_reprovar(receita.codigo, "acessório desconhecido",
+                              acess_extra, list(ITENS_DE_ACESSORIO),
+                              ORIGEM_RECEITA))
+    return r
+
+
+# ---------------------------------------------------------------------------
+# Validação efetiva do caso real
+# ---------------------------------------------------------------------------
+
+def problemas_da_validacao_caso(caso: CasoRealFabricacao) -> tuple[str, ...]:
+    """Por que a validação declarada NÃO vale.
+
+    Um objeto `ValidacaoCasoReal(resultado=APROVADO)` é uma declaração; para
+    valer, ela precisa de fonte apta a registrar a conferência, com autor e
+    data coerentes, sobre dados íntegros."""
+    val = caso.validacao
+    if val is None:
+        return ("caso sem validação estruturada",)
+    problemas = []
+    if not val.aprovada:
+        problemas.append(f"validação com resultado {val.resultado.value}")
+
+    indice = caso.indice_fontes
+    ausentes = [i for i in val.fontes_ids if i not in indice]
+    if ausentes:
+        problemas.append(f"validação cita fonte inexistente: {ausentes}")
+        return tuple(problemas)
+
+    fontes = [indice[i] for i in val.fontes_ids]
+    for f in fontes:
+        if f.estado in ESTADOS_NAO_CALCULAVEIS:
+            problemas.append(
+                f"fonte da validação {f.id_fonte} está {f.estado.value}")
+    aptas = [f for f in fontes
+             if f.tipo in TIPOS_APTOS_PARA_VALIDAR_CASO
+             and f.estado in (EstadoConhecimento.CONFIRMADO_CASO_REAL,
+                              EstadoConhecimento.CONFIRMADO_ESPECIALISTA)
+             and f.responsavel and f.data]
+    if not aptas:
+        problemas.append(
+            f"nenhuma fonte apta a registrar validação "
+            f"(esperado tipo em {sorted(TIPOS_APTOS_PARA_VALIDAR_CASO)}, "
+            f"confirmada, com responsável e data)")
+    else:
+        if val.responsavel.strip() not in {f.responsavel.strip() for f in aptas}:
+            problemas.append(
+                f"responsável da validação ({val.responsavel}) divergente da "
+                f"evidência ({sorted({f.responsavel for f in aptas})})")
+        if val.data not in {f.data for f in aptas}:
+            problemas.append(
+                f"data da validação ({val.data}) divergente da evidência "
+                f"({sorted({f.data for f in aptas})})")
+    return tuple(problemas)
+
+
+def estado_validacao_caso(caso: CasoRealFabricacao,
+                          perfis_oficiais=()) -> str:
+    """Estado EFETIVO do caso: `VALIDADO` só com evidência apta e dados íntegros."""
+    if problemas_da_validacao_caso(caso):
+        return caso.estado_recebimento
+    if not validar_integridade_caso_real(caso, perfis_oficiais or PERFIS_OFICIAIS).ok:
+        return caso.estado_recebimento
+    return ESTADO_CASO_VALIDADO
+
+
+def caso_validado(caso: CasoRealFabricacao, perfis_oficiais=()) -> bool:
+    return estado_validacao_caso(caso, perfis_oficiais) == ESTADO_CASO_VALIDADO
 
 
 # ---------------------------------------------------------------------------
@@ -269,33 +425,6 @@ def validar_integridade_caso_real(caso: CasoRealFabricacao,
                 perfil, f"{ident}.perfis.{perfil.codigo_perfil}",
                 ("funcao", "quantidade", "orientacao"), indice))
 
-    val = caso.validacao
-    if val is None:
-        r = r.somar(_reprovar(ident, "caso sem validação estruturada", None,
-                              "ValidacaoCasoReal APROVADA", ORIGEM_CASO))
-    else:
-        ausentes = [i for i in val.fontes_ids if i not in indice]
-        if ausentes:
-            r = r.somar(_reprovar(ident, "validação cita fonte inexistente",
-                                  ausentes, sorted(indice) or "nenhuma",
-                                  ORIGEM_CASO))
-        else:
-            autores = {indice[i].responsavel for i in val.fontes_ids
-                       if indice[i].responsavel}
-            if autores and val.responsavel.strip() not in autores:
-                r = r.somar(_reprovar(
-                    ident, "responsável da validação divergente da evidência",
-                    val.responsavel, sorted(autores), ORIGEM_CASO))
-            datas = {indice[i].data for i in val.fontes_ids if indice[i].data}
-            if datas and val.data not in datas:
-                r = r.somar(_reprovar(
-                    ident, "data da validação divergente da evidência",
-                    val.data, sorted(datas), ORIGEM_CASO))
-        if not val.aprovada:
-            r = r.somar(_reprovar(ident, "validação do caso não é APROVADO",
-                                  val.resultado.value,
-                                  ResultadoAprovacao.APROVADO.value,
-                                  ORIGEM_CASO))
     return r
 
 
@@ -307,6 +436,7 @@ def validar_prontidao_para_visualizacao(receita: ReceitaTipologia,
     não se aceita é referência quebrada: desenhar um perfil que não está na
     biblioteca seria mostrar geometria inventada."""
     r = validar_referencias_geometricas(receita, biblioteca)
+    r = r.somar(validar_cobertura_estrutural_receita(receita))
     r = r.somar(validar_fontes(receita))
     if not receita.preliminar:
         pend = [c.identificador for c in receita.componentes if c.pendencias()]
@@ -325,6 +455,7 @@ def validar_prontidao_para_calculo(receita: ReceitaTipologia,
                                    biblioteca) -> ResultadoValidacao:
     """Cálculo oficial: tudo confirmado, sem exceção."""
     r = validar_referencias_geometricas(receita, biblioteca)
+    r = r.somar(validar_cobertura_estrutural_receita(receita))
     r = r.somar(validar_fontes(receita))
     r = r.somar(validar_componentes_confirmados(receita))
     r = r.somar(validar_regras_dimensionais(receita))
@@ -408,7 +539,21 @@ def validar_casos_reais_independentes(receita: ReceitaTipologia) -> ResultadoVal
     r = ResultadoValidacao.aprovado()
     # `validado` deriva de uma ValidacaoCasoReal APROVADA — nunca de uma string
     # escrita à mão no campo de estado.
-    validados = [c for c in receita.casos_reais if c.validado]
+    validados = [c for c in receita.casos_reais
+                 if caso_validado(c, PERFIS_OFICIAIS)]
+    # Casos que se DECLARAM validados mas não passam: o motivo tem de aparecer.
+    # Contar só os efetivos deixaria a falha como "caso canônico ausente", sem
+    # dizer que o problema era a lista de corte vazia.
+    declarados = [c for c in receita.casos_reais
+                  if c.validacao_declarada_aprovada and c not in validados]
+    for c in declarados:
+        r = r.somar(validar_integridade_caso_real(c, PERFIS_OFICIAIS))
+        for motivo in problemas_da_validacao_caso(c):
+            r = r.somar(_reprovar(
+                c.identificador or "caso sem identificador",
+                "validação declarada não vale", motivo,
+                "validação aprovada com fonte apta sobre dados íntegros",
+                ORIGEM_CASO))
     por_id = {}
     for c in validados:
         por_id.setdefault(c.identificador, []).append(c)
@@ -443,6 +588,10 @@ def validar_casos_reais_independentes(receita: ReceitaTipologia) -> ResultadoVal
         # Aprovar a validação não salva um caso incompleto: as duas condições
         # são necessárias ao mesmo tempo.
         r = r.somar(validar_integridade_caso_real(c, PERFIS_OFICIAIS))
+        for motivo in problemas_da_validacao_caso(c):
+            r = r.somar(_reprovar(c.identificador, "validação do caso inválida",
+                                  motivo, "validação aprovada com fonte apta",
+                                  ORIGEM_CASO))
         if c.tem_medidas:
             dimensoes.append((c.identificador,
                               (c.largura_total_mm, c.altura_total_mm)))

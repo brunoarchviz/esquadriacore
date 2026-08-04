@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from .modelos import ReceitaTipologia
 from .receita import PERGUNTAS_ABERTAS, variaveis_disponiveis
-from .validar import (validar_prontidao_para_calculo,
+from .validar import (caso_validado, validar_prontidao_para_calculo,
                       validar_prontidao_para_producao,
                       validar_prontidao_para_visualizacao)
 
@@ -97,7 +97,7 @@ def gerar_relatorio_prontidao(receita: ReceitaTipologia,
         "casos_reais": {
             "recebidos": [c.identificador for c in receita.casos_reais],
             "validados": [c.identificador for c in receita.casos_reais
-                          if c.validado],
+                          if caso_validado(c)],
         },
         "gates": {
             "visualizacao_preliminar": _resumo_gate(visual, "visualizacao_preliminar"),

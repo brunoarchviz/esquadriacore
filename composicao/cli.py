@@ -106,7 +106,9 @@ def cmd_validar_ficha(args) -> int:
             print(f"erro na conversão: {e}", file=sys.stderr)
             return 1
         ident = caso.identificador or "NAO_INFORMADO"
-        print(f"caso real: {ident} — {caso.estado_validacao}")
+        # Estado de RECEBIMENTO. "VALIDADO" não sai daqui: depende de fonte
+        # apta e de integridade, conferidas no gate de produção.
+        print(f"caso real: {ident} — {caso.estado_recebimento}")
         print(f"  seções preenchidas: "
               f"{', '.join(caso.secoes_preenchidas) or 'nenhuma'}")
         largura = ("NAO_INFORMADO" if caso.largura_total_mm is None
