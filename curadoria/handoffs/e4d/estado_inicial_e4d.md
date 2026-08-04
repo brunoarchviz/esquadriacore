@@ -121,6 +121,23 @@ inventaria a identidade da evidência.
 Um índice por tipo fazia a segunda fonte do mesmo tipo sobrescrever a primeira,
 e a afirmação não dizia a qual das duas se referia.
 
+**Fonte existente não é fonte apta.** O estado da fonte precisa sustentar o
+estado da afirmação:
+
+```text
+CONFIRMADO_CATALOGO             catálogo ou tabela de fabricação
+CONFIRMADO_BIBLIOTECA_OFICIAL   manifesto de promoção ou biblioteca oficial
+CONFIRMADO_ESPECIALISTA         especialista de domínio, com autoria completa
+CONFIRMADO_CASO_REAL            medição, foto, croqui, lista real, software
+DERIVADO_DE_REGRA_APROVADA      evidência da regra aprovada correspondente
+```
+
+Não é uma escala numérica: cada confirmação tem natureza própria. Uma foto não
+confirma cota de catálogo, e um catálogo não prova o que foi medido numa janela
+real. Nenhuma fonte citada pode estar `PENDENTE` ou `HIPOTESE`, e ao menos uma
+tem de ser compatível. Afirmação confirmada com evidência incompatível vira
+**erro visível**, não some da lista de confirmações.
+
 ### Cada afirmação carrega o seu estado e a sua evidência
 
 `caso_real`, `vista`, cada perfil e cada item de `cortes`, `vidros`,
@@ -141,8 +158,32 @@ negativo abriria o mesmo portão que um positivo.
 
 O gate de produção exige **exatamente uma** aprovação por escopo, com resultado
 `APROVADO`. Duas aprovações do mesmo escopo bloqueiam: conflito não se resolve
-pela ordem da lista. A assinatura e a evidência têm de ser da mesma pessoa, e a
-fonte tem de ser `especialista_de_dominio`.
+pela ordem da lista.
+
+A aprovação cita a evidência por `fonte_id`, resolvido no **registro central**
+da receita (`indice_fontes_receita`). Carregar o objeto da fonte permitia
+aprovar com evidência que não existe em lugar nenhum. A fonte tem de estar
+registrada, ser `especialista_de_dominio`, estar `CONFIRMADO_ESPECIALISTA`, ter
+autoria completa, e bater em responsável e data com a aprovação.
+
+### Caso validado exige integridade E validação
+
+`bool(caso.cortes)` aceitava uma tupla com objetos vazios: o gate abria porque
+a lista não estava vazia, sem uma única peça descrita.
+`validar_integridade_caso_real()` confere item a item — campos mínimos, estado
+e evidência apta:
+
+```text
+dimensões    largura, altura, estado confirmado e fontes compatíveis
+cortes       perfil (do microlote oficial), comprimento, quantidade, evidência
+vidros       folha, largura, altura, espessura, evidência
+demais       campos mínimos da categoria, estado e evidência
+```
+
+Item parcial continua guardado no caso como dado recebido — o que ele não pode
+é ser contado como prova para produção. E aprovar a validação **não** salva um
+caso incompleto: integridade dos dados e validação estruturada são necessárias
+ao mesmo tempo.
 
 ### Caso validado tem registro estruturado
 
@@ -151,6 +192,14 @@ fonte tem de ser `especialista_de_dominio`.
 data real e fontes existentes. Os estados de recebimento continuam sendo
 `AGUARDANDO_DADOS`, `RECEBIDO_PARCIAL` e `RECEBIDO_NAO_VALIDADO` — e nenhum
 deles pode ser escrito como `VALIDADO`.
+
+### Modelos são profundamente imutáveis
+
+`frozen=True` congela os atributos do dataclass, não o conteúdo de um `dict`.
+`dados_adicionais` é congelado na construção — cópia recursiva com
+`MappingProxyType`, `tuple` e `frozenset` —, então alterar o dicionário
+original depois não muda o registro, e mutar o conteúdo do modelo falha.
+`para_dict()` devolve uma cópia nova e mutável: mexer nela não afeta o modelo.
 
 ### Datas são datas de verdade
 

@@ -24,7 +24,7 @@ from composicao.modelos import (ESCOPO_APROVACAO_FORMULAS,
                                 ESTADO_RECEITA_PRELIMINAR,
                                 AprovacaoEspecialista, CasoRealFabricacao,
                                 ComponenteReceita, CorteReal,
-                                EstadoConhecimento, FonteEvidencia,
+                                EstadoConhecimento, FolgaReal, FonteEvidencia,
                                 PapelComponente, ReceitaErro, ReceitaTipologia,
                                 RegraAcessorio, RegraDimensional,
                                 ResultadoAprovacao, ValidacaoCasoReal,
@@ -52,8 +52,16 @@ def ficha_em_branco():
 
 
 def _fonte(estado=EstadoConhecimento.CONFIRMADO_ESPECIALISTA, responsavel="Bruno",
-           data="2026-08-03", id_fonte="FONTE-TESTE-01",
-           tipo="especialista_de_dominio"):
+           data="2026-08-03", id_fonte=None, tipo=None):
+    """Fonte de teste com ID derivado do estado.
+
+    IDs distintos por estado de propósito: o registro central recusa o mesmo
+    `id_fonte` com conteúdos diferentes, e reaproveitar um único ID aqui
+    esconderia justamente essa checagem."""
+    tipo = tipo or ("especialista_de_dominio"
+                    if estado is EstadoConhecimento.CONFIRMADO_ESPECIALISTA
+                    else "lista_de_corte_real")
+    id_fonte = id_fonte or f"FONTE-TESTE-{estado.value.replace('_', '-')}"
     return FonteEvidencia(
         id_fonte=id_fonte, tipo=tipo,
         referencia="curadoria/handoffs/e4d/estado_inicial_e4d.md",
@@ -69,11 +77,27 @@ def _regra_acessorio_confirmada(item="roldanas"):
         fontes=(_fonte(estado=EstadoConhecimento.CONFIRMADO_CASO_REAL),))
 
 
+# Fonte de especialista com autoria completa, datada no dia da aprovação.
+FONTE_APROVACAO = FonteEvidencia(
+    id_fonte="FONTE-APROVACAO", tipo="especialista_de_dominio",
+    referencia="curadoria/handoffs/e4d/estado_inicial_e4d.md",
+    descricao="arbitragem final", estado=EstadoConhecimento.CONFIRMADO_ESPECIALISTA,
+    responsavel="Bruno", data="2026-08-10")
+
+# Evidência do caso real: lista de corte de verdade, não parecer.
+FONTE_CASO = FonteEvidencia(
+    id_fonte="FONTE-CASO-01", tipo="lista_de_corte_real",
+    referencia="curadoria/campo/lista_a.pdf", descricao="lista de corte real",
+    estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
+    responsavel="Bruno", data="2026-08-10")
+
+
 def _aprovacao(escopo, resultado=ResultadoAprovacao.APROVADO,
-               responsavel="Bruno"):
+               responsavel="Bruno", fonte_id="FONTE-APROVACAO",
+               data="2026-08-10"):
     return AprovacaoEspecialista(
-        resultado=resultado, responsavel=responsavel, data="2026-08-10",
-        fonte=_fonte(responsavel=responsavel), escopo=escopo)
+        resultado=resultado, responsavel=responsavel, data=data,
+        fonte_id=fonte_id, escopo=escopo)
 
 
 def _validacao_aprovada(resultado=ResultadoAprovacao.APROVADO):
@@ -82,17 +106,31 @@ def _validacao_aprovada(resultado=ResultadoAprovacao.APROVADO):
         fontes_ids=("FONTE-CASO-01",))
 
 
-def _caso_validado(ident, largura, altura, validacao=None):
-    return CasoRealFabricacao(
+def _corte_confirmado(perfil="SU-001", comprimento="1000", quantidade=1):
+    return CorteReal(perfil=perfil, comprimento_mm=Decimal(comprimento),
+                     quantidade=quantidade,
+                     estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
+                     fontes_ids=("FONTE-CASO-01",))
+
+
+def _vidro_confirmado(largura="500", altura="900"):
+    return VidroReal(folha="1", largura_mm=Decimal(largura),
+                     altura_mm=Decimal(altura), espessura_mm=Decimal("6"),
+                     estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
+                     fontes_ids=("FONTE-CASO-01",))
+
+
+def _caso_validado(ident, largura, altura, validacao=None, **kw):
+    base = dict(
         identificador=ident, largura_total_mm=Decimal(largura),
         altura_total_mm=Decimal(altura),
-        cortes=(CorteReal(perfil="SU-001", comprimento_mm=Decimal("1000")),),
-        vidros=(VidroReal(folha="1", largura_mm=Decimal("500"),
-                          altura_mm=Decimal("900")),),
-        fontes=(_fonte(estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
-                       id_fonte="FONTE-CASO-01"),),
-        estado_recebimento=ESTADO_CASO_RECEBIDO,
+        estado_dimensoes=EstadoConhecimento.CONFIRMADO_CASO_REAL,
+        fontes_ids_dimensoes=("FONTE-CASO-01",),
+        cortes=(_corte_confirmado(),), vidros=(_vidro_confirmado(),),
+        fontes=(FONTE_CASO,), estado_recebimento=ESTADO_CASO_RECEBIDO,
         validacao=validacao if validacao is not None else _validacao_aprovada())
+    base.update(kw)
+    return CasoRealFabricacao(**base)
 
 
 def _componente_confirmado(codigo="SU-001", **kw):
@@ -421,7 +459,7 @@ def _receita_completa(regra=None):
         componentes=tuple(_componente_confirmado(p) for p in PERFIS),
         regras_corte=(regra,), regras_vidro=(),
         regras_acessorios=(_regra_acessorio_confirmada(),),
-        estado="CONFIRMADA")
+        fontes=(FONTE_APROVACAO,), estado="CONFIRMADA")
 
 
 def test_producao_exige_casos_reais_validados_e_aprovacao(biblioteca):
@@ -971,10 +1009,10 @@ def test_aprovacao_como_string_solta_nao_abre_producao(biblioteca):
     assert not r.ok, "aprovar a receita não aprova as fórmulas"
 
 
-@pytest.mark.parametrize("campo", ["responsavel", "data", "escopo"])
+@pytest.mark.parametrize("campo", ["responsavel", "data", "escopo", "fonte_id"])
 def test_aprovacao_exige_todos_os_campos(campo):
     base = dict(resultado=ResultadoAprovacao.APROVADO, responsavel="Bruno",
-                data="2026-08-10", fonte=_fonte(),
+                data="2026-08-10", fonte_id="FONTE-APROVACAO",
                 escopo=ESCOPO_APROVACAO_RECEITA)
     base[campo] = ""
     with pytest.raises(ReceitaErro):
@@ -1315,22 +1353,33 @@ def test_aprovacoes_por_escopo_devolve_todas():
     assert aprovacoes_por_escopo(receita, ESCOPO_APROVACAO_FORMULAS) == ()
 
 
-def test_responsavel_da_aprovacao_divergente_da_fonte_reprova():
+def test_responsavel_da_aprovacao_divergente_da_fonte_reprova(biblioteca):
     """Assinatura e evidência têm de ser da mesma pessoa."""
-    with pytest.raises(ReceitaErro, match="assinada por"):
-        AprovacaoEspecialista(
-            resultado=ResultadoAprovacao.APROVADO, responsavel="Anderson",
-            data="2026-08-10", fonte=_fonte(responsavel="Bruno"),
-            escopo=ESCOPO_APROVACAO_RECEITA)
+    from dataclasses import replace
+    receita = replace(_receita_completa(), casos_reais=_TRES_CASOS,
+                      aprovacoes=(_aprovacao(ESCOPO_APROVACAO_RECEITA,
+                                             responsavel="Anderson"),
+                                  _aprovacao(ESCOPO_APROVACAO_FORMULAS)))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("assinada por" in str(f["encontrado"]) for f in r.falhas)
 
 
-def test_aprovacao_com_fonte_que_nao_e_de_especialista_reprova():
-    with pytest.raises(ReceitaErro, match="especialista_de_dominio"):
-        AprovacaoEspecialista(
-            resultado=ResultadoAprovacao.APROVADO, responsavel="Bruno",
-            data="2026-08-10",
-            fonte=_fonte(tipo="foto", id_fonte="FONTE-FOTO"),
-            escopo=ESCOPO_APROVACAO_RECEITA)
+def test_aprovacao_com_fonte_que_nao_e_de_especialista_reprova(biblioteca):
+    from dataclasses import replace
+    foto = FonteEvidencia(id_fonte="FONTE-FOTO", tipo="foto",
+                          referencia="curadoria/campo/a.jpg", descricao="",
+                          estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
+                          responsavel="Bruno", data="2026-08-10")
+    receita = replace(_receita_completa(), casos_reais=_TRES_CASOS,
+                      fontes=(FONTE_APROVACAO, foto),
+                      aprovacoes=(_aprovacao(ESCOPO_APROVACAO_RECEITA,
+                                             fonte_id="FONTE-FOTO"),
+                                  _aprovacao(ESCOPO_APROVACAO_FORMULAS)))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("especialista_de_dominio" in str(f["encontrado"])
+               for f in r.falhas)
 
 
 def test_escopo_de_aprovacao_desconhecido_reprova():
@@ -1350,6 +1399,7 @@ def test_caso_nao_pode_se_declarar_validado():
 def test_caso_sem_validacao_estruturada_nao_abre_producao(biblioteca):
     from dataclasses import replace
     sem_validacao = tuple(replace(c, validacao=None) for c in _TRES_CASOS)
+    assert all(not c.validado for c in sem_validacao)
     assert all(c.estado_validacao == ESTADO_CASO_RECEBIDO
                for c in sem_validacao)
     receita = replace(_receita_completa(), casos_reais=sem_validacao,
@@ -1479,3 +1529,350 @@ def test_modelo_yaml_nao_cria_valor_tecnico(ficha_em_branco):
                   "sobreposicoes", "croquis", "fontes", "duvidas"):
         assert getattr(caso, secao) == (), secao
     assert caso.validacao is None
+
+
+# ===========================================================================
+# Invariantes de evidência
+#
+# Existir não é sustentar. Uma fonte PENDENTE não confirma nada, um catálogo
+# não prova o que foi medido, e um objeto vazio numa lista não é uma peça.
+# ===========================================================================
+
+def _fonte_com(id_fonte, tipo, estado, responsavel="Bruno", data="2026-08-10"):
+    return FonteEvidencia(
+        id_fonte=id_fonte, tipo=tipo,
+        referencia=f"curadoria/campo/{id_fonte.lower()}.pdf",
+        descricao="evidência de teste",
+        estado=EstadoConhecimento(estado), responsavel=responsavel, data=data)
+
+
+def _indice(*fontes):
+    return {f.id_fonte: f for f in fontes}
+
+
+# ---- matriz de compatibilidade --------------------------------------------
+
+@pytest.mark.parametrize("estado_fonte", ["PENDENTE", "HIPOTESE"])
+def test_fonte_sem_confirmacao_nao_sustenta_afirmacao(estado_fonte):
+    """Uma afirmação firme apoiada em fonte pendente diria que a janela foi
+    medida quando ninguém mediu."""
+    from composicao.modelos import incompatibilidades_da_afirmacao
+    f = _fonte_com("FONTE-X", "lista_de_corte_real", estado_fonte)
+    problemas = incompatibilidades_da_afirmacao(
+        EstadoConhecimento.CONFIRMADO_CASO_REAL, ("FONTE-X",), _indice(f))
+    assert problemas
+    assert any(estado_fonte in p for p in problemas)
+
+
+def test_caso_real_com_fonte_so_de_catalogo_reprova():
+    from composicao.modelos import incompatibilidades_da_afirmacao
+    f = _fonte_com("FONTE-CAT", "catalogo", "CONFIRMADO_CATALOGO")
+    problemas = incompatibilidades_da_afirmacao(
+        EstadoConhecimento.CONFIRMADO_CASO_REAL, ("FONTE-CAT",), _indice(f))
+    assert any("nenhuma fonte compatível" in p for p in problemas)
+
+
+def test_especialista_com_fonte_de_caso_real_reprova():
+    from composicao.modelos import incompatibilidades_da_afirmacao
+    f = _fonte_com("FONTE-MED", "medicao_fisica", "CONFIRMADO_CASO_REAL")
+    problemas = incompatibilidades_da_afirmacao(
+        EstadoConhecimento.CONFIRMADO_ESPECIALISTA, ("FONTE-MED",), _indice(f))
+    assert any("nenhuma fonte compatível" in p for p in problemas)
+
+
+@pytest.mark.parametrize("estado,tipo", [
+    ("CONFIRMADO_CATALOGO", "catalogo"),
+    ("CONFIRMADO_BIBLIOTECA_OFICIAL", "manifesto_promocao"),
+    ("CONFIRMADO_ESPECIALISTA", "especialista_de_dominio"),
+    ("CONFIRMADO_CASO_REAL", "medicao_fisica"),
+    ("DERIVADO_DE_REGRA_APROVADA", "tabela_de_fabricacao"),
+])
+def test_fonte_compativel_confirma(estado, tipo):
+    from composicao.modelos import (afirmacao_confirmada,
+                                    fonte_compativel_com_afirmacao)
+    f = _fonte_com("FONTE-OK", tipo, estado)
+    assert fonte_compativel_com_afirmacao(f, EstadoConhecimento(estado))
+    assert afirmacao_confirmada(EstadoConhecimento(estado), ("FONTE-OK",),
+                                _indice(f))
+
+
+def test_especialista_sem_autoria_nao_e_fonte_compativel():
+    from composicao.modelos import fonte_compativel_com_afirmacao
+    f = _fonte_com("FONTE-ESP", "especialista_de_dominio",
+                   "CONFIRMADO_ESPECIALISTA", responsavel=None)
+    assert not fonte_compativel_com_afirmacao(
+        f, EstadoConhecimento.CONFIRMADO_ESPECIALISTA)
+
+
+def test_uma_fonte_pendente_entre_duas_nao_passa_em_silencio():
+    """A compatível não apaga o problema da outra: citar uma fonte pendente é
+    citar algo que ainda não foi confirmado."""
+    from composicao.modelos import incompatibilidades_da_afirmacao
+    boa = _fonte_com("FONTE-BOA", "lista_de_corte_real", "CONFIRMADO_CASO_REAL")
+    ruim = _fonte_com("FONTE-RUIM", "foto", "PENDENTE")
+    problemas = incompatibilidades_da_afirmacao(
+        EstadoConhecimento.CONFIRMADO_CASO_REAL,
+        ("FONTE-BOA", "FONTE-RUIM"), _indice(boa, ruim))
+    assert problemas
+    assert any("FONTE-RUIM" in p and "PENDENTE" in p for p in problemas)
+
+
+def test_ficha_com_fonte_incompativel_reprova_a_estrutura(ficha_em_branco):
+    """Não basta sumir da lista de confirmações: tem de aparecer como erro."""
+    d = copy.deepcopy(ficha_em_branco)
+    d["fontes"] = [{"id_fonte": "FONTE-CAT", "tipo": "catalogo",
+                    "referencia": "dados_exemplo/catalogo.pdf",
+                    "descricao": "catálogo", "estado": "CONFIRMADO_CATALOGO"}]
+    d["folgas"] = [{"entre": "folha e marco", "valor_mm": 3,
+                    "estado": "CONFIRMADO_CASO_REAL",
+                    "fontes_ids": ["FONTE-CAT"]}]
+    r = fontes.validar_estrutura_ficha(d, "x")
+    assert not r.ok
+    assert any("evidência não sustenta o estado" in f["regra"] for f in r.falhas)
+    assert fontes.extrair_decisoes_confirmadas(d) == ()
+
+
+# ---- integridade do caso real ---------------------------------------------
+
+def _caso_com(**kw):
+    return _caso_validado("CASO_A_PEQUENO", "800", "600", **kw)
+
+
+@pytest.mark.parametrize("cortes,motivo", [
+    ((CorteReal(),), "campos mínimos"),
+    ((CorteReal(perfil="SU-001", estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
+                fontes_ids=("FONTE-CASO-01",)),), "campos mínimos"),
+    ((CorteReal(perfil="SU-001", comprimento_mm=Decimal("700"),
+                estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
+                fontes_ids=("FONTE-CASO-01",)),), "campos mínimos"),
+    ((CorteReal(perfil="SU-001", comprimento_mm=Decimal("700"), quantidade=1),),
+     "evidência apta"),
+    ((CorteReal(perfil="SU-001", comprimento_mm=Decimal("700"), quantidade=1,
+                estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
+                fontes_ids=("FONTE-FANTASMA",)),), "evidência apta"),
+])
+def test_corte_incompleto_nao_valida_o_caso(cortes, motivo):
+    """`bool(caso.cortes)` aceitava uma tupla com objetos vazios: o gate abria
+    porque a lista não estava vazia, sem uma única peça descrita."""
+    caso = _caso_com(cortes=cortes)
+    r = validar.validar_integridade_caso_real(caso, PERFIS)
+    assert not r.ok
+    assert any(motivo in f["regra"] for f in r.falhas), r.descrever()
+
+
+def test_corte_de_perfil_fora_do_microlote_nao_valida_o_caso():
+    caso = _caso_com(cortes=(_corte_confirmado(perfil="SU-999"),))
+    r = validar.validar_integridade_caso_real(caso, PERFIS)
+    assert not r.ok
+    assert any("fora do microlote" in f["regra"] for f in r.falhas)
+
+
+@pytest.mark.parametrize("vidros", [
+    (VidroReal(),),
+    (VidroReal(folha="1", largura_mm=Decimal("500"), altura_mm=Decimal("900"),
+               estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
+               fontes_ids=("FONTE-CASO-01",)),),   # sem espessura
+])
+def test_vidro_incompleto_nao_valida_o_caso(vidros):
+    caso = _caso_com(vidros=vidros)
+    r = validar.validar_integridade_caso_real(caso, PERFIS)
+    assert not r.ok
+    assert any("campos mínimos" in f["regra"] for f in r.falhas)
+
+
+@pytest.mark.parametrize("kw", [
+    {"estado_dimensoes": None},
+    {"estado_dimensoes": EstadoConhecimento.HIPOTESE},
+    {"fontes_ids_dimensoes": ()},
+    {"fontes_ids_dimensoes": ("FONTE-FANTASMA",)},
+])
+def test_dimensoes_sem_evidencia_apta_nao_validam_o_caso(kw):
+    caso = _caso_com(**kw)
+    r = validar.validar_integridade_caso_real(caso, PERFIS)
+    assert not r.ok
+    assert any("dimensões sem evidência apta" in f["regra"] for f in r.falhas)
+
+
+def test_validacao_aprovada_nao_salva_caso_incompleto(biblioteca):
+    """As duas condições são necessárias ao mesmo tempo: dados íntegros E
+    validação aprovada."""
+    from dataclasses import replace
+    vazio = _caso_com(cortes=(CorteReal(),))
+    assert vazio.validado, "a validação estruturada está aprovada"
+    assert not validar.validar_integridade_caso_real(vazio, PERFIS).ok
+
+    receita = replace(_receita_completa(),
+                      casos_reais=(vazio,) + _TRES_CASOS[1:],
+                      aprovacoes=(_aprovacao(ESCOPO_APROVACAO_RECEITA),
+                                  _aprovacao(ESCOPO_APROVACAO_FORMULAS)))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("campos mínimos" in f["regra"] for f in r.falhas)
+
+
+def test_validacao_com_fonte_duplicada_reprova():
+    with pytest.raises(ReceitaErro, match="fonte repetida"):
+        ValidacaoCasoReal(resultado=ResultadoAprovacao.APROVADO,
+                          responsavel="Bruno", data="2026-08-10",
+                          fontes_ids=("FONTE-CASO-01", "FONTE-CASO-01"))
+
+
+def test_responsavel_da_validacao_divergente_da_fonte_reprova():
+    caso = _caso_com(validacao=ValidacaoCasoReal(
+        resultado=ResultadoAprovacao.APROVADO, responsavel="Anderson",
+        data="2026-08-10", fontes_ids=("FONTE-CASO-01",)))
+    r = validar.validar_integridade_caso_real(caso, PERFIS)
+    assert not r.ok
+    assert any("responsável da validação divergente" in f["regra"]
+               for f in r.falhas)
+
+
+def test_data_da_validacao_divergente_da_evidencia_reprova():
+    caso = _caso_com(validacao=ValidacaoCasoReal(
+        resultado=ResultadoAprovacao.APROVADO, responsavel="Bruno",
+        data="2026-09-01", fontes_ids=("FONTE-CASO-01",)))
+    r = validar.validar_integridade_caso_real(caso, PERFIS)
+    assert not r.ok
+    assert any("data da validação divergente" in f["regra"] for f in r.falhas)
+
+
+def test_caso_integro_passa_na_validacao_completa():
+    caso = _caso_validado("CASO_A_PEQUENO", "800", "600")
+    r = validar.validar_integridade_caso_real(caso, PERFIS)
+    assert r.ok, r.descrever()
+
+
+def test_item_parcial_permanece_no_caso_mas_nao_valida(biblioteca):
+    """Dado parcial é registro legítimo; o que ele não pode é virar prova."""
+    from dataclasses import replace
+    parcial = _caso_com(folgas=(FolgaReal(entre="folha e marco"),))
+    assert parcial.folgas, "o item continua guardado"
+    r = validar.validar_integridade_caso_real(parcial, PERFIS)
+    assert not r.ok
+    assert any("folgas[0]" in f["alvo"] for f in r.falhas)
+
+
+# ---- aprovação vinculada ao registro central -------------------------------
+
+def test_aprovacao_com_fonte_fora_da_receita_reprova(biblioteca):
+    from dataclasses import replace
+    receita = replace(_receita_completa(), casos_reais=_TRES_CASOS,
+                      fontes=(),      # a fonte da aprovação não está registrada
+                      aprovacoes=(_aprovacao(ESCOPO_APROVACAO_RECEITA),
+                                  _aprovacao(ESCOPO_APROVACAO_FORMULAS)))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("não está registrada" in str(f["encontrado"]) for f in r.falhas)
+
+
+def test_aprovacao_com_fonte_pendente_reprova(biblioteca):
+    from dataclasses import replace
+    pendente = FonteEvidencia(
+        id_fonte="FONTE-APROVACAO", tipo="especialista_de_dominio",
+        referencia="curadoria/handoffs/e4d/estado_inicial_e4d.md",
+        descricao="rascunho", estado=EstadoConhecimento.PENDENTE,
+        responsavel="Bruno", data="2026-08-10")
+    receita = replace(_receita_completa(), casos_reais=_TRES_CASOS,
+                      fontes=(pendente,),
+                      aprovacoes=(_aprovacao(ESCOPO_APROVACAO_RECEITA),
+                                  _aprovacao(ESCOPO_APROVACAO_FORMULAS)))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("PENDENTE" in str(f["encontrado"]) for f in r.falhas)
+
+
+def test_aprovacao_com_data_divergente_da_evidencia_reprova(biblioteca):
+    from dataclasses import replace
+    receita = replace(_receita_completa(), casos_reais=_TRES_CASOS,
+                      aprovacoes=(_aprovacao(ESCOPO_APROVACAO_RECEITA,
+                                             data="2026-09-15"),
+                                  _aprovacao(ESCOPO_APROVACAO_FORMULAS)))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("datas divergentes" in str(f["encontrado"]) for f in r.falhas)
+
+
+def test_duas_fontes_com_mesmo_id_e_conteudo_diferente_reprovam():
+    from composicao.modelos import indice_fontes_receita
+    from dataclasses import replace
+    outra = replace(FONTE_APROVACAO, descricao="outra coisa")
+    receita = replace(_receita_completa(),
+                      fontes=(FONTE_APROVACAO,),
+                      casos_reais=(_caso_validado("CASO_A_PEQUENO", "800", "600",
+                                                  fontes=(FONTE_CASO, outra)),))
+    with pytest.raises(ReceitaErro, match="duas fontes diferentes"):
+        indice_fontes_receita(receita)
+
+
+def test_indice_de_fontes_nao_depende_da_ordem():
+    from composicao.modelos import indice_fontes_receita
+    from dataclasses import replace
+    r1 = replace(_receita_completa(), fontes=(FONTE_APROVACAO, FONTE_CASO))
+    r2 = replace(_receita_completa(), fontes=(FONTE_CASO, FONTE_APROVACAO))
+    assert indice_fontes_receita(r1) == indice_fontes_receita(r2)
+
+
+# ---- imutabilidade profunda ------------------------------------------------
+
+def test_alterar_o_dict_original_nao_altera_o_modelo():
+    """`frozen=True` congela os atributos, não o conteúdo de um dict."""
+    original = {"nota": "primeira", "medidas": [1, 2]}
+    corte = CorteReal(perfil="SU-001", dados_adicionais=original)
+    original["nota"] = "alterada depois"
+    original["medidas"].append(3)
+    assert corte.dados_adicionais["nota"] == "primeira"
+    assert corte.dados_adicionais["medidas"] == (1, 2)
+
+
+def test_mutar_dados_adicionais_do_modelo_falha():
+    corte = CorteReal(perfil="SU-001",
+                      dados_adicionais={"nota": "x", "aninhado": {"a": 1}})
+    with pytest.raises(TypeError):
+        corte.dados_adicionais["nota"] = "y"
+    with pytest.raises(TypeError):
+        corte.dados_adicionais["aninhado"]["a"] = 2
+
+
+def test_mutar_o_retorno_de_para_dict_nao_altera_o_modelo():
+    caso = _caso_com(dados_adicionais={"obs": "original", "lista": [1]})
+    d = caso.para_dict()
+    d["dados_adicionais"]["obs"] = "mexido"
+    d["dados_adicionais"]["lista"].append(2)
+    assert caso.dados_adicionais["obs"] == "original"
+    assert caso.dados_adicionais["lista"] == (1,)
+    assert caso.para_dict()["dados_adicionais"]["obs"] == "original"
+
+
+def test_congelamento_e_recursivo_em_listas_e_conjuntos():
+    from composicao.modelos import (congelar_dados_adicionais,
+                                    descongelar_dados_adicionais)
+    congelado = congelar_dados_adicionais(
+        {"a": [1, {"b": {2, 3}}], "c": ("x",)})
+    assert isinstance(congelado["a"], tuple)
+    assert isinstance(congelado["a"][1]["b"], frozenset)
+    devolvido = descongelar_dados_adicionais(congelado)
+    assert devolvido["a"][0] == 1
+    assert isinstance(devolvido, dict) and isinstance(devolvido["a"], list)
+    devolvido["a"].append("novo")
+    assert len(congelado["a"]) == 2
+
+
+def test_serializacao_permanece_deterministica():
+    a = _caso_com(dados_adicionais={"z": 1, "a": 2})
+    b = _caso_com(dados_adicionais={"a": 2, "z": 1})
+    assert a.dados_adicionais == b.dados_adicionais
+    assert json.dumps(a.para_dict(), sort_keys=True) == \
+        json.dumps(b.para_dict(), sort_keys=True)
+
+
+# ---- o modelo continua inerte ---------------------------------------------
+
+def test_modelo_vazio_e_gates_permanecem(receita, biblioteca, ficha_em_branco):
+    assert fontes.validar_estrutura_ficha(ficha_em_branco, "modelo").ok
+    assert fontes.extrair_decisoes_confirmadas(ficha_em_branco) == ()
+    rel = prontidao.gerar_relatorio_prontidao(receita, biblioteca)
+    assert rel["gates"]["calculo"]["aberto"] is False
+    assert rel["gates"]["producao"]["aberto"] is False
+    assert rel["componentes"]["confirmados"] == []
+    assert rel["regras"]["confirmadas"] == []
+    assert rel["acessorios"]["confirmados"] == []
