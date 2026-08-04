@@ -96,6 +96,7 @@ TIPOS_DE_FONTE = frozenset({
     "catalogo", "medicao_fisica", "especialista_de_dominio",
     "lista_de_corte_real", "software_externo", "foto", "croqui",
     "tabela_de_fabricacao", "manifesto_promocao", "biblioteca_oficial",
+    "validacao_caso_real",
 })
 
 # Como a `referencia` da fonte deve ser lida. A regra de caminho relativo vale
@@ -142,15 +143,45 @@ TIPOS_QUE_SUSTENTAM = {
         "especialista_de_dominio"}),
     EstadoConhecimento.CONFIRMADO_CASO_REAL: frozenset({
         "medicao_fisica", "foto", "croqui", "lista_de_corte_real",
-        "software_externo", "tabela_de_fabricacao"}),
+        "software_externo", "tabela_de_fabricacao", "validacao_caso_real"}),
     EstadoConhecimento.DERIVADO_DE_REGRA_APROVADA: frozenset({
         "especialista_de_dominio", "tabela_de_fabricacao", "software_externo"}),
 }
 
 
+# Quem pode ASSINAR a validação final de um caso. Uma foto prova que a janela
+# existe; ela não registra que alguém conferiu a lista de corte contra a peça.
+# Manifesto e catálogo ficam de fora: falam da biblioteca, não desta janela.
+TIPOS_APTOS_PARA_VALIDAR_CASO = frozenset({
+    "validacao_caso_real", "especialista_de_dominio", "lista_de_corte_real",
+    "tabela_de_fabricacao",
+})
+
+
 # ---------------------------------------------------------------------------
 # Imutabilidade profunda
 # ---------------------------------------------------------------------------
+
+def como_tupla(valor, campo: str = "coleção") -> tuple:
+    """Cópia imutável de uma coleção. `None` é tupla vazia por convenção.
+
+    Copiar é o ponto: guardar a lista recebida deixaria o chamador alterando o
+    registro depois de construído. Recusa `str` e mapeamento — iterar uma
+    string daria caracteres soltos, e um dicionário daria só as chaves, os dois
+    em silêncio."""
+    if valor is None:
+        return ()
+    if isinstance(valor, str) or isinstance(valor, bytes):
+        raise ReceitaErro(
+            f"{campo}: recebeu texto onde se espera uma coleção ({valor!r})")
+    if isinstance(valor, Mapping):
+        raise ReceitaErro(
+            f"{campo}: recebeu mapeamento onde se espera uma coleção — "
+            f"iterá-lo devolveria só as chaves")
+    try:
+        return tuple(valor)
+    except TypeError as e:
+        raise ReceitaErro(f"{campo}: valor não iterável ({valor!r})") from e
 
 def congelar_dados_adicionais(valor):
     """Cópia profundamente imutável do conteúdo livre.
@@ -416,6 +447,48 @@ def incompatibilidades_da_afirmacao(estado, fontes_ids, indice_fontes) -> tuple[
     return tuple(problemas)
 
 
+def incompatibilidades_das_fontes_embutidas(estado, fontes) -> tuple[str, ...]:
+    """Mesma matriz da ficha, aplicada às fontes que vivem DENTRO do modelo.
+
+    Componentes e regras carregam objetos `FonteEvidencia` em vez de IDs. Sem
+    isto, a receita ficava com dois pesos: a ficha do especialista era cobrada
+    pela compatibilidade semântica, e a receita não — um componente
+    `CONFIRMADO_CASO_REAL` apoiado só num catálogo passaria."""
+    fontes = tuple(fontes or ())
+    if estado is None:
+        return ("sem estado",)
+    if estado in ESTADOS_NAO_CALCULAVEIS:
+        return (f"estado {estado.value} não confirma",)
+    if estado not in ESTADOS_CONFIRMADOS:
+        return (f"estado desconhecido: {estado}",)
+    if not fontes:
+        return ("confirmado sem fonte",)
+
+    problemas = []
+    por_id = {}
+    for f in fontes:
+        anterior = por_id.get(f.id_fonte)
+        if anterior is not None:
+            problemas.append(
+                f"id_fonte repetido: {f.id_fonte}"
+                + ("" if anterior == f else " com conteúdos diferentes"))
+        por_id[f.id_fonte] = f
+        if f.estado in ESTADOS_NAO_CALCULAVEIS:
+            problemas.append(
+                f"{f.id_fonte} está {f.estado.value} e não sustenta confirmação")
+    if not any(fonte_compativel_com_afirmacao(f, estado) for f in fontes):
+        problemas.append(
+            f"nenhuma fonte compatível com {estado.value} "
+            f"(esperado estado {estado.value} e tipo em "
+            f"{sorted(TIPOS_QUE_SUSTENTAM[estado])}"
+            + (" com autoria completa"
+               if estado is EstadoConhecimento.CONFIRMADO_ESPECIALISTA else "")
+            + f"; encontrado "
+            + str(sorted({f"{f.id_fonte}:{f.tipo}/{f.estado.value}"
+                          for f in fontes})) + ")")
+    return tuple(problemas)
+
+
 def afirmacao_confirmada(estado, fontes_ids, indice_fontes) -> bool:
     """Uma afirmação só é confirmada com estado, evidência existente, apta e
     semanticamente compatível.
@@ -468,6 +541,11 @@ class ComponenteReceita:
     observacoes: tuple[str, ...] = ()
 
     def __post_init__(self):
+        object.__setattr__(self, "fontes",
+                           como_tupla(self.fontes, f"{self.identificador}.fontes"))
+        object.__setattr__(self, "observacoes",
+                           como_tupla(self.observacoes,
+                                      f"{self.identificador}.observacoes"))
         if self.quantidade is not None and self.quantidade <= 0:
             raise ReceitaErro(
                 f"{self.identificador}: quantidade {self.quantidade!r} — "
@@ -475,29 +553,24 @@ class ComponenteReceita:
 
     @property
     def confirmado(self) -> bool:
-        """Confirmado de verdade: estado, papel, quantidade, orientação e —
-        quando a decisão é do especialista — autoria registrada."""
-        return (self.estado in ESTADOS_CONFIRMADOS
-                and self.papel is not PapelComponente.NAO_CONFIRMADO
+        """Confirmado de verdade: estado, papel, quantidade, orientação e
+        evidência que sustente o que se afirma."""
+        return (self.papel is not PapelComponente.NAO_CONFIRMADO
                 and self.quantidade is not None
                 and self.orientacao is not None
-                and bool(self.fontes)
-                and not autoria_de_especialista_ausente(self.estado, self.fontes))
+                and not incompatibilidades_das_fontes_embutidas(self.estado,
+                                                                self.fontes))
 
     def pendencias(self) -> tuple[str, ...]:
         faltando = []
-        if self.estado in ESTADOS_NAO_CALCULAVEIS:
-            faltando.append(f"estado={self.estado.value}")
         if self.papel is PapelComponente.NAO_CONFIRMADO:
             faltando.append("papel não confirmado")
         if self.quantidade is None:
             faltando.append("quantidade não informada")
         if self.orientacao is None:
             faltando.append("orientação não informada")
-        if not self.fontes and self.estado in ESTADOS_CONFIRMADOS:
-            faltando.append("confirmado sem fonte")
-        if autoria_de_especialista_ausente(self.estado, self.fontes):
-            faltando.append("decisão de especialista sem autoria registrada")
+        faltando += list(incompatibilidades_das_fontes_embutidas(self.estado,
+                                                                 self.fontes))
         return tuple(faltando)
 
     def para_dict(self) -> dict:
@@ -535,6 +608,11 @@ class RegraDimensional:
     fontes: tuple[FonteEvidencia, ...] = ()
 
     def __post_init__(self):
+        object.__setattr__(self, "fontes",
+                           como_tupla(self.fontes, f"{self.identificador}.fontes"))
+        object.__setattr__(self, "variaveis",
+                           como_tupla(self.variaveis,
+                                      f"{self.identificador}.variaveis"))
         if self.alvo not in ALVOS_DIMENSIONAIS:
             raise ReceitaErro(
                 f"{self.identificador}: alvo desconhecido {self.alvo!r}")
@@ -547,9 +625,20 @@ class RegraDimensional:
 
     @property
     def calculavel(self) -> bool:
-        return (self.estado in ESTADOS_CONFIRMADOS
-                and bool(self.expressao) and bool(self.fontes)
-                and not autoria_de_especialista_ausente(self.estado, self.fontes))
+        return not self.impedimentos()
+
+    def impedimentos(self) -> tuple[str, ...]:
+        """Por que esta regra ainda não pode calcular."""
+        faltando = []
+        if not self.expressao:
+            faltando.append("sem expressão")
+        elif not self.variaveis:
+            # Uma fórmula sem variáveis declaradas é uma constante disfarçada:
+            # ninguém sabe de que medida ela depende.
+            faltando.append("expressão sem variáveis declaradas")
+        faltando += list(incompatibilidades_das_fontes_embutidas(self.estado,
+                                                                 self.fontes))
+        return tuple(faltando)
 
     def para_dict(self) -> dict:
         return {"identificador": self.identificador,
@@ -576,6 +665,8 @@ class RegraAcessorio:
     fontes: tuple[FonteEvidencia, ...] = ()
 
     def __post_init__(self):
+        object.__setattr__(self, "fontes",
+                           como_tupla(self.fontes, f"{self.identificador}.fontes"))
         if not self.item:
             raise ReceitaErro(f"{self.identificador}: item vazio")
         if self.estado in ESTADOS_CONFIRMADOS:
@@ -592,10 +683,17 @@ class RegraAcessorio:
 
     @property
     def calculavel(self) -> bool:
-        return (self.estado in ESTADOS_CONFIRMADOS
-                and bool(self.quantidade_expressao) and bool(self.posicao)
-                and bool(self.fontes)
-                and not autoria_de_especialista_ausente(self.estado, self.fontes))
+        return not self.impedimentos()
+
+    def impedimentos(self) -> tuple[str, ...]:
+        faltando = []
+        if not self.quantidade_expressao:
+            faltando.append("sem quantidade")
+        if not self.posicao:
+            faltando.append("sem posição")
+        faltando += list(incompatibilidades_das_fontes_embutidas(self.estado,
+                                                                 self.fontes))
+        return tuple(faltando)
 
     def para_dict(self) -> dict:
         return {"identificador": self.identificador, "item": self.item,
@@ -635,7 +733,8 @@ class Afirmacao:
         # alterá-lo por fora depois que o registro foi criado.
         object.__setattr__(self, "dados_adicionais",
                            congelar_dados_adicionais(self.dados_adicionais))
-        object.__setattr__(self, "fontes_ids", tuple(self.fontes_ids or ()))
+        object.__setattr__(self, "fontes_ids",
+                           como_tupla(self.fontes_ids, "fontes_ids"))
 
     def confirmada(self, indice_fontes) -> bool:
         return afirmacao_confirmada(self.estado, self.fontes_ids, indice_fontes)
@@ -837,6 +936,8 @@ class ValidacaoCasoReal:
     observacao: str | None = None
 
     def __post_init__(self):
+        object.__setattr__(self, "fontes_ids",
+                           como_tupla(self.fontes_ids, "validacao.fontes_ids"))
         if not isinstance(self.resultado, ResultadoAprovacao):
             raise ReceitaErro(
                 f"validação com resultado inválido: {self.resultado!r}")
@@ -897,9 +998,17 @@ class CasoRealFabricacao:
     estado_recebimento: str = ESTADO_CASO_AGUARDANDO
     validacao: ValidacaoCasoReal | None = None
 
+    COLECOES = ("fontes_ids_dimensoes", "perfis", "cortes", "vidros",
+                "baguetes", "acessorios", "folgas", "sobreposicoes", "croquis",
+                "fontes", "duvidas")
+
     def __post_init__(self):
         object.__setattr__(self, "dados_adicionais",
                            congelar_dados_adicionais(self.dados_adicionais))
+        for campo in self.COLECOES:
+            object.__setattr__(self, campo,
+                               como_tupla(getattr(self, campo),
+                                          f"caso_real.{campo}"))
         if (self.identificador is not None
                 and self.identificador not in IDENTIFICADORES_DE_CASO):
             raise ReceitaErro(
@@ -934,15 +1043,14 @@ class CasoRealFabricacao:
         return {f.id_fonte: f for f in self.fontes}
 
     @property
-    def estado_validacao(self) -> str:
-        """`VALIDADO` só existe com registro estruturado aprovado."""
-        if self.validacao is not None and self.validacao.aprovada:
-            return ESTADO_CASO_VALIDADO
-        return self.estado_recebimento
+    def validacao_declarada_aprovada(self) -> bool:
+        """O que o documento AFIRMA. Não é o mesmo que estar validado.
 
-    @property
-    def validado(self) -> bool:
-        return self.estado_validacao == ESTADO_CASO_VALIDADO
+        O estado efetivo depende também das fontes serem aptas e dos dados
+        serem íntegros — e isso quem decide é `validar.estado_validacao_caso`.
+        Expor `validado=True` aqui diria que o caso serve de prova enquanto o
+        gate ainda o considera inválido."""
+        return self.validacao is not None and self.validacao.aprovada
 
     @property
     def tem_medidas(self) -> bool:
@@ -976,9 +1084,20 @@ class CasoRealFabricacao:
 
     @property
     def completo_para_derivacao(self) -> bool:
-        """Mínimo para tentar derivar qualquer fórmula: medidas do produto e a
-        lista de corte real."""
-        return bool(self.tem_medidas and self.cortes and self.vidros)
+        """Mínimo ESTRUTURAL para tentar derivar qualquer fórmula.
+
+        `bool(cortes) and bool(vidros)` aceitava tuplas de objetos vazios: uma
+        ficha sem uma única peça descrita seria classificada como recebida por
+        completo. Aqui cada lista precisa ter ao menos um item que descreva
+        algo — sem exigir aprovação final, que é outra etapa."""
+        if not self.tem_medidas:
+            return False
+        corte_util = any(c.perfil and c.comprimento_mm is not None
+                         and c.quantidade is not None for c in self.cortes)
+        vidro_util = any(v.folha and v.largura_mm is not None
+                         and v.altura_mm is not None
+                         and v.espessura_mm is not None for v in self.vidros)
+        return corte_util and vidro_util
 
     def para_dict(self) -> dict:
         return {
@@ -1005,7 +1124,7 @@ class CasoRealFabricacao:
                 self.dados_adicionais),
             "dados_adicionais_interpretados": False,
             "estado_recebimento": self.estado_recebimento,
-            "estado_validacao": self.estado_validacao,
+            "validacao_declarada_aprovada": self.validacao_declarada_aprovada,
             "validacao": self.validacao.para_dict() if self.validacao else None,
             "secoes_preenchidas": list(self.secoes_preenchidas),
         }
@@ -1126,6 +1245,27 @@ class ReceitaTipologia:
     estado: str = ESTADO_RECEITA_PRELIMINAR
     aprovacoes: tuple[AprovacaoEspecialista, ...] = ()
     perguntas_abertas: tuple[str, ...] = ()
+
+    COLECOES = {
+        "componentes": ComponenteReceita,
+        "regras_corte": RegraDimensional,
+        "regras_vidro": RegraDimensional,
+        "regras_acessorios": RegraAcessorio,
+        "casos_reais": CasoRealFabricacao,
+        "fontes": FonteEvidencia,
+        "aprovacoes": AprovacaoEspecialista,
+        "perguntas_abertas": str,
+    }
+
+    def __post_init__(self):
+        for campo, tipo in self.COLECOES.items():
+            itens = como_tupla(getattr(self, campo), f"{self.codigo}.{campo}")
+            fora = [type(i).__name__ for i in itens if not isinstance(i, tipo)]
+            if fora:
+                raise ReceitaErro(
+                    f"{self.codigo}.{campo}: elementos de tipo inesperado "
+                    f"{fora} (esperado {tipo.__name__})")
+            object.__setattr__(self, campo, itens)
 
     @property
     def regras_dimensionais(self) -> tuple[RegraDimensional, ...]:
