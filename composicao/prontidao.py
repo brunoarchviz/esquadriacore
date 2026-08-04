@@ -10,7 +10,7 @@ conhecimento numa lista de perguntas objetivas.
 """
 from __future__ import annotations
 
-from .modelos import ESTADO_CASO_VALIDADO, ReceitaTipologia
+from .modelos import ReceitaTipologia
 from .receita import PERGUNTAS_ABERTAS, variaveis_disponiveis
 from .validar import (validar_prontidao_para_calculo,
                       validar_prontidao_para_producao,
@@ -97,7 +97,7 @@ def gerar_relatorio_prontidao(receita: ReceitaTipologia,
         "casos_reais": {
             "recebidos": [c.identificador for c in receita.casos_reais],
             "validados": [c.identificador for c in receita.casos_reais
-                          if c.estado_validacao == ESTADO_CASO_VALIDADO],
+                          if c.validado],
         },
         "gates": {
             "visualizacao_preliminar": _resumo_gate(visual, "visualizacao_preliminar"),

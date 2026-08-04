@@ -15,11 +15,10 @@ sistema. Sem eles, a única saída seria inventar um número.
 """
 from __future__ import annotations
 
-from .modelos import (ESCOPO_APROVACAO_FORMULAS, ESCOPO_APROVACAO_RECEITA,
-                      ESTADO_CASO_VALIDADO, ESTADOS_CONFIRMADOS,
+from .modelos import (ESCOPOS_DE_APROVACAO, ESTADOS_CONFIRMADOS,
                       IDENTIFICADORES_DE_CASO, EstadoConhecimento,
-                      ReceitaTipologia, ResultadoValidacao,
-                      autoria_de_especialista_ausente)
+                      ReceitaTipologia, ResultadoAprovacao, ResultadoValidacao,
+                      aprovacoes_por_escopo, autoria_de_especialista_ausente)
 
 ORIGEM_BIBLIOTECA = "dados/ (via contrato de consumo)"
 ORIGEM_RECEITA = "composicao/receita.py"
@@ -224,13 +223,47 @@ def validar_prontidao_para_producao(receita: ReceitaTipologia,
     fabricada não autoriza corte de alumínio."""
     r = validar_prontidao_para_calculo(receita, biblioteca)
     r = r.somar(validar_casos_reais_independentes(receita))
-    for escopo in (ESCOPO_APROVACAO_RECEITA, ESCOPO_APROVACAO_FORMULAS):
-        if receita.aprovacao(escopo) is None:
+    r = r.somar(validar_aprovacoes(receita))
+    return r
+
+
+def validar_aprovacoes(receita: ReceitaTipologia) -> ResultadoValidacao:
+    """Uma aprovação vigente APROVADA por escopo — nem zero, nem duas.
+
+    Devolver a primeira aprovação encontrada esconderia um segundo parecer
+    conflitante, e a ordem da tupla decidiria se a produção abre. Um parecer
+    REPROVADO ou REVOGADO não é aprovação nenhuma."""
+    r = ResultadoValidacao.aprovado()
+
+    desconhecidos = [a.escopo for a in receita.aprovacoes
+                     if a.escopo not in ESCOPOS_DE_APROVACAO]
+    if desconhecidos:
+        r = r.somar(_reprovar(receita.codigo, "escopo de aprovação desconhecido",
+                              desconhecidos, list(ESCOPOS_DE_APROVACAO),
+                              ORIGEM_RECEITA))
+
+    for escopo in ESCOPOS_DE_APROVACAO:
+        do_escopo = aprovacoes_por_escopo(receita, escopo)
+        if not do_escopo:
             r = r.somar(_reprovar(
                 receita.codigo, f"sem aprovação do especialista para {escopo}",
                 [a.escopo for a in receita.aprovacoes],
-                f"AprovacaoEspecialista com escopo={escopo!r}, responsável, "
-                f"data e fonte", ORIGEM_RECEITA))
+                f"uma AprovacaoEspecialista APROVADA com escopo={escopo!r}",
+                ORIGEM_RECEITA))
+            continue
+        if len(do_escopo) > 1:
+            r = r.somar(_reprovar(
+                receita.codigo, f"mais de uma aprovação vigente para {escopo}",
+                [a.resultado.value for a in do_escopo],
+                "exatamente uma — conflito não se resolve pela ordem",
+                ORIGEM_RECEITA))
+            continue
+        aprovacao = do_escopo[0]
+        if not aprovacao.aprovada:
+            r = r.somar(_reprovar(
+                receita.codigo, f"aprovação de {escopo} não é APROVADO",
+                aprovacao.resultado.value, ResultadoAprovacao.APROVADO.value,
+                ORIGEM_RECEITA))
     return r
 
 
@@ -240,8 +273,9 @@ def validar_casos_reais_independentes(receita: ReceitaTipologia) -> ResultadoVal
     Três casos com as mesmas medidas não distinguem constante de proporção: a
     fórmula passaria por acidente."""
     r = ResultadoValidacao.aprovado()
-    validados = [c for c in receita.casos_reais
-                 if c.estado_validacao == ESTADO_CASO_VALIDADO]
+    # `validado` deriva de uma ValidacaoCasoReal APROVADA — nunca de uma string
+    # escrita à mão no campo de estado.
+    validados = [c for c in receita.casos_reais if c.validado]
     por_id = {}
     for c in validados:
         por_id.setdefault(c.identificador, []).append(c)
@@ -279,6 +313,14 @@ def validar_casos_reais_independentes(receita: ReceitaTipologia) -> ResultadoVal
         if not c.fontes:
             r = r.somar(_reprovar(c.identificador, "caso sem fonte registrada",
                                   0, "ao menos uma fonte", ORIGEM_RECEITA))
+        val = c.validacao
+        if val is not None:
+            ausentes = [i for i in val.fontes_ids if i not in c.indice_fontes]
+            if ausentes:
+                r = r.somar(_reprovar(
+                    c.identificador, "validação cita fonte inexistente",
+                    ausentes, sorted(c.indice_fontes) or "nenhuma",
+                    ORIGEM_RECEITA))
         if c.tem_medidas:
             dimensoes.append((c.identificador,
                               (c.largura_total_mm, c.altura_total_mm)))

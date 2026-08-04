@@ -26,7 +26,9 @@ from composicao.modelos import (ESCOPO_APROVACAO_FORMULAS,
                                 ComponenteReceita, CorteReal,
                                 EstadoConhecimento, FonteEvidencia,
                                 PapelComponente, ReceitaErro, ReceitaTipologia,
-                                RegraAcessorio, RegraDimensional, VidroReal)
+                                RegraAcessorio, RegraDimensional,
+                                ResultadoAprovacao, ValidacaoCasoReal,
+                                VidroReal)
 
 RAIZ = Path(__file__).resolve().parent.parent
 MODELO_FICHA = RAIZ / "composicao/insumos/suprema_2f_modelo_preenchimento.yaml"
@@ -50,9 +52,10 @@ def ficha_em_branco():
 
 
 def _fonte(estado=EstadoConhecimento.CONFIRMADO_ESPECIALISTA, responsavel="Bruno",
-           data="2026-08-03"):
+           data="2026-08-03", id_fonte="FONTE-TESTE-01",
+           tipo="especialista_de_dominio"):
     return FonteEvidencia(
-        tipo="especialista_de_dominio",
+        id_fonte=id_fonte, tipo=tipo,
         referencia="curadoria/handoffs/e4d/estado_inicial_e4d.md",
         descricao="decisão registrada em teste", estado=estado,
         responsavel=responsavel, data=data)
@@ -66,21 +69,30 @@ def _regra_acessorio_confirmada(item="roldanas"):
         fontes=(_fonte(estado=EstadoConhecimento.CONFIRMADO_CASO_REAL),))
 
 
-def _aprovacao(escopo):
+def _aprovacao(escopo, resultado=ResultadoAprovacao.APROVADO,
+               responsavel="Bruno"):
     return AprovacaoEspecialista(
-        decisao="aprovado", responsavel="Bruno", data="2026-08-10",
-        fonte=_fonte(), escopo=escopo)
+        resultado=resultado, responsavel=responsavel, data="2026-08-10",
+        fonte=_fonte(responsavel=responsavel), escopo=escopo)
 
 
-def _caso_validado(ident, largura, altura):
+def _validacao_aprovada(resultado=ResultadoAprovacao.APROVADO):
+    return ValidacaoCasoReal(
+        resultado=resultado, responsavel="Bruno", data="2026-08-10",
+        fontes_ids=("FONTE-CASO-01",))
+
+
+def _caso_validado(ident, largura, altura, validacao=None):
     return CasoRealFabricacao(
         identificador=ident, largura_total_mm=Decimal(largura),
         altura_total_mm=Decimal(altura),
         cortes=(CorteReal(perfil="SU-001", comprimento_mm=Decimal("1000")),),
         vidros=(VidroReal(folha="1", largura_mm=Decimal("500"),
                           altura_mm=Decimal("900")),),
-        fontes=(_fonte(estado=EstadoConhecimento.CONFIRMADO_CASO_REAL),),
-        estado_validacao=ESTADO_CASO_VALIDADO)
+        fontes=(_fonte(estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
+                       id_fonte="FONTE-CASO-01"),),
+        estado_recebimento=ESTADO_CASO_RECEBIDO,
+        validacao=validacao if validacao is not None else _validacao_aprovada())
 
 
 def _componente_confirmado(codigo="SU-001", **kw):
@@ -243,14 +255,15 @@ def test_preserva_autoria_da_decisao_do_especialista(biblioteca, receita):
 
 def test_fonte_recusa_caminho_absoluto():
     with pytest.raises(ReceitaErro, match="absoluto"):
-        FonteEvidencia(tipo="foto", referencia="/home/bruno/foto.jpg",
+        FonteEvidencia(id_fonte="FONTE-X", tipo="foto",
+                       referencia="/home/bruno/foto.jpg",
                        descricao="", estado=EstadoConhecimento.PENDENTE)
 
 
 def test_fonte_recusa_tipo_desconhecido():
     with pytest.raises(ReceitaErro, match="tipo de fonte desconhecido"):
-        FonteEvidencia(tipo="chute", referencia="x", descricao="",
-                       estado=EstadoConhecimento.PENDENTE)
+        FonteEvidencia(id_fonte="FONTE-X", tipo="chute", referencia="x",
+                       descricao="", estado=EstadoConhecimento.PENDENTE)
 
 
 # ===========================================================================
@@ -623,7 +636,8 @@ def test_campo_desconhecido_na_raiz_reprova(ficha_em_branco):
     r = fontes.validar_estrutura_ficha(d, "x")
     assert not r.ok
     falha = next(f for f in r.falhas if "cortess" in str(f["alvo"]))
-    assert falha["esperado"] == "cortes", "a mensagem tem de sugerir o nome certo"
+    assert falha["esperado"].startswith("cortes"), \
+        "a mensagem tem de sugerir o nome certo"
 
 
 def test_campo_desconhecido_em_vista_reprova(ficha_em_branco):
@@ -632,7 +646,7 @@ def test_campo_desconhecido_em_vista_reprova(ficha_em_branco):
     r = fontes.validar_estrutura_ficha(d, "x")
     assert not r.ok
     falha = next(f for f in r.falhas if "lado_de_referencias" in str(f["alvo"]))
-    assert falha["esperado"] == "lado_de_referencia"
+    assert falha["esperado"].startswith("lado_de_referencia")
 
 
 def test_campo_desconhecido_em_item_de_corte_reprova(ficha_em_branco):
@@ -641,7 +655,7 @@ def test_campo_desconhecido_em_item_de_corte_reprova(ficha_em_branco):
     r = fontes.validar_estrutura_ficha(d, "x")
     assert not r.ok
     falha = next(f for f in r.falhas if "comprimento_mmm" in str(f["alvo"]))
-    assert falha["esperado"] == "comprimento_mm"
+    assert falha["esperado"].startswith("comprimento_mm")
 
 
 def test_funcao_de_perfil_invalida_reprova(ficha_em_branco):
@@ -706,7 +720,8 @@ def test_conversao_preserva_todas_as_secoes(ficha_em_branco):
     d["perfis"]["SU-001"] = {"funcao": "MARCO_SUPERIOR", "quantidade": 1,
                              "orientacao": "horizontal",
                              "observacoes": "trilho duplo",
-                             "fonte": "lista_de_corte_real"}
+                             "estado": "CONFIRMADO_CASO_REAL",
+                             "fontes_ids": ["FONTE-LISTA-A"]}
     d["cortes"] = [{"perfil": "SU-001", "comprimento_mm": 760,
                     "quantidade": 1, "angulo": "90"}]
     d["vidros"] = [{"folha": "1", "largura_mm": 350, "altura_mm": 520,
@@ -720,7 +735,7 @@ def test_conversao_preserva_todas_as_secoes(ficha_em_branco):
     d["sobreposicoes"] = [{"entre": "folha 1 e folha 2", "valor_mm": 25}]
     d["croquis"] = [{"tipo": "croqui", "referencia": "curadoria/campo/a.jpg",
                      "descricao": "rabisco do serralheiro"}]
-    d["fontes"] = [{"tipo": "lista_de_corte_real",
+    d["fontes"] = [{"id_fonte": "FONTE-LISTA-A", "tipo": "lista_de_corte_real",
                     "referencia": "curadoria/campo/lista_a.pdf",
                     "descricao": "lista real", "estado": "CONFIRMADO_CASO_REAL",
                     "responsavel": "Bruno", "data": "2026-08-10"}]
@@ -739,6 +754,8 @@ def test_conversao_preserva_todas_as_secoes(ficha_em_branco):
     assert caso.folgas[0].valor_mm == Decimal("3")
     assert caso.sobreposicoes[0].valor_mm == Decimal("25")
     assert caso.croquis and caso.fontes and caso.duvidas
+    assert caso.croquis[0].descricao == "rabisco do serralheiro"
+    assert caso.fontes[0].id_fonte == "FONTE-LISTA-A"
     assert caso.estado_validacao == ESTADO_CASO_RECEBIDO
     # nada se perdeu no caminho
     for secao in ("vista", "perfis", "cortes", "vidros", "baguetes",
@@ -747,12 +764,43 @@ def test_conversao_preserva_todas_as_secoes(ficha_em_branco):
         assert secao in caso.secoes_preenchidas, secao
 
 
-def test_dado_fora_do_schema_vai_para_dados_adicionais():
-    """Item de lista com campo extra reprova a estrutura; mas se a conversão
-    for chamada com ele, o dado é preservado, nunca descartado."""
-    item = {"perfil": "SU-001", "comprimento_mm": 700, "medido_com": "trena"}
-    from composicao.fontes import CAMPOS_CORTE, _extras
-    assert _extras(item, CAMPOS_CORTE) == (("medido_com", "trena"),)
+def test_dados_adicionais_sobrevivem_ao_fluxo_completo(ficha_em_branco):
+    """Fluxo inteiro: validar -> converter -> serializar.
+
+    Conteúdo livre tem um lugar declarado. Ele é preservado integralmente e
+    marcado como NÃO interpretado — nada ali participa de cálculo."""
+    d = copy.deepcopy(ficha_em_branco)
+    d["dados_adicionais"] = {"observacao_geral": "serralheiro usou gabarito"}
+    d["cortes"] = [{"perfil": "SU-001", "comprimento_mm": 700,
+                    "dados_adicionais": {"medido_com": "trena",
+                                         "conferido_por": "Anderson"}}]
+    assert fontes.validar_estrutura_ficha(d, "x").ok
+
+    caso = fontes.converter_ficha_em_caso_real(d, "x")
+    assert caso.dados_adicionais == {"observacao_geral":
+                                     "serralheiro usou gabarito"}
+    assert caso.cortes[0].dados_adicionais == {"medido_com": "trena",
+                                               "conferido_por": "Anderson"}
+
+    serializado = caso.para_dict()
+    assert serializado["dados_adicionais"]["observacao_geral"] == \
+        "serralheiro usou gabarito"
+    assert serializado["dados_adicionais_interpretados"] is False
+    assert serializado["cortes"][0]["dados_adicionais"]["medido_com"] == "trena"
+    assert serializado["cortes"][0]["dados_adicionais_interpretados"] is False
+    assert json.dumps(serializado, ensure_ascii=False)
+
+
+def test_campo_extra_fora_de_dados_adicionais_reprova(ficha_em_branco):
+    """A política é uma só: fora do bloco explícito, campo desconhecido
+    reprova. 'Preservamos qualquer campo' seria conveniente e perigoso."""
+    d = copy.deepcopy(ficha_em_branco)
+    d["cortes"] = [{"perfil": "SU-001", "comprimento_mm": 700,
+                    "medido_com": "trena"}]
+    r = fontes.validar_estrutura_ficha(d, "x")
+    assert not r.ok
+    falha = next(f for f in r.falhas if "medido_com" in str(f["alvo"]))
+    assert "dados_adicionais" in falha["esperado"]
 
 
 def test_ficha_apenas_com_folga_e_recebido_parcial(ficha_em_branco):
@@ -768,7 +816,8 @@ def test_ficha_apenas_com_folga_e_recebido_parcial(ficha_em_branco):
 
 def test_ficha_apenas_com_foto_e_recebido_parcial(ficha_em_branco):
     d = copy.deepcopy(ficha_em_branco)
-    d["fontes"] = [{"tipo": "foto", "referencia": "curadoria/campo/frente.jpg",
+    d["fontes"] = [{"id_fonte": "FONTE-FOTO-A", "tipo": "foto",
+                    "referencia": "curadoria/campo/frente.jpg",
                     "descricao": "vista interna", "estado": "CONFIRMADO_CASO_REAL",
                     "responsavel": "Bruno", "data": "2026-08-10"}]
     caso = fontes.converter_ficha_em_caso_real(d, "x")
@@ -784,8 +833,9 @@ def test_preenchido_nao_e_confirmado(ficha_em_branco):
     assert len(fontes.extrair_campos_preenchidos(d)) >= 3
     assert fontes.extrair_decisoes_confirmadas(d) == ()
 
-    d["perfis"]["SU-001"]["fonte"] = "especialista_de_dominio"
-    d["fontes"] = [{"tipo": "especialista_de_dominio",
+    d["perfis"]["SU-001"]["estado"] = "CONFIRMADO_ESPECIALISTA"
+    d["perfis"]["SU-001"]["fontes_ids"] = ["FONTE-ARB-01"]
+    d["fontes"] = [{"id_fonte": "FONTE-ARB-01", "tipo": "especialista_de_dominio",
                     "referencia": "curadoria/handoffs/e4d/estado_inicial_e4d.md",
                     "descricao": "arbitragem", "estado": "CONFIRMADO_ESPECIALISTA",
                     "responsavel": "Bruno", "data": "2026-08-10"}]
@@ -798,8 +848,10 @@ def test_preenchido_nao_e_confirmado(ficha_em_branco):
 def test_confirmacao_do_especialista_sem_autoria_nao_conta(ficha_em_branco):
     d = copy.deepcopy(ficha_em_branco)
     d["perfis"]["SU-001"] = {"funcao": "MARCO_SUPERIOR",
-                             "fonte": "especialista_de_dominio"}
-    d["fontes"] = [{"tipo": "especialista_de_dominio",
+                             "estado": "CONFIRMADO_ESPECIALISTA",
+                             "fontes_ids": ["FONTE-SEM-AUTOR"]}
+    d["fontes"] = [{"id_fonte": "FONTE-SEM-AUTOR",
+                    "tipo": "especialista_de_dominio",
                     "referencia": "curadoria/handoffs/e4d/estado_inicial_e4d.md",
                     "descricao": "sem autor", "estado": "CONFIRMADO_ESPECIALISTA"}]
     assert fontes.extrair_decisoes_confirmadas(d) == ()
@@ -919,10 +971,11 @@ def test_aprovacao_como_string_solta_nao_abre_producao(biblioteca):
     assert not r.ok, "aprovar a receita não aprova as fórmulas"
 
 
-@pytest.mark.parametrize("campo", ["decisao", "responsavel", "data", "escopo"])
+@pytest.mark.parametrize("campo", ["responsavel", "data", "escopo"])
 def test_aprovacao_exige_todos_os_campos(campo):
-    base = dict(decisao="ok", responsavel="Bruno", data="2026-08-10",
-                fonte=_fonte(), escopo=ESCOPO_APROVACAO_RECEITA)
+    base = dict(resultado=ResultadoAprovacao.APROVADO, responsavel="Bruno",
+                data="2026-08-10", fonte=_fonte(),
+                escopo=ESCOPO_APROVACAO_RECEITA)
     base[campo] = ""
     with pytest.raises(ReceitaErro):
         AprovacaoEspecialista(**base)
@@ -935,8 +988,8 @@ def test_aprovacao_exige_todos_os_campos(campo):
 ])
 def test_referencia_de_arquivo_insegura_e_rejeitada(referencia):
     with pytest.raises(ReceitaErro):
-        FonteEvidencia(tipo="foto", referencia=referencia, descricao="",
-                       estado=EstadoConhecimento.PENDENTE)
+        FonteEvidencia(id_fonte="FONTE-X", tipo="foto", referencia=referencia,
+                       descricao="", estado=EstadoConhecimento.PENDENTE)
 
 
 @pytest.mark.parametrize("referencia,forma", [
@@ -947,14 +1000,16 @@ def test_identificador_externo_e_url_nao_sao_tratados_como_caminho(referencia,
                                                                    forma):
     """A regra de caminho relativo vale para arquivo; um DOI ou uma URL não são
     caminhos e não podem ser recusados por isso."""
-    f = FonteEvidencia(tipo="software_externo", referencia=referencia,
-                       descricao="", estado=EstadoConhecimento.PENDENTE,
+    f = FonteEvidencia(id_fonte="FONTE-X", tipo="software_externo",
+                       referencia=referencia, descricao="",
+                       estado=EstadoConhecimento.PENDENTE,
                        forma_referencia=forma)
     assert f.referencia == referencia
 
 
 def test_referencia_relativa_e_aceita():
-    f = FonteEvidencia(tipo="foto", referencia="curadoria/campo/a/frente.jpg",
+    f = FonteEvidencia(id_fonte="FONTE-X", tipo="foto",
+                       referencia="curadoria/campo/a/frente.jpg",
                        descricao="", estado=EstadoConhecimento.PENDENTE)
     assert f.forma_referencia == "arquivo"
 
@@ -1019,3 +1074,408 @@ def test_modelo_de_ficha_continua_valido_e_totalmente_pendente(ficha_em_branco):
     caso = fontes.converter_ficha_em_caso_real(ficha_em_branco, "modelo")
     assert caso.secoes_preenchidas == ()
     assert caso.estado_validacao == ESTADO_CASO_AGUARDANDO
+
+
+# ===========================================================================
+# Fechamento estrutural do schema
+#
+# Evidência tem identidade, cada afirmação carrega a sua, aprovação tem
+# resultado semântico, e validar é um ato registrado — não uma string.
+# ===========================================================================
+
+def _ficha_com_fontes(ficha_em_branco, *fontes_brutas):
+    d = copy.deepcopy(ficha_em_branco)
+    d["fontes"] = list(fontes_brutas)
+    return d
+
+
+def _fonte_bruta(id_fonte, tipo="foto", **kw):
+    base = {"id_fonte": id_fonte, "tipo": tipo,
+            "referencia": f"curadoria/campo/{id_fonte.lower()}.jpg",
+            "descricao": "evidência de teste",
+            "estado": "CONFIRMADO_CASO_REAL"}
+    base.update(kw)
+    return base
+
+
+# ---- identidade da evidência ----------------------------------------------
+
+def test_duas_fontes_do_mesmo_tipo_continuam_distintas(ficha_em_branco):
+    """Um índice por `tipo` faria a segunda foto apagar a primeira."""
+    d = _ficha_com_fontes(ficha_em_branco,
+                          _fonte_bruta("FONTE-FOTO-FRENTE"),
+                          _fonte_bruta("FONTE-FOTO-VERSO"))
+    assert fontes.validar_estrutura_ficha(d, "x").ok
+    caso = fontes.converter_ficha_em_caso_real(d, "x")
+    assert len(caso.fontes) == 2
+    assert {f.id_fonte for f in caso.fontes} == {"FONTE-FOTO-FRENTE",
+                                                 "FONTE-FOTO-VERSO"}
+    assert {f.tipo for f in caso.fontes} == {"foto"}
+    assert len(caso.indice_fontes) == 2
+
+
+def test_fonte_sem_id_reprova(ficha_em_branco):
+    """Sem ID não há como citar — e gerar um automaticamente inventaria a
+    identidade da evidência."""
+    d = copy.deepcopy(ficha_em_branco)
+    d["fontes"] = [{"tipo": "foto", "referencia": "curadoria/campo/a.jpg"}]
+    r = fontes.validar_estrutura_ficha(d, "x")
+    assert not r.ok
+    assert any("fonte sem id_fonte" in f["regra"] for f in r.falhas)
+
+
+@pytest.mark.parametrize("id_fonte", ["fonte-001", "F1", "FONTE 001", "001"])
+def test_id_fonte_fora_do_formato_reprova(ficha_em_branco, id_fonte):
+    d = _ficha_com_fontes(ficha_em_branco, _fonte_bruta(id_fonte))
+    r = fontes.validar_estrutura_ficha(d, "x")
+    assert not r.ok
+    assert any("id_fonte" in str(f["alvo"]) for f in r.falhas)
+
+
+def test_id_fonte_duplicado_reprova(ficha_em_branco):
+    d = _ficha_com_fontes(ficha_em_branco,
+                          _fonte_bruta("FONTE-A"),
+                          _fonte_bruta("FONTE-A", tipo="croqui"))
+    r = fontes.validar_estrutura_ficha(d, "x")
+    assert not r.ok
+    assert any("id_fonte duplicado" in f["regra"] for f in r.falhas)
+
+
+def test_referencia_a_fonte_inexistente_reprova(ficha_em_branco):
+    d = _ficha_com_fontes(ficha_em_branco, _fonte_bruta("FONTE-A"))
+    d["cortes"] = [{"perfil": "SU-001", "comprimento_mm": 700,
+                    "estado": "CONFIRMADO_CASO_REAL",
+                    "fontes_ids": ["FONTE-QUE-NAO-EXISTE"]}]
+    r = fontes.validar_estrutura_ficha(d, "x")
+    assert not r.ok
+    assert any("fonte inexistente" in f["regra"] for f in r.falhas)
+
+
+def test_fonte_repetida_na_mesma_afirmacao_reprova(ficha_em_branco):
+    d = _ficha_com_fontes(ficha_em_branco, _fonte_bruta("FONTE-A"))
+    d["folgas"] = [{"entre": "folha e marco", "valor_mm": 3,
+                    "estado": "CONFIRMADO_CASO_REAL",
+                    "fontes_ids": ["FONTE-A", "FONTE-A"]}]
+    r = fontes.validar_estrutura_ficha(d, "x")
+    assert not r.ok
+    assert any("fonte repetida" in f["regra"] for f in r.falhas)
+
+
+def test_uma_fonte_serve_a_varias_afirmacoes(ficha_em_branco):
+    d = _ficha_com_fontes(ficha_em_branco,
+                          _fonte_bruta("FONTE-LISTA", tipo="lista_de_corte_real"))
+    d["cortes"] = [{"perfil": "SU-001", "comprimento_mm": 700,
+                    "estado": "CONFIRMADO_CASO_REAL",
+                    "fontes_ids": ["FONTE-LISTA"]},
+                   {"perfil": "SU-002", "comprimento_mm": 500,
+                    "estado": "CONFIRMADO_CASO_REAL",
+                    "fontes_ids": ["FONTE-LISTA"]}]
+    assert fontes.validar_estrutura_ficha(d, "x").ok
+    assert len(fontes.extrair_decisoes_confirmadas(d)) >= 4
+
+
+def test_ordem_das_fontes_nao_muda_o_resultado(ficha_em_branco):
+    a, b = _fonte_bruta("FONTE-A"), _fonte_bruta("FONTE-B", tipo="croqui")
+    d1 = _ficha_com_fontes(ficha_em_branco, a, b)
+    d2 = _ficha_com_fontes(ficha_em_branco, b, a)
+    for d in (d1, d2):
+        d["folgas"] = [{"entre": "folha e marco", "valor_mm": 3,
+                        "estado": "CONFIRMADO_CASO_REAL",
+                        "fontes_ids": ["FONTE-B"]}]
+    assert (fontes.validar_estrutura_ficha(d1, "x").ok
+            == fontes.validar_estrutura_ficha(d2, "x").ok)
+    assert (fontes.extrair_decisoes_confirmadas(d1)
+            == fontes.extrair_decisoes_confirmadas(d2))
+
+
+def test_decisao_de_perfil_usa_a_fonte_pelo_id(ficha_em_branco):
+    """Duas fontes `especialista_de_dominio`: só a citada vale."""
+    d = _ficha_com_fontes(
+        ficha_em_branco,
+        _fonte_bruta("FONTE-ESP-SEM-AUTOR", tipo="especialista_de_dominio",
+                     referencia="curadoria/campo/rascunho.md",
+                     estado="CONFIRMADO_ESPECIALISTA"),
+        _fonte_bruta("FONTE-ESP-COM-AUTOR", tipo="especialista_de_dominio",
+                     referencia="curadoria/campo/arbitragem.md",
+                     estado="CONFIRMADO_ESPECIALISTA",
+                     responsavel="Bruno", data="2026-08-10"))
+    d["perfis"]["SU-001"] = {"funcao": "MARCO_SUPERIOR",
+                             "estado": "CONFIRMADO_ESPECIALISTA",
+                             "fontes_ids": ["FONTE-ESP-SEM-AUTOR"]}
+    assert fontes.extrair_decisoes_confirmadas(d) == (), \
+        "a fonte citada não tem autoria — a outra não pode salvá-la"
+
+    d["perfis"]["SU-001"]["fontes_ids"] = ["FONTE-ESP-COM-AUTOR"]
+    confirmadas = fontes.extrair_decisoes_confirmadas(d)
+    assert [c["campo"] for c in confirmadas] == ["funcao"]
+    assert confirmadas[0]["fontes_ids"] == ["FONTE-ESP-COM-AUTOR"]
+
+
+# ---- evidência por afirmação ----------------------------------------------
+
+@pytest.mark.parametrize("secao,item", [
+    ("cortes", {"perfil": "SU-001", "comprimento_mm": 700}),
+    ("vidros", {"folha": "1", "largura_mm": 500, "altura_mm": 900}),
+    ("folgas", {"entre": "folha e marco", "valor_mm": 3}),
+])
+def test_item_confirmado_sem_fonte_nao_conta(ficha_em_branco, secao, item):
+    """Estado confirmado sem evidência é palavra solta."""
+    d = copy.deepcopy(ficha_em_branco)
+    d[secao] = [dict(item, estado="CONFIRMADO_CASO_REAL")]
+    assert fontes.validar_estrutura_ficha(d, "x").ok, "sem fonte não é erro de forma"
+    assert fontes.extrair_decisoes_confirmadas(d) == ()
+    assert len(fontes.extrair_campos_preenchidos(d)) >= 1
+
+
+def test_vista_confirmada_sem_fonte_nao_conta(ficha_em_branco):
+    d = copy.deepcopy(ficha_em_branco)
+    d["vista"]["lado_de_referencia"] = "interno"
+    d["vista"]["estado"] = "CONFIRMADO_ESPECIALISTA"
+    assert fontes.extrair_decisoes_confirmadas(d) == ()
+
+
+def test_item_com_fonte_valida_aparece_em_decisoes(ficha_em_branco):
+    d = _ficha_com_fontes(ficha_em_branco,
+                          _fonte_bruta("FONTE-LISTA-A",
+                                       tipo="lista_de_corte_real"))
+    d["cortes"] = [{"perfil": "SU-001", "comprimento_mm": 1460, "quantidade": 1,
+                    "estado": "CONFIRMADO_CASO_REAL",
+                    "fontes_ids": ["FONTE-LISTA-A"]}]
+    confirmadas = fontes.extrair_decisoes_confirmadas(d)
+    campos = {c["campo"] for c in confirmadas}
+    assert campos == {"perfil", "comprimento_mm", "quantidade"}
+    assert all(c["escopo"] == "cortes[0]" for c in confirmadas)
+
+
+def test_folga_sem_estado_aparece_so_em_campos_preenchidos(ficha_em_branco):
+    d = copy.deepcopy(ficha_em_branco)
+    d["folgas"] = [{"entre": "folha e marco", "valor_mm": 3}]
+    assert fontes.extrair_decisoes_confirmadas(d) == ()
+    assert any(p["escopo"] == "folgas" for p in
+               fontes.extrair_campos_preenchidos(d))
+
+
+def test_dimensoes_do_caso_confirmadas_com_evidencia(ficha_em_branco):
+    d = _ficha_com_fontes(ficha_em_branco,
+                          _fonte_bruta("FONTE-MEDICAO", tipo="medicao_fisica"))
+    d["caso_real"] = {"identificador": "CASO_A_PEQUENO",
+                      "largura_total_mm": 800, "altura_total_mm": 600,
+                      "estado": "CONFIRMADO_CASO_REAL",
+                      "fontes_ids": ["FONTE-MEDICAO"]}
+    confirmadas = fontes.extrair_decisoes_confirmadas(d)
+    assert {c["campo"] for c in confirmadas} == {"largura_total_mm",
+                                                 "altura_total_mm"}
+
+
+# ---- aprovação com resultado semântico ------------------------------------
+
+@pytest.mark.parametrize("resultado", [ResultadoAprovacao.REPROVADO,
+                                       ResultadoAprovacao.REVOGADO])
+def test_aprovacao_negativa_nao_abre_producao(biblioteca, resultado):
+    """`REPROVADO` nunca é aprovação — antes, a mera existência do registro
+    abria o mesmo portão que um parecer positivo."""
+    from dataclasses import replace
+    receita = replace(_receita_completa(), casos_reais=_TRES_CASOS,
+                      aprovacoes=(_aprovacao(ESCOPO_APROVACAO_RECEITA, resultado),
+                                  _aprovacao(ESCOPO_APROVACAO_FORMULAS)))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("não é APROVADO" in f["regra"] for f in r.falhas)
+
+
+def test_aprovacoes_conflitantes_nao_abrem_producao(biblioteca):
+    """Duas aprovações do mesmo escopo não se resolvem pela ordem da tupla."""
+    from dataclasses import replace
+    conflito = (_aprovacao(ESCOPO_APROVACAO_RECEITA),
+                _aprovacao(ESCOPO_APROVACAO_RECEITA,
+                           ResultadoAprovacao.REVOGADO),
+                _aprovacao(ESCOPO_APROVACAO_FORMULAS))
+    receita = replace(_receita_completa(), casos_reais=_TRES_CASOS,
+                      aprovacoes=conflito)
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("mais de uma aprovação" in f["regra"] for f in r.falhas)
+
+    invertida = replace(receita, aprovacoes=(conflito[1], conflito[0],
+                                             conflito[2]))
+    r2 = validar.validar_prontidao_para_producao(invertida, biblioteca)
+    assert not r2.ok
+    assert [f["regra"] for f in r.falhas] == [f["regra"] for f in r2.falhas], \
+        "a ordem não pode mudar o veredito"
+
+
+def test_aprovacoes_por_escopo_devolve_todas():
+    from composicao.modelos import aprovacoes_por_escopo
+    from dataclasses import replace
+    receita = replace(_receita_completa(),
+                      aprovacoes=(_aprovacao(ESCOPO_APROVACAO_RECEITA),
+                                  _aprovacao(ESCOPO_APROVACAO_RECEITA,
+                                             ResultadoAprovacao.REPROVADO)))
+    assert len(aprovacoes_por_escopo(receita, ESCOPO_APROVACAO_RECEITA)) == 2
+    assert aprovacoes_por_escopo(receita, ESCOPO_APROVACAO_FORMULAS) == ()
+
+
+def test_responsavel_da_aprovacao_divergente_da_fonte_reprova():
+    """Assinatura e evidência têm de ser da mesma pessoa."""
+    with pytest.raises(ReceitaErro, match="assinada por"):
+        AprovacaoEspecialista(
+            resultado=ResultadoAprovacao.APROVADO, responsavel="Anderson",
+            data="2026-08-10", fonte=_fonte(responsavel="Bruno"),
+            escopo=ESCOPO_APROVACAO_RECEITA)
+
+
+def test_aprovacao_com_fonte_que_nao_e_de_especialista_reprova():
+    with pytest.raises(ReceitaErro, match="especialista_de_dominio"):
+        AprovacaoEspecialista(
+            resultado=ResultadoAprovacao.APROVADO, responsavel="Bruno",
+            data="2026-08-10",
+            fonte=_fonte(tipo="foto", id_fonte="FONTE-FOTO"),
+            escopo=ESCOPO_APROVACAO_RECEITA)
+
+
+def test_escopo_de_aprovacao_desconhecido_reprova():
+    with pytest.raises(ReceitaErro, match="escopo de aprovação desconhecido"):
+        _aprovacao("qualquer_coisa")
+
+
+# ---- validação estruturada do caso ----------------------------------------
+
+def test_caso_nao_pode_se_declarar_validado():
+    """`VALIDADO` deixou de ser uma string que qualquer código escreve."""
+    with pytest.raises(ReceitaErro, match="NÃO se escreve"):
+        CasoRealFabricacao(identificador="CASO_A_PEQUENO",
+                           estado_recebimento=ESTADO_CASO_VALIDADO)
+
+
+def test_caso_sem_validacao_estruturada_nao_abre_producao(biblioteca):
+    from dataclasses import replace
+    sem_validacao = tuple(replace(c, validacao=None) for c in _TRES_CASOS)
+    assert all(c.estado_validacao == ESTADO_CASO_RECEBIDO
+               for c in sem_validacao)
+    receita = replace(_receita_completa(), casos_reais=sem_validacao,
+                      aprovacoes=(_aprovacao(ESCOPO_APROVACAO_RECEITA),
+                                  _aprovacao(ESCOPO_APROVACAO_FORMULAS)))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("canônicos ausentes" in f["regra"] for f in r.falhas)
+
+
+def test_caso_com_validacao_aprovada_e_considerado_validado(biblioteca):
+    caso = _TRES_CASOS[0]
+    assert caso.validacao.aprovada
+    assert caso.estado_validacao == ESTADO_CASO_VALIDADO
+    assert caso.validado
+    from dataclasses import replace
+    receita = replace(_receita_completa(), casos_reais=_TRES_CASOS,
+                      aprovacoes=(_aprovacao(ESCOPO_APROVACAO_RECEITA),
+                                  _aprovacao(ESCOPO_APROVACAO_FORMULAS)))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert r.ok, r.descrever()
+
+
+def test_validacao_reprovada_nao_torna_o_caso_validado():
+    caso = _caso_validado("CASO_A_PEQUENO", "800", "600",
+                          validacao=_validacao_aprovada(
+                              ResultadoAprovacao.REPROVADO))
+    assert not caso.validado
+    assert caso.estado_validacao == ESTADO_CASO_RECEBIDO
+
+
+def test_validacao_de_caso_exige_responsavel_data_e_fontes():
+    with pytest.raises(ReceitaErro, match="sem responsável"):
+        ValidacaoCasoReal(resultado=ResultadoAprovacao.APROVADO,
+                          responsavel="", data="2026-08-10",
+                          fontes_ids=("FONTE-A",))
+    with pytest.raises(ReceitaErro, match="sem fontes"):
+        ValidacaoCasoReal(resultado=ResultadoAprovacao.APROVADO,
+                          responsavel="Bruno", data="2026-08-10",
+                          fontes_ids=())
+
+
+def test_validacao_citando_fonte_inexistente_reprova_producao(biblioteca):
+    from dataclasses import replace
+    ruim = replace(_TRES_CASOS[0],
+                   validacao=ValidacaoCasoReal(
+                       resultado=ResultadoAprovacao.APROVADO,
+                       responsavel="Bruno", data="2026-08-10",
+                       fontes_ids=("FONTE-INEXISTENTE",)))
+    receita = replace(_receita_completa(),
+                      casos_reais=(ruim,) + _TRES_CASOS[1:],
+                      aprovacoes=(_aprovacao(ESCOPO_APROVACAO_RECEITA),
+                                  _aprovacao(ESCOPO_APROVACAO_FORMULAS)))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("fonte inexistente" in f["regra"] for f in r.falhas)
+
+
+# ---- datas reais -----------------------------------------------------------
+
+@pytest.mark.parametrize("data", ["2026-02-30", "2026-13-10", "2026-00-01",
+                                  "2026-04-31", "10/08/2026", "20260810"])
+def test_data_invalida_reprova(data):
+    """Conferir só o formato aceitaria 2026-02-30 — que parece data e não é."""
+    from composicao.modelos import data_invalida
+    assert data_invalida(data) is not None
+    with pytest.raises(ReceitaErro):
+        _fonte(data=data)
+
+
+@pytest.mark.parametrize("data", ["2026-08-10", "2024-02-29", "2026-12-31"])
+def test_data_valida_e_aceita(data):
+    from composicao.modelos import data_invalida
+    assert data_invalida(data) is None
+    assert _fonte(data=data).data == data
+
+
+def test_data_invalida_na_ficha_reprova(ficha_em_branco):
+    d = _ficha_com_fontes(ficha_em_branco,
+                          _fonte_bruta("FONTE-A", data="2026-02-30"))
+    r = fontes.validar_estrutura_ficha(d, "x")
+    assert not r.ok
+    assert any("não é uma data real" in f["regra"] for f in r.falhas)
+
+
+def test_validacao_e_aprovacao_recusam_data_irreal():
+    with pytest.raises(ReceitaErro, match="data real"):
+        ValidacaoCasoReal(resultado=ResultadoAprovacao.APROVADO,
+                          responsavel="Bruno", data="2026-02-30",
+                          fontes_ids=("FONTE-A",))
+
+
+# ---- modelo YAML -----------------------------------------------------------
+
+def test_modelo_yaml_declara_os_campos_do_schema(ficha_em_branco):
+    """O modelo distribuído tem de mostrar onde vai id_fonte, estado,
+    fontes_ids e dados_adicionais — senão ninguém os preencheria."""
+    texto = MODELO_FICHA.read_text(encoding="utf-8")
+    for campo in ("id_fonte", "estado:", "fontes_ids", "dados_adicionais"):
+        assert campo in texto, campo
+    assert ficha_em_branco["caso_real"]["fontes_ids"] == []
+    assert ficha_em_branco["vista"]["dados_adicionais"] == {}
+    for p in PERFIS:
+        assert ficha_em_branco["perfis"][p]["fontes_ids"] == []
+    assert ficha_em_branco["dados_adicionais"] == {}
+
+
+def test_modelo_yaml_vazio_continua_valido_e_sem_decisoes(ficha_em_branco):
+    r = fontes.validar_estrutura_ficha(ficha_em_branco, "modelo")
+    assert r.ok, r.descrever()
+    assert fontes.extrair_decisoes_confirmadas(ficha_em_branco) == ()
+    caso = fontes.converter_ficha_em_caso_real(ficha_em_branco, "modelo")
+    assert caso.identificador is None
+    assert caso.estado_validacao == ESTADO_CASO_AGUARDANDO
+    assert caso.secoes_preenchidas == ()
+
+
+def test_modelo_yaml_nao_cria_valor_tecnico(ficha_em_branco):
+    """Nenhum número, papel, quantidade ou fórmula nasce do modelo."""
+    caso = fontes.converter_ficha_em_caso_real(ficha_em_branco, "modelo")
+    assert caso.largura_total_mm is None and caso.altura_total_mm is None
+    assert caso.estado_dimensoes is None and caso.fontes_ids_dimensoes == ()
+    assert caso.vista.vazia
+    assert all(p.vazio for p in caso.perfis)
+    assert all(p.funcao is None and p.quantidade is None for p in caso.perfis)
+    for secao in ("cortes", "vidros", "baguetes", "acessorios", "folgas",
+                  "sobreposicoes", "croquis", "fontes", "duvidas"):
+        assert getattr(caso, secao) == (), secao
+    assert caso.validacao is None

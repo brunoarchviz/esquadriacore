@@ -6,17 +6,31 @@
 #   - Nunca escreva 0, "n/a" ou um chute para preencher espaço: o sistema
 #     leria como decisão tomada.
 #   - Medidas em milímetros, sem unidade no valor (ex.: 1500, 1500.5).
-#   - `fonte` é como você sabe: "catalogo", "medicao_fisica",
-#     "especialista_de_dominio", "lista_de_corte_real", "software_externo",
-#     "foto", "croqui", "tabela_de_fabricacao", "manifesto_promocao",
-#     "biblioteca_oficial".
+#   - Datas no formato AAAA-MM-DD, e datas reais: 2026-02-30 é recusada.
 #   - Nome de campo com erro de digitação REPROVA a ficha, com sugestão do nome
 #     certo. Nada é ignorado em silêncio.
-#   - Datas no formato AAAA-MM-DD.
 #
-# PREENCHER NÃO É CONFIRMAR. Um campo vira "decisão confirmada" só quando tem
-# valor, uma fonte declarada em `fontes:` com estado confirmado e — quando a
-# decisão é sua, como especialista — `responsavel` e `data`.
+# EVIDÊNCIA É CITADA POR ID
+#   Cada fonte em `fontes:` tem um `id_fonte` único (FONTE-ALGUMA-COISA). Cada
+#   afirmação cita as suas com `fontes_ids: [FONTE-001]`. Citar por TIPO seria
+#   ambíguo: com duas fotos, ninguém saberia de qual você está falando.
+#
+# CADA AFIRMAÇÃO TEM SEU PRÓPRIO ESTADO E SUA PRÓPRIA EVIDÊNCIA
+#   `estado` diz o quanto aquilo está firme:
+#     CONFIRMADO_CATALOGO, CONFIRMADO_BIBLIOTECA_OFICIAL,
+#     CONFIRMADO_ESPECIALISTA, CONFIRMADO_CASO_REAL,
+#     DERIVADO_DE_REGRA_APROVADA, HIPOTESE, PENDENTE
+#   Uma fonte solta no fim do documento NÃO confirma o resto da ficha.
+#
+# PREENCHER NÃO É CONFIRMAR
+#   Um campo vira "decisão confirmada" só com valor + `estado` confirmado +
+#   `fontes_ids` que existem — e, quando o estado é CONFIRMADO_ESPECIALISTA, a
+#   fonte precisa ser do tipo `especialista_de_dominio` com `responsavel` e
+#   `data`.
+#
+# CONTEÚDO LIVRE VAI EM dados_adicionais
+#   Qualquer coisa fora do schema entra em `dados_adicionais: {}`. Ela é
+#   preservada integralmente e NUNCA interpretada — não vira cálculo.
 #
 # Copie este arquivo antes de preencher, por exemplo para
 # composicao/insumos/suprema_2f_caso_a.yaml, e valide com:
@@ -30,11 +44,14 @@ tipologia:
   codigo: SUPREMA_CORRER_2F
 
 # Uma janela REAL, medida. Identificador: CASO_A_PEQUENO, CASO_B_MEDIO
-# ou CASO_C_GRANDE.
+# ou CASO_C_GRANDE. Largura e altura podem compartilhar a mesma evidência.
 caso_real:
   identificador:
   largura_total_mm:
   altura_total_mm:
+  estado:
+  fontes_ids: []
+  dados_adicionais: {}
 
 # Sem isto não dá para saber o que é "esquerda" nem qual folha passa na frente.
 vista:
@@ -43,6 +60,9 @@ vista:
   folha_trilho_externo:      # qual folha corre no trilho de fora
   sentidos_de_movimento:     # ex.: folha 1 abre para a direita
   posicao_do_fecho:          # onde fica o fecho / mão-de-amigo
+  estado:
+  fontes_ids: []
+  dados_adicionais: {}
 
 # Os oito perfis oficiais promovidos no E.4C.
 # `funcao`: MARCO_SUPERIOR, MARCO_INFERIOR, MARCO_LATERAL_ESQUERDO,
@@ -57,86 +77,142 @@ perfis:
     quantidade:
     orientacao:
     observacoes:
-    fonte:
+    estado:
+    fontes_ids: []
+    dados_adicionais: {}
   SU-002:
     funcao:
     quantidade:
     orientacao:
     observacoes:
-    fonte:
+    estado:
+    fontes_ids: []
+    dados_adicionais: {}
   SU-003:
     funcao:
     quantidade:
     orientacao:
     observacoes:
-    fonte:
+    estado:
+    fontes_ids: []
+    dados_adicionais: {}
   SU-039:
     funcao:
     quantidade:
     orientacao:
     observacoes:
-    fonte:
+    estado:
+    fontes_ids: []
+    dados_adicionais: {}
   SU-040:
     funcao:
     quantidade:
     orientacao:
     observacoes:
-    fonte:
+    estado:
+    fontes_ids: []
+    dados_adicionais: {}
   SU-041:
     funcao:
     quantidade:
     orientacao:
     observacoes:
-    fonte:
+    estado:
+    fontes_ids: []
+    dados_adicionais: {}
   SU-053:
     funcao:
     quantidade:
     orientacao:
     observacoes:
-    fonte:
+    estado:
+    fontes_ids: []
+    dados_adicionais: {}
   SU-102:
     funcao:
     quantidade:
     orientacao:
     observacoes:
-    fonte:
+    estado:
+    fontes_ids: []
+    dados_adicionais: {}
 
 # Lista de corte REAL da janela acima. Uma entrada por peça cortada.
-# Ex.: - {perfil: SU-001, comprimento_mm: 1460, quantidade: 1, angulo: 90,
-#         observacao: "desconta 40 mm do vão"}
+# Ex.: - perfil: SU-001
+#        comprimento_mm: 1460
+#        quantidade: 1
+#        angulo: "90"
+#        observacao: desconta 40 mm do vão
+#        estado: CONFIRMADO_CASO_REAL
+#        fontes_ids: [FONTE-LISTA-CORTE-A]
 cortes: []
 
 # Chapas de vidro efetivamente usadas.
-# Ex.: - {folha: 1, largura_mm: 690, altura_mm: 1180, espessura_mm: 6}
+# Ex.: - folha: "1"
+#        largura_mm: 690
+#        altura_mm: 1180
+#        espessura_mm: 6
+#        estado: CONFIRMADO_CASO_REAL
+#        fontes_ids: [FONTE-LISTA-CORTE-A]
 vidros: []
 
 # Baguetes cortadas. A baguete Suprema tem DOIS lados de encaixe — registre
 # qual lado encaixa em quê.
 baguetes: []
 
-# Ex.: - {item: roldana, quantidade: 4, posicao: "base de cada folha"}
+# Ex.: - item: roldana
+#        quantidade: 4
+#        posicao: base de cada folha
+#        estado: CONFIRMADO_CASO_REAL
+#        fontes_ids: [FONTE-FOTO-BASE]
 acessorios: []
 
 # Folgas medidas, não estimadas.
-# Ex.: - {entre: "folha e marco lateral", valor_mm: 3, medido_por: paquimetro}
+# Ex.: - entre: folha e marco lateral
+#        valor_mm: 3
+#        medido_por: paquimetro
+#        estado: CONFIRMADO_CASO_REAL
+#        fontes_ids: [FONTE-MEDICAO-A]
 folgas: []
 
 # Sobreposição no encontro central e onde mais houver.
-# Ex.: - {entre: "folha 1 e folha 2", valor_mm: 25}
 sobreposicoes: []
 
-# Fotos, croquis e documentos — caminho RELATIVO à raiz do repositório.
+# Croquis e fotos como ARQUIVOS. Croqui é evidência visual, não decisão: ele
+# não carrega estado nem responsável. Para CITAR um croqui numa afirmação,
+# declare-o também em `fontes:` com um id_fonte próprio (exemplo abaixo).
+# Ex.: - tipo: croqui
+#        referencia: curadoria/campo/caso_a/croqui.jpg
+#        descricao: Croqui do serralheiro
 croquis: []
 
-# Ex.: - {tipo: foto, referencia: "curadoria/campo/caso_a/frente.jpg",
-#         descricao: "janela montada, vista interna", estado: CONFIRMADO_CASO_REAL,
-#         responsavel: Bruno, data: "2026-08-10"}
-#
+# As fontes citadas por `fontes_ids` em qualquer parte da ficha.
+# `id_fonte` é obrigatório, único, no formato FONTE-[A-Z0-9_-]+.
+# Tipos podem se repetir (duas fotos são duas fontes); IDs não.
 # `referencia` é caminho RELATIVO à raiz do repositório. Caminho absoluto
 # (/home/..., C:\...) e travessia com ".." são recusados: a evidência tem de
 # sobreviver ao clone em outra máquina. Para algo que não é arquivo, declare
 # forma_referencia: identificador_externo  (ou: url).
+#
+# Ex.: - id_fonte: FONTE-CROQUI-A
+#        tipo: croqui
+#        referencia: curadoria/campo/caso_a/croqui.jpg
+#        descricao: Croqui do serralheiro
+#        estado: CONFIRMADO_CASO_REAL
+#        responsavel: Bruno
+#        data: "2026-08-10"
+#      - id_fonte: FONTE-ARBITRAGEM-PAPEIS
+#        tipo: especialista_de_dominio
+#        referencia: curadoria/campo/caso_a/confirmacao_perfis.md
+#        descricao: Confirmação dos papéis dos perfis
+#        estado: CONFIRMADO_ESPECIALISTA
+#        responsavel: Bruno
+#        data: "2026-08-10"
 fontes: []
 
 # O que ficou em aberto na visita, com suas palavras.
 duvidas: []
+
+# Qualquer informação que não caiba no schema acima. Preservada integralmente,
+# nunca interpretada e nunca usada em cálculo.
+dados_adicionais: {}
