@@ -26,6 +26,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from .modelos import (ESTADO_CASO_AGUARDANDO, ESTADO_CASO_PARCIAL,
+                      ESTADOS_CONFIRMADOS,
                       ESTADO_CASO_RECEBIDO, FORMAS_DE_REFERENCIA,
                       FORMATO_DATA, FORMATO_ID_FONTE, IDENTIFICADORES_DE_CASO,
                       TIPOS_DE_FONTE, AcessorioReal, Afirmacao, BagueteReal,
@@ -34,7 +35,8 @@ from .modelos import (ESTADO_CASO_AGUARDANDO, ESTADO_CASO_PARCIAL,
                       PapelComponente, PerfilNoCasoReal, ReceitaErro,
                       ReferenciaPerfilOficial, ResultadoValidacao,
                       SobreposicaoReal, VidroReal, VistaCasoReal,
-                      _RE_ID_FONTE, afirmacao_confirmada, data_invalida)
+                      _RE_ID_FONTE, data_invalida,
+                      incompatibilidades_da_afirmacao)
 
 RAIZ = Path(__file__).resolve().parents[1]
 DIR_INSUMOS = Path(__file__).resolve().parent / "insumos"
@@ -278,8 +280,12 @@ def _ids_de_fontes(bloco: dict) -> tuple[str, ...]:
 
 
 def _validar_afirmacao(bloco: dict, alvo: str, ids_disponiveis,
-                       origem) -> ResultadoValidacao:
-    """Estado, evidência e bloco de extensão de uma afirmação qualquer."""
+                       origem, fontes_tipadas=None) -> ResultadoValidacao:
+    """Estado, evidência e bloco de extensão de uma afirmação qualquer.
+
+    Quando as fontes já foram tipadas, cobra também a compatibilidade
+    semântica: uma afirmação `CONFIRMADO_CASO_REAL` apoiada só num catálogo é
+    erro visível, não uma confirmação que some da lista."""
     r = ResultadoValidacao.aprovado()
 
     estado = _texto(bloco.get("estado"))
@@ -317,6 +323,20 @@ def _validar_afirmacao(bloco: dict, alvo: str, ids_disponiveis,
         r = r.somar(_reprovar(f"{alvo}.dados_adicionais",
                               "dados_adicionais tem de ser mapeamento",
                               type(extra).__name__, "mapeamento", origem))
+
+    if fontes_tipadas and estado is not None and r.ok:
+        try:
+            estado_enum = EstadoConhecimento(estado)
+        except ValueError:
+            return r
+        if estado_enum in ESTADOS_CONFIRMADOS:
+            problemas = incompatibilidades_da_afirmacao(
+                estado_enum, _ids_de_fontes(bloco), fontes_tipadas)
+            for motivo in problemas:
+                r = r.somar(_reprovar(
+                    f"{alvo}.fontes_ids", f"evidência não sustenta o estado: "
+                    f"{motivo}", estado, "fonte compatível com o estado",
+                    origem))
     return r
 
 
@@ -401,8 +421,36 @@ def _validar_referencia(item: dict, alvo: str, origem,
     return r
 
 
+def fontes_tipadas_da_ficha(dados: dict) -> dict:
+    """`id_fonte` -> FonteEvidencia, ignorando as malformadas.
+
+    Fonte malformada já reprovou na validação do bloco `fontes`; aqui ela
+    simplesmente não sustenta nada."""
+    tipadas = {}
+    for f in (dados.get("fontes") or []):
+        if not isinstance(f, dict):
+            continue
+        ident = _texto(f.get("id_fonte"))
+        if not ident or ident in tipadas:
+            continue
+        try:
+            tipadas[ident] = FonteEvidencia(
+                id_fonte=ident, tipo=_texto(f.get("tipo")) or "",
+                referencia=_texto(f.get("referencia")) or "",
+                descricao=_texto(f.get("descricao")) or "",
+                estado=EstadoConhecimento(_texto(f.get("estado"))
+                                          or EstadoConhecimento.PENDENTE.value),
+                responsavel=_texto(f.get("responsavel")),
+                data=_texto(f.get("data")),
+                forma_referencia=(_texto(f.get("forma_referencia"))
+                                  or "arquivo"))
+        except (ReceitaErro, ValueError):
+            continue
+    return tipadas
+
+
 def _validar_itens_de_lista(dados: dict, secao: str, ids_disponiveis,
-                            origem) -> ResultadoValidacao:
+                            origem, fontes_tipadas=None) -> ResultadoValidacao:
     r = ResultadoValidacao.aprovado()
     itens = dados.get(secao)
     if itens is None:
@@ -427,7 +475,8 @@ def _validar_itens_de_lista(dados: dict, secao: str, ids_disponiveis,
             _, res = _inteiro_positivo(item.get(campo), f"{alvo}.{campo}", origem)
             r = r.somar(res)
         if secao in SECOES_DE_AFIRMACAO:
-            r = r.somar(_validar_afirmacao(item, alvo, ids_disponiveis, origem))
+            r = r.somar(_validar_afirmacao(item, alvo, ids_disponiveis, origem,
+                                           fontes_tipadas))
         if secao == "croquis":
             r = r.somar(_validar_referencia(item, alvo, origem,
                                             exige_tipo=False))
@@ -468,6 +517,7 @@ def validar_estrutura_ficha(dados: dict,
 
     ids_disponiveis, res_fontes = _validar_fontes_declaradas(dados, origem)
     r = r.somar(res_fontes)
+    fontes_tipadas = fontes_tipadas_da_ficha(dados)
 
     extra_raiz = dados.get("dados_adicionais")
     if extra_raiz is not None and not isinstance(extra_raiz, dict):
@@ -483,7 +533,8 @@ def validar_estrutura_ficha(dados: dict,
     caso = caso or {}
     r = r.somar(_campos_desconhecidos(caso, CAMPOS_CASO_REAL, "caso_real",
                                       origem))
-    r = r.somar(_validar_afirmacao(caso, "caso_real", ids_disponiveis, origem))
+    r = r.somar(_validar_afirmacao(caso, "caso_real", ids_disponiveis, origem,
+                                   fontes_tipadas))
     ident = _texto(caso.get("identificador"))
     if ident is not None and ident not in IDENTIFICADORES_DE_CASO:
         r = r.somar(_reprovar("caso_real.identificador",
@@ -499,7 +550,8 @@ def validar_estrutura_ficha(dados: dict,
                               type(vista).__name__, "mapeamento", origem))
     elif isinstance(vista, dict):
         r = r.somar(_campos_desconhecidos(vista, CAMPOS_VISTA, "vista", origem))
-        r = r.somar(_validar_afirmacao(vista, "vista", ids_disponiveis, origem))
+        r = r.somar(_validar_afirmacao(vista, "vista", ids_disponiveis, origem,
+                                       fontes_tipadas))
 
     perfis = dados.get("perfis")
     if perfis is not None and not isinstance(perfis, dict):
@@ -522,7 +574,8 @@ def validar_estrutura_ficha(dados: dict,
             continue
         alvo = f"perfis.{codigo}"
         r = r.somar(_campos_desconhecidos(bloco, CAMPOS_PERFIL, alvo, origem))
-        r = r.somar(_validar_afirmacao(bloco, alvo, ids_disponiveis, origem))
+        r = r.somar(_validar_afirmacao(bloco, alvo, ids_disponiveis, origem,
+                                       fontes_tipadas))
         funcao = _texto(bloco.get("funcao"))
         if funcao is not None:
             try:
@@ -540,7 +593,7 @@ def validar_estrutura_ficha(dados: dict,
         if secao == "fontes":
             continue                       # já validada acima
         r = r.somar(_validar_itens_de_lista(dados, secao, ids_disponiveis,
-                                            origem))
+                                            origem, fontes_tipadas))
     return r
 
 
@@ -727,19 +780,12 @@ def extrair_campos_preenchidos(dados: dict) -> tuple[dict, ...]:
 
 
 def _indice_de_fontes_da_ficha(dados: dict) -> dict:
-    """`id_fonte` -> bloco da fonte. Duas fontes do mesmo tipo continuam duas."""
-    indice = {}
-    for f in (dados.get("fontes") or []):
-        if not isinstance(f, dict):
-            continue
-        ident = _texto(f.get("id_fonte"))
-        if ident and ident not in indice:
-            indice[ident] = f
-    return indice
+    """`id_fonte` -> FonteEvidencia. Duas fontes do mesmo tipo continuam duas."""
+    return fontes_tipadas_da_ficha(dados)
 
 
 def _fonte_valida_para(indice: dict, ids, estado_texto) -> bool:
-    """Delega a `afirmacao_confirmada`, montando fontes tipadas quando dá.
+    """Evidência existente, apta e compatível com o estado da afirmação.
 
     Uma fonte malformada no documento não confirma nada — e também não pode
     derrubar a extração."""
@@ -747,26 +793,7 @@ def _fonte_valida_para(indice: dict, ids, estado_texto) -> bool:
         estado = EstadoConhecimento(estado_texto)
     except (ValueError, TypeError):
         return False
-    fontes = {}
-    for i in ids:
-        bruto = indice.get(i)
-        if bruto is None:
-            return False
-        try:
-            fontes[i] = FonteEvidencia(
-                id_fonte=_texto(bruto.get("id_fonte")) or "",
-                tipo=_texto(bruto.get("tipo")) or "",
-                referencia=_texto(bruto.get("referencia")) or "",
-                descricao=_texto(bruto.get("descricao")) or "",
-                estado=EstadoConhecimento(_texto(bruto.get("estado"))
-                                          or EstadoConhecimento.PENDENTE.value),
-                responsavel=_texto(bruto.get("responsavel")),
-                data=_texto(bruto.get("data")),
-                forma_referencia=(_texto(bruto.get("forma_referencia"))
-                                  or "arquivo"))
-        except (ReceitaErro, ValueError):
-            return False
-    return afirmacao_confirmada(estado, tuple(ids), fontes)
+    return not incompatibilidades_da_afirmacao(estado, tuple(ids), indice)
 
 
 def _registrar_confirmacoes(destino: list, escopo: str, bloco: dict,
@@ -782,8 +809,8 @@ def _registrar_confirmacoes(destino: list, escopo: str, bloco: dict,
             destino.append({"escopo": escopo, "campo": campo,
                             "valor": bloco[campo], "estado": estado,
                             "fontes_ids": list(ids),
-                            "responsavel": _texto(
-                                (indice.get(ids[0]) or {}).get("responsavel"))})
+                            "responsavel": getattr(indice.get(ids[0]),
+                                                   "responsavel", None)})
 
 
 def extrair_decisoes_confirmadas(dados: dict) -> tuple[dict, ...]:

@@ -27,10 +27,12 @@ distintas, e um índice por tipo faria a segunda apagar a primeira.
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
 from enum import Enum
+from types import MappingProxyType
 
 
 class EstadoConhecimento(str, Enum):
@@ -127,6 +129,54 @@ ALVOS_DIMENSIONAIS = (
 )
 
 ESTADO_RECEITA_PRELIMINAR = "PRELIMINAR_AGUARDANDO_DADOS_DE_CAMPO"
+
+# Que TIPO de evidência sustenta que TIPO de confirmação. Não é uma escala
+# numérica: cada confirmação tem natureza própria. Uma foto não confirma cota
+# de catálogo, e um catálogo não confirma o que foi medido numa janela real.
+TIPOS_QUE_SUSTENTAM = {
+    EstadoConhecimento.CONFIRMADO_CATALOGO: frozenset({
+        "catalogo", "tabela_de_fabricacao"}),
+    EstadoConhecimento.CONFIRMADO_BIBLIOTECA_OFICIAL: frozenset({
+        "manifesto_promocao", "biblioteca_oficial"}),
+    EstadoConhecimento.CONFIRMADO_ESPECIALISTA: frozenset({
+        "especialista_de_dominio"}),
+    EstadoConhecimento.CONFIRMADO_CASO_REAL: frozenset({
+        "medicao_fisica", "foto", "croqui", "lista_de_corte_real",
+        "software_externo", "tabela_de_fabricacao"}),
+    EstadoConhecimento.DERIVADO_DE_REGRA_APROVADA: frozenset({
+        "especialista_de_dominio", "tabela_de_fabricacao", "software_externo"}),
+}
+
+
+# ---------------------------------------------------------------------------
+# Imutabilidade profunda
+# ---------------------------------------------------------------------------
+
+def congelar_dados_adicionais(valor):
+    """Cópia profundamente imutável do conteúdo livre.
+
+    `frozen=True` congela os ATRIBUTOS do dataclass, não o conteúdo de um
+    `dict`. Sem isto, quem passou o dicionário continuaria podendo alterá-lo
+    depois — e o "registro auditável" mudaria por baixo de quem o leu."""
+    if isinstance(valor, Mapping):
+        return MappingProxyType({str(k): congelar_dados_adicionais(v)
+                                 for k, v in valor.items()})
+    if isinstance(valor, (list, tuple)):
+        return tuple(congelar_dados_adicionais(v) for v in valor)
+    if isinstance(valor, (set, frozenset)):
+        return frozenset(congelar_dados_adicionais(v) for v in valor)
+    return valor
+
+
+def descongelar_dados_adicionais(valor):
+    """Cópia nova e mutável, para serializar. Mexer nela não afeta o modelo."""
+    if isinstance(valor, Mapping):
+        return {k: descongelar_dados_adicionais(v) for k, v in valor.items()}
+    if isinstance(valor, (list, tuple)):
+        return [descongelar_dados_adicionais(v) for v in valor]
+    if isinstance(valor, (set, frozenset)):
+        return sorted(descongelar_dados_adicionais(v) for v in valor)
+    return valor
 
 
 def data_invalida(valor: str) -> str | None:
@@ -306,22 +356,74 @@ def autoria_de_especialista_ausente(estado: EstadoConhecimento,
                    for f in fontes)
 
 
+def fonte_compativel_com_afirmacao(fonte: FonteEvidencia,
+                                   estado_afirmacao: EstadoConhecimento) -> bool:
+    """A fonte sustenta ESTE tipo de confirmação?
+
+    Existir não basta. Uma fonte `PENDENTE` confirmando um
+    `CONFIRMADO_CASO_REAL` seria uma afirmação firme apoiada em nada — e o
+    sistema diria que a janela foi medida quando ninguém mediu."""
+    if estado_afirmacao not in ESTADOS_CONFIRMADOS:
+        return False
+    if fonte.estado is not estado_afirmacao:
+        return False
+    if fonte.tipo not in TIPOS_QUE_SUSTENTAM[estado_afirmacao]:
+        return False
+    if estado_afirmacao is EstadoConhecimento.CONFIRMADO_ESPECIALISTA:
+        return fonte.autoria_completa
+    return True
+
+
+def incompatibilidades_da_afirmacao(estado, fontes_ids, indice_fontes) -> tuple[str, ...]:
+    """Motivos pelos quais a evidência citada NÃO sustenta a afirmação.
+
+    Devolve texto, não booleano: uma afirmação confirmada com fonte incompatível
+    tem de virar erro visível, não sumir em silêncio da lista de confirmações."""
+    if estado is None:
+        return ("afirmação sem estado",)
+    if estado in ESTADOS_NAO_CALCULAVEIS:
+        return (f"estado {estado.value} não confirma",)
+    if estado not in ESTADOS_CONFIRMADOS:
+        return (f"estado desconhecido: {estado}",)
+
+    ids = tuple(fontes_ids or ())
+    if not ids:
+        return ("afirmação confirmada sem fontes_ids",)
+    problemas = []
+    vistos = set()
+    for i in ids:
+        if i in vistos:
+            problemas.append(f"fonte repetida na mesma afirmação: {i}")
+        vistos.add(i)
+        if i not in indice_fontes:
+            problemas.append(f"fonte inexistente: {i}")
+    if problemas:
+        return tuple(problemas)
+
+    fontes = tuple(indice_fontes[i] for i in ids)
+    for f in fontes:
+        if f.estado in ESTADOS_NAO_CALCULAVEIS:
+            problemas.append(
+                f"{f.id_fonte} está {f.estado.value} e não sustenta confirmação")
+    if not any(fonte_compativel_com_afirmacao(f, estado) for f in fontes):
+        esperado = sorted(TIPOS_QUE_SUSTENTAM[estado])
+        problemas.append(
+            f"nenhuma fonte compatível com {estado.value} "
+            f"(esperado estado {estado.value} e tipo em {esperado}"
+            + (" com autoria completa"
+               if estado is EstadoConhecimento.CONFIRMADO_ESPECIALISTA else "")
+            + ")")
+    return tuple(problemas)
+
+
 def afirmacao_confirmada(estado, fontes_ids, indice_fontes) -> bool:
-    """Uma afirmação só é confirmada com estado, evidência existente e autoria.
+    """Uma afirmação só é confirmada com estado, evidência existente, apta e
+    semanticamente compatível.
 
     Uma fonte global no documento não confirma seção nenhuma: a evidência tem
-    de estar ligada à afirmação específica."""
-    if estado is None or estado in ESTADOS_NAO_CALCULAVEIS:
-        return False
-    if estado not in ESTADOS_CONFIRMADOS:
-        return False
-    ids = tuple(fontes_ids or ())
-    if not ids or len(set(ids)) != len(ids):
-        return False
-    if any(i not in indice_fontes for i in ids):
-        return False
-    fontes = tuple(indice_fontes[i] for i in ids)
-    return not autoria_de_especialista_ausente(estado, fontes)
+    de estar ligada à afirmação específica — e sustentá-la."""
+    return not incompatibilidades_da_afirmacao(estado, fontes_ids,
+                                               indice_fontes)
 
 
 # ---------------------------------------------------------------------------
@@ -526,15 +628,27 @@ class Afirmacao:
     perdido, e a ficha pareceria completa."""
     estado: EstadoConhecimento | None = None
     fontes_ids: tuple[str, ...] = ()
-    dados_adicionais: dict = field(default_factory=dict)
+    dados_adicionais: Mapping = field(default_factory=dict)
+
+    def __post_init__(self):
+        # Cópia profunda e congelada: quem passou o dicionário não pode mais
+        # alterá-lo por fora depois que o registro foi criado.
+        object.__setattr__(self, "dados_adicionais",
+                           congelar_dados_adicionais(self.dados_adicionais))
+        object.__setattr__(self, "fontes_ids", tuple(self.fontes_ids or ()))
 
     def confirmada(self, indice_fontes) -> bool:
         return afirmacao_confirmada(self.estado, self.fontes_ids, indice_fontes)
 
+    def incompatibilidades(self, indice_fontes) -> tuple[str, ...]:
+        return incompatibilidades_da_afirmacao(self.estado, self.fontes_ids,
+                                               indice_fontes)
+
     def _base_dict(self) -> dict:
         return {"estado": self.estado.value if self.estado else None,
                 "fontes_ids": list(self.fontes_ids),
-                "dados_adicionais": dict(self.dados_adicionais),
+                "dados_adicionais": descongelar_dados_adicionais(
+                    self.dados_adicionais),
                 "dados_adicionais_interpretados": False}
 
 
@@ -733,6 +847,9 @@ class ValidacaoCasoReal:
             raise ReceitaErro(f"validação de caso: data {self.data!r} {motivo}")
         if not self.fontes_ids:
             raise ReceitaErro("validação de caso sem fontes")
+        if len(set(self.fontes_ids)) != len(self.fontes_ids):
+            raise ReceitaErro(
+                f"validação de caso com fonte repetida: {self.fontes_ids}")
 
     @property
     def aprovada(self) -> bool:
@@ -776,11 +893,13 @@ class CasoRealFabricacao:
     croquis: tuple[CroquiCasoReal, ...] = ()
     fontes: tuple[FonteEvidencia, ...] = ()
     duvidas: tuple[str, ...] = ()
-    dados_adicionais: dict = field(default_factory=dict)
+    dados_adicionais: Mapping = field(default_factory=dict)
     estado_recebimento: str = ESTADO_CASO_AGUARDANDO
     validacao: ValidacaoCasoReal | None = None
 
     def __post_init__(self):
+        object.__setattr__(self, "dados_adicionais",
+                           congelar_dados_adicionais(self.dados_adicionais))
         if (self.identificador is not None
                 and self.identificador not in IDENTIFICADORES_DE_CASO):
             raise ReceitaErro(
@@ -882,7 +1001,8 @@ class CasoRealFabricacao:
             "croquis": [c.para_dict() for c in self.croquis],
             "fontes": [f.para_dict() for f in self.fontes],
             "duvidas": list(self.duvidas),
-            "dados_adicionais": dict(self.dados_adicionais),
+            "dados_adicionais": descongelar_dados_adicionais(
+                self.dados_adicionais),
             "dados_adicionais_interpretados": False,
             "estado_recebimento": self.estado_recebimento,
             "estado_validacao": self.estado_validacao,
@@ -902,15 +1022,20 @@ ESCOPOS_DE_APROVACAO = (ESCOPO_APROVACAO_RECEITA, ESCOPO_APROVACAO_FORMULAS)
 
 @dataclass(frozen=True)
 class AprovacaoEspecialista:
-    """Aprovação com resultado, autor, data, escopo e evidência.
+    """Aprovação com resultado, autor, data, escopo e evidência **registrada**.
 
     `resultado` é um enum, não texto livre: antes, a mera existência de um
     registro abria o portão, e um parecer NEGATIVO abriria o mesmo portão que
-    um positivo."""
+    um positivo.
+
+    A evidência é citada por `fonte_id`, resolvido no registro central da
+    receita. Carregar o objeto `FonteEvidencia` aqui permitia aprovar com uma
+    fonte que não existe em lugar nenhum — evidência que ninguém consegue
+    auditar depois."""
     resultado: ResultadoAprovacao
     responsavel: str
     data: str
-    fonte: FonteEvidencia
+    fonte_id: str
     escopo: str
     observacao: str | None = None
 
@@ -918,27 +1043,20 @@ class AprovacaoEspecialista:
         if not isinstance(self.resultado, ResultadoAprovacao):
             raise ReceitaErro(f"aprovação com resultado inválido: "
                               f"{self.resultado!r}")
-        for campo in ("responsavel", "data", "escopo"):
+        for campo in ("responsavel", "data", "fonte_id", "escopo"):
             if not str(getattr(self, campo) or "").strip():
                 raise ReceitaErro(f"aprovação sem {campo}")
         if self.escopo not in ESCOPOS_DE_APROVACAO:
             raise ReceitaErro(
                 f"escopo de aprovação desconhecido: {self.escopo!r} "
                 f"(conhecidos: {list(ESCOPOS_DE_APROVACAO)})")
+        if not _RE_ID_FONTE.fullmatch(self.fonte_id):
+            raise ReceitaErro(
+                f"aprovação com fonte_id fora do formato: {self.fonte_id!r} "
+                f"(esperado {FORMATO_ID_FONTE})")
         motivo = data_invalida(self.data)
         if motivo:
             raise ReceitaErro(f"aprovação: data {self.data!r} {motivo}")
-        if self.fonte.tipo != "especialista_de_dominio":
-            raise ReceitaErro(
-                f"aprovação com fonte {self.fonte.tipo!r} — a aprovação final é "
-                f"decisão de domínio e exige fonte especialista_de_dominio")
-        if not self.fonte.autoria_completa:
-            raise ReceitaErro("aprovação com fonte sem autoria completa")
-        if self.fonte.responsavel.strip() != self.responsavel.strip():
-            raise ReceitaErro(
-                f"aprovação assinada por {self.responsavel!r} com evidência de "
-                f"{self.fonte.responsavel!r} — a assinatura e a evidência têm "
-                f"de ser da mesma pessoa")
 
     @property
     def aprovada(self) -> bool:
@@ -949,7 +1067,39 @@ class AprovacaoEspecialista:
                 "responsavel": self.responsavel,
                 "data": self.data, "escopo": self.escopo,
                 "observacao": self.observacao,
-                "fonte": self.fonte.para_dict()}
+                "fonte_id": self.fonte_id}
+
+
+def problemas_da_fonte_de_aprovacao(aprovacao: "AprovacaoEspecialista",
+                                    indice: dict) -> tuple[str, ...]:
+    """A evidência citada existe, é de especialista, está confirmada e bate.
+
+    Aprovar é o ato que libera corte de alumínio: a assinatura, a data e a
+    evidência têm de contar a mesma história."""
+    fonte = indice.get(aprovacao.fonte_id)
+    if fonte is None:
+        return (f"fonte {aprovacao.fonte_id} não está registrada na receita",)
+    problemas = []
+    if fonte.tipo != "especialista_de_dominio":
+        problemas.append(
+            f"fonte {fonte.id_fonte} é {fonte.tipo!r} — aprovação final é "
+            f"decisão de domínio e exige especialista_de_dominio")
+    if fonte.estado is not EstadoConhecimento.CONFIRMADO_ESPECIALISTA:
+        problemas.append(
+            f"fonte {fonte.id_fonte} está {fonte.estado.value}, não "
+            f"CONFIRMADO_ESPECIALISTA")
+    if not fonte.autoria_completa:
+        problemas.append(f"fonte {fonte.id_fonte} sem autoria completa")
+    elif fonte.responsavel.strip() != aprovacao.responsavel.strip():
+        problemas.append(
+            f"aprovação assinada por {aprovacao.responsavel!r} com evidência "
+            f"de {fonte.responsavel!r} — assinatura e evidência têm de ser da "
+            f"mesma pessoa")
+    if fonte.data and fonte.data != aprovacao.data:
+        problemas.append(
+            f"aprovação datada em {aprovacao.data} com evidência de "
+            f"{fonte.data} — datas divergentes")
+    return tuple(problemas)
 
 
 # ---------------------------------------------------------------------------
@@ -998,6 +1148,27 @@ class ReceitaTipologia:
             if c.perfil.codigo_perfil == codigo_perfil:
                 return c
         raise ReceitaErro(f"{self.codigo}: sem componente para {codigo_perfil}")
+
+
+def indice_fontes_receita(receita: ReceitaTipologia) -> dict:
+    """Todas as fontes da receita por ID — determinístico e sem colisão.
+
+    Varre receita, componentes, regras e casos. Dois registros com o mesmo ID e
+    conteúdo diferente reprovam: seria a mesma evidência dizendo duas coisas."""
+    indice: dict = {}
+    grupos = [receita.fontes]
+    grupos += [c.fontes for c in receita.componentes]
+    grupos += [r.fontes for r in receita.todas_as_regras]
+    grupos += [c.fontes for c in receita.casos_reais]
+    for grupo in grupos:
+        for f in grupo:
+            anterior = indice.get(f.id_fonte)
+            if anterior is not None and anterior != f:
+                raise ReceitaErro(
+                    f"id_fonte {f.id_fonte} usado por duas fontes diferentes — "
+                    f"a mesma evidência não pode dizer duas coisas")
+            indice[f.id_fonte] = f
+    return indice
 
 
 def aprovacoes_por_escopo(receita: ReceitaTipologia,
