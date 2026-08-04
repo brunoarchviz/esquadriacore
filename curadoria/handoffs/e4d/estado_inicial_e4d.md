@@ -97,9 +97,10 @@ já cortado.
 
 ```text
 campo preenchido   alguém escreveu algo na ficha
-decisão confirmada valor + estado confirmado + fonte + autoria do especialista
+decisão confirmada valor + estado confirmado + fontes_ids existentes +
+                   autoria, quando a decisão é do especialista
 regra aprovada     decisão confirmada + fórmula + evidência
-caso validado      janela real medida, com lista de corte e vidros conferidos
+caso validado      registro estruturado de validação com resultado APROVADO
 ```
 
 A CLI conta as duas primeiras separadamente, de propósito: tratar preenchimento
@@ -109,6 +110,52 @@ Regra confirmada **sem fonte** é recusada na construção. Decisão de
 especialista sem autoria — responsável, data e referência — reprova o gate de
 cálculo, valha ela para componente, regra dimensional, regra de acessório ou
 aprovação final.
+
+### Evidência é citada por ID, nunca por tipo
+
+Cada fonte tem `id_fonte` obrigatório e único (`FONTE-[A-Z0-9_-]+`); cada
+afirmação cita as suas em `fontes_ids`. Tipos podem se repetir — duas fotos são
+duas fontes —, IDs não. Fonte sem ID **reprova**: gerar um automaticamente
+inventaria a identidade da evidência.
+
+Um índice por tipo fazia a segunda fonte do mesmo tipo sobrescrever a primeira,
+e a afirmação não dizia a qual das duas se referia.
+
+### Cada afirmação carrega o seu estado e a sua evidência
+
+`caso_real`, `vista`, cada perfil e cada item de `cortes`, `vidros`,
+`baguetes`, `acessorios`, `folgas` e `sobreposicoes` têm `estado` e
+`fontes_ids` próprios. Uma fonte solta no fim do documento **não** confirma
+seção nenhuma.
+
+Croquis são evidência visual, não decisão dimensional: ficam com `tipo`,
+`referencia` e `descricao`, e viram `FonteEvidencia` com `id_fonte` próprio
+quando alguém quiser citá-los. Duas representações do mesmo fato — uma com
+estado e outra sem — entrariam em conflito.
+
+### REPROVADO nunca é aprovação
+
+`AprovacaoEspecialista.resultado` é um enum: `APROVADO`, `REPROVADO`,
+`REVOGADO`. Antes, a mera existência do registro abria o portão, e um parecer
+negativo abriria o mesmo portão que um positivo.
+
+O gate de produção exige **exatamente uma** aprovação por escopo, com resultado
+`APROVADO`. Duas aprovações do mesmo escopo bloqueiam: conflito não se resolve
+pela ordem da lista. A assinatura e a evidência têm de ser da mesma pessoa, e a
+fonte tem de ser `especialista_de_dominio`.
+
+### Caso validado tem registro estruturado
+
+`VALIDADO` deixou de ser uma string que qualquer código podia escrever. Ele é
+**derivado** de uma `ValidacaoCasoReal` com resultado `APROVADO`, responsável,
+data real e fontes existentes. Os estados de recebimento continuam sendo
+`AGUARDANDO_DADOS`, `RECEBIDO_PARCIAL` e `RECEBIDO_NAO_VALIDADO` — e nenhum
+deles pode ser escrito como `VALIDADO`.
+
+### Datas são datas de verdade
+
+`2026-02-30` parece uma data e não é. A validação usa o calendário real, não só
+o formato — vale para fontes, aprovações e validações de caso.
 
 ---
 
@@ -190,8 +237,19 @@ Regras de preenchimento:
 
 O conversor **preserva todas as seções**: vista, perfis, cortes, vidros,
 baguetes, acessórios, folgas, sobreposições, croquis, fontes e dúvidas. Nada do
-que a visita produziu é descartado; o que vier fora do schema fica guardado em
-`dados_adicionais`.
+que a visita produziu é descartado.
+
+**Política de dados adicionais**, uma só e explícita:
+
+```text
+campo desconhecido FORA de dados_adicionais         reprova
+conteúdo DENTRO de dados_adicionais                 preservado, sem interpretação
+```
+
+`dados_adicionais` é um mapeamento e existe na raiz e em cada afirmação. Nada
+ali participa de cálculo, e o relatório marca esse conteúdo como não
+interpretado. "Qualquer campo é preservado" seria conveniente e perigoso: um
+`largura_totall_mm` guardado em silêncio faria a ficha parecer completa.
 
 Uma ficha só com folgas medidas e fotos já conta como `RECEBIDO_PARCIAL` — ela
 trouxe dado de campo real. Os estados são:
