@@ -34,6 +34,16 @@
 #   Nenhuma fonte citada pode estar PENDENTE ou HIPOTESE. Uma foto não confirma
 #   cota de catálogo, e um catálogo não prova o que foi medido na janela.
 #
+# QUEM PODE ASSINAR A VALIDAÇÃO FINAL DE UM CASO
+#   validacao_caso_real, especialista_de_dominio, lista_de_corte_real ou
+#   tabela_de_fabricacao — confirmadas, com responsavel e data. Foto e croqui
+#   provam que a janela existe; não registram que alguém conferiu a lista de
+#   corte contra a peça. Manifesto e catálogo falam da biblioteca, não desta
+#   janela.
+#
+#   VALIDADO nunca se escreve: é derivado de validação aprovada + fonte apta +
+#   dados íntegros.
+#
 # PREENCHER NÃO É CONFIRMAR
 #   Um campo vira "decisão confirmada" só com valor + `estado` confirmado +
 #   `fontes_ids` que existem — e, quando o estado é CONFIRMADO_ESPECIALISTA, a

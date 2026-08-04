@@ -138,6 +138,28 @@ real. Nenhuma fonte citada pode estar `PENDENTE` ou `HIPOTESE`, e ao menos uma
 tem de ser compatível. Afirmação confirmada com evidência incompatível vira
 **erro visível**, não some da lista de confirmações.
 
+A mesma matriz vale para a receita inteira — `ComponenteReceita`,
+`RegraDimensional` e `RegraAcessorio`, que carregam objetos de fonte em vez de
+IDs. Sem isso a receita teria dois pesos: a ficha do especialista era cobrada e
+a receita não.
+
+### Cobertura estrutural da tipologia
+
+Independe dos estados de conhecimento: uma receita preliminar pode ter tudo
+pendente, mas não pode estar **incompleta**. `validar_cobertura_estrutural_receita`
+entra nos três gates e exige:
+
+```text
+oito componentes    um por perfil oficial, sem duplicata, sem intruso,
+                    com GEO e associação coerentes
+tipologia           sistema Suprema, duas folhas
+nove alvos          um registro por alvo dimensional, sem duplicata
+seis acessórios     um requisito por item, sem duplicata
+```
+
+A verificação **não** assume qual papel cada perfil exerce — garante só que as
+oito peças oficiais estão cobertas.
+
 ### Cada afirmação carrega o seu estado e a sua evidência
 
 `caso_real`, `vista`, cada perfil e cada item de `cortes`, `vidros`,
@@ -166,7 +188,7 @@ aprovar com evidência que não existe em lugar nenhum. A fonte tem de estar
 registrada, ser `especialista_de_dominio`, estar `CONFIRMADO_ESPECIALISTA`, ter
 autoria completa, e bater em responsável e data com a aprovação.
 
-### Caso validado exige integridade E validação
+### Caso validado exige integridade, evidência apta E validação
 
 `bool(caso.cortes)` aceitava uma tupla com objetos vazios: o gate abria porque
 a lista não estava vazia, sem uma única peça descrita.
@@ -185,6 +207,29 @@ Item parcial continua guardado no caso como dado recebido — o que ele não pod
 caso incompleto: integridade dos dados e validação estruturada são necessárias
 ao mesmo tempo.
 
+`VALIDADO` é **estado derivado**, calculado por `validar.estado_validacao_caso`:
+
+```text
+validação declarada APROVADA
++ fonte apta a registrar a conferência
++ integridade dos dados do caso
+```
+
+Fonte apta é `validacao_caso_real`, `especialista_de_dominio`,
+`lista_de_corte_real` ou `tabela_de_fabricacao`, confirmada, com responsável e
+data coerentes com a validação. Foto e croqui provam que a janela existe; não
+registram que alguém conferiu a lista de corte contra a peça. Manifesto e
+catálogo falam da biblioteca, não desta janela.
+
+O modelo expõe só `validacao_declarada_aprovada` — o que o documento afirma.
+Expor `validado=True` no modelo diria que o caso serve de prova enquanto o gate
+ainda o considera inválido.
+
+`completo_para_derivacao` também deixou de ser `bool(cortes) and bool(vidros)`:
+exige ao menos um corte com perfil, comprimento e quantidade, e ao menos um
+vidro com folha, largura, altura e espessura. Lista de objetos vazios mantém
+`RECEBIDO_PARCIAL`.
+
 ### Caso validado tem registro estruturado
 
 `VALIDADO` deixou de ser uma string que qualquer código podia escrever. Ele é
@@ -195,11 +240,17 @@ deles pode ser escrito como `VALIDADO`.
 
 ### Modelos são profundamente imutáveis
 
-`frozen=True` congela os atributos do dataclass, não o conteúdo de um `dict`.
-`dados_adicionais` é congelado na construção — cópia recursiva com
-`MappingProxyType`, `tuple` e `frozenset` —, então alterar o dicionário
-original depois não muda o registro, e mutar o conteúdo do modelo falha.
-`para_dict()` devolve uma cópia nova e mutável: mexer nela não afeta o modelo.
+`frozen=True` congela os atributos do dataclass, não o conteúdo de um `dict`
+nem de uma `list`. **Todas** as coleções são copiadas para tuplas na
+construção — fontes, observações, variáveis, `fontes_ids`, as listas do caso
+real e as da receita —, então alterar a lista original depois não muda o
+registro, e a coleção do modelo não tem `append`.
+
+`dados_adicionais` é congelado recursivamente (`MappingProxyType`, `tuple`,
+`frozenset`); `para_dict()` devolve cópia nova e mutável, e mexer nela não
+afeta o modelo. `como_tupla()` recusa texto e mapeamento onde se espera
+coleção: iterar uma string daria caracteres soltos, e um dicionário daria só as
+chaves — os dois em silêncio.
 
 ### Datas são datas de verdade
 
