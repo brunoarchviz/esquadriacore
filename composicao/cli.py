@@ -156,7 +156,7 @@ def cmd_registrar_evidencia(args) -> int:
     else:
         relativo = alvo
     completo = (raiz / relativo).resolve()
-    if not str(completo).startswith(str(raiz.resolve())):
+    if not validar._dentro_da_raiz(completo, raiz.resolve()):
         print(f"erro: caminho resolve fora da raiz do repositório: {relativo}",
               file=sys.stderr)
         return 1
@@ -176,7 +176,9 @@ def cmd_registrar_evidencia(args) -> int:
 def cmd_prontidao(args) -> int:
     rec = _receita(args.tipologia)
     bib = fontes.carregar_biblioteca_oficial()
-    rel = prontidao.gerar_relatorio_prontidao(rec, bib)
+    # Raiz REAL do repositório, não o diretório de trabalho: a verificação de
+    # artefatos não pode depender de onde o comando foi chamado.
+    rel = prontidao.gerar_relatorio_prontidao(rec, bib, fontes.RAIZ)
 
     if args.json:
         print(json.dumps(rel, ensure_ascii=False, indent=2))

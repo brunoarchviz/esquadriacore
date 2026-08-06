@@ -45,8 +45,8 @@ def _resumo_gate(resultado, nome: str) -> dict:
     }
 
 
-def gerar_relatorio_prontidao(receita: ReceitaTipologia,
-                              biblioteca) -> dict:
+def gerar_relatorio_prontidao(receita: ReceitaTipologia, biblioteca,
+                              raiz_repositorio=None) -> dict:
     """Documento único com geometrias, componentes, regras, casos e gates."""
     codigos = {g.codigo for g in biblioteca.geometrias}
     disponiveis = sorted(p.id_geometria for p in receita.perfis_disponiveis
@@ -75,9 +75,12 @@ def gerar_relatorio_prontidao(receita: ReceitaTipologia,
                             for a in receita.regras_acessorios
                             if not a.calculavel]
 
-    visual = validar_prontidao_para_visualizacao(receita, biblioteca)
-    calculo = validar_prontidao_para_calculo(receita, biblioteca)
-    producao = validar_prontidao_para_producao(receita, biblioteca)
+    visual = validar_prontidao_para_visualizacao(receita, biblioteca,
+                                                 raiz_repositorio)
+    calculo = validar_prontidao_para_calculo(receita, biblioteca,
+                                             raiz_repositorio)
+    producao = validar_prontidao_para_producao(receita, biblioteca,
+                                               raiz_repositorio)
 
     return {
         "tipologia": {"codigo": receita.codigo, "nome": receita.nome,
@@ -98,6 +101,8 @@ def gerar_relatorio_prontidao(receita: ReceitaTipologia,
         "acessorios": {"confirmados": acessorios_confirmados,
                        "pendentes": acessorios_pendentes,
                        "total": len(receita.regras_acessorios)},
+        "resultados_calculados": [r.id_resultado
+                                  for r in receita.resultados_calculados],
         "casos_reais": {
             "recebidos": [c.identificador for c in receita.casos_reais],
             "validados": [c.identificador for c in receita.casos_reais

@@ -40,6 +40,11 @@ FONTE_PROMOCAO_E4C = FonteEvidencia(
                "quantidade, orientação, corte, vidro ou acessório."),
     estado=EstadoConhecimento.CONFIRMADO_BIBLIOTECA_OFICIAL,
     data="2026-08-02",
+    # O manifesto é artefato IMUTÁVEL do evento E.4C: o hash fica registrado
+    # para que qualquer alteração posterior seja detectada. Calculado uma vez e
+    # fixado aqui — o modelo não toca no filesystem.
+    sha256="0b68ef5783e0a8fc0626c00eef8b9dcc2a643baa92adb0871799ab2590ddc0c7",
+    tamanho_bytes=11072,
 )
 
 # Regras que a tipologia vai precisar. Declarar o alvo é registrar a pergunta;
