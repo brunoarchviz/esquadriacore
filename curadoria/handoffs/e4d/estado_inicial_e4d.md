@@ -275,17 +275,51 @@ agregada igual à da receita, vidros presentes e acessórios calculados
 presentes.
 
 O gate de produção exige uma `ConferenciaCasoContraReceita` **aprovada por
-caso** — com cortes, vidros e acessórios efetivamente vistos e sem
-divergências.
+caso** — e ela aponta para um `ResultadoCalculoCaso`:
+
+```text
+"conferi cortes, vidros e acessórios"     afirmação sem objeto
+"conferi ESTE resultado calculado
+ contra ESTE caso real"                   conferência de verdade
+```
+
+O contrato do resultado existe agora para que a conferência tenha para onde
+apontar. **Não há motor de cálculo nesta sprint**, e a receita tem
+`resultados_calculados = ()` — por isso o gate de produção continua fechado,
+mesmo com três casos, duas aprovações e três conferências documentadas.
+
+A conferência é assinada por fonte apta (`conferencia_caso_receita`,
+`especialista_de_dominio` ou `validacao_caso_real`), com responsável e data
+coerentes com a evidência. `componentes_conferidos` não é decorativo: quando há
+resultado, ele tem de cobrir exatamente os componentes calculados — sem
+duplicata, sem omissão e sem componente que não está no resultado.
 
 ### Três casos, três janelas
 
 Medidas diferentes não provam independência: a mesma lista de corte pode ser
 reaproveitada com números trocados. Cada caso precisa de `id_exemplar`
 auditável (ordem de produção, orçamento, etiqueta, código interno), evidência
-**primária** própria — medição, foto, croqui, lista de corte — e assinatura
-documental distinta. Catálogo e biblioteca podem ser compartilhados: falam do
+**primária** própria e assinatura documental distinta.
+
+A identidade do artefato primário é o **conteúdo**, não o caminho:
+`fingerprint_fonte_primaria` usa o `sha256` quando existe. O mesmo croqui
+copiado para três pastas continua sendo um artefato só, e ter uma foto própria
+ao lado não torna uma lista compartilhada em evidência independente. Catálogo,
+manifesto e biblioteca oficial continuam podendo ser compartilhados: falam do
 produto, não do exemplar.
+
+### Integridade dos artefatos entra nos gates
+
+`validar_prontidao_para_calculo` e `..._para_producao` aceitam
+`raiz_repositorio` e conferem a integridade de toda evidência local
+confirmada. Evidência que sumiu ou foi trocada depois do registro não sustenta
+mais o que sustentava — e isso bloqueia o gate, não é aviso.
+
+A CLI passa a raiz **real** do repositório, não o diretório de trabalho.
+
+A contenção de caminho usa `relative_to`, não comparação de prefixo textual:
+`/tmp/x/repo-fora` não é descendente de `/tmp/x/repo`, embora o texto comece
+igual, e symlinks são resolvidos antes da checagem.
 
 ### Evidência local confirmada tem hash
 

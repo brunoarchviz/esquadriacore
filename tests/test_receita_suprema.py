@@ -172,15 +172,40 @@ def _caso_homologavel(ident, largura, altura, id_fonte):
 _TRES_CASOS_HOMOLOGAVEIS = None      # preenchido após os helpers
 
 
-def _conferencia(caso_id, id_fonte="FONTE-APROVACAO",
-                 resultado=ResultadoAprovacao.APROVADO, divergencias=()):
+FONTE_CONFERENCIA = FonteEvidencia(
+    id_fonte="FONTE-CONFERENCIA", tipo="conferencia_caso_receita",
+    referencia="curadoria/campo/conferencia.md",
+    descricao="comparação do resultado calculado com a janela real",
+    estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
+    responsavel="Bruno", data="2026-08-10")
+
+
+def _conferencia(caso_id, id_fonte="FONTE-CONFERENCIA",
+                 resultado=ResultadoAprovacao.APROVADO, divergencias=(),
+                 resultado_calculo_id=None, componentes=None):
     from composicao.modelos import ConferenciaCasoContraReceita
     return ConferenciaCasoContraReceita(
         caso_id=caso_id, resultado=resultado, responsavel="Bruno",
         data="2026-08-10", fonte_id=id_fonte,
-        componentes_conferidos=tuple(f"TESTE:{p}" for p in PERFIS),
+        resultado_calculo_id=resultado_calculo_id or f"RES-{caso_id}",
+        componentes_conferidos=(tuple(f"TESTE:{p}" for p in PERFIS)
+                                if componentes is None else componentes),
         cortes_conferidos=True, vidros_conferidos=True,
         acessorios_conferidos=True, divergencias=divergencias)
+
+
+def _resultado_calculado(caso_id, receita_codigo="TESTE"):
+    """Resultado com CONTEÚDO de teste — nenhum número real de fabricação.
+
+    Existe só para provar o encadeamento conferência → resultado; a E.4D não
+    tem motor de cálculo, e a receita oficial continua com zero resultados."""
+    from composicao.modelos import ResultadoCalculoCaso
+    return ResultadoCalculoCaso(
+        id_resultado=f"RES-{caso_id}", caso_id=caso_id,
+        receita_codigo=receita_codigo, gerado_por="fixture de teste",
+        componentes=tuple(f"TESTE:{p}" for p in PERFIS),
+        cortes=("PLACEHOLDER_DE_TESTE",), vidros=("PLACEHOLDER_DE_TESTE",),
+        acessorios=("PLACEHOLDER_DE_TESTE",))
 
 
 def _componente_confirmado(codigo="SU-001", **kw):
@@ -522,7 +547,8 @@ def _receita_homologavel():
         aprovacoes=(_aprovacao(ESCOPO_APROVACAO_RECEITA),
                     _aprovacao(ESCOPO_APROVACAO_FORMULAS)),
         conferencias=tuple(_conferencia(c.identificador)
-                           for c in _TRES_CASOS_HOMOLOGAVEIS))
+                           for c in _TRES_CASOS_HOMOLOGAVEIS),
+        fontes=(FONTE_APROVACAO, FONTE_CONFERENCIA))
 
 
 def _regra_confirmada(alvo):
@@ -569,9 +595,12 @@ def test_producao_exige_casos_reais_validados_e_aprovacao(biblioteca):
     assert any("canônicos ausentes" in f["regra"] for f in r.falhas)
     assert any("aprovação do especialista" in f["regra"] for f in r.falhas)
 
+    # Documentação completa NÃO basta: sem resultado calculado não há o que
+    # conferir, e a produção continua fechada.
     com_casos = _receita_homologavel()
     r2 = validar.validar_prontidao_para_producao(com_casos, biblioteca)
-    assert r2.ok, r2.descrever()
+    assert not r2.ok
+    assert any("nenhum resultado calculado" in f["regra"] for f in r2.falhas)
 
 
 def test_relatorio_lista_todas_as_pendencias(receita, biblioteca):
@@ -1520,9 +1549,13 @@ def test_caso_com_validacao_aprovada_e_considerado_validado(biblioteca):
     assert caso.validacao.aprovada
     assert validar.estado_validacao_caso(caso, PERFIS) == ESTADO_CASO_VALIDADO
     assert validar.caso_validado(caso, PERFIS)
+    # O caso está validado; a produção continua bloqueada por falta de
+    # resultado calculado — são coisas diferentes.
+    assert validar.caso_validado(_TRES_CASOS_HOMOLOGAVEIS[0], PERFIS)
     r = validar.validar_prontidao_para_producao(_receita_homologavel(),
                                                 biblioteca)
-    assert r.ok, r.descrever()
+    assert not r.ok
+    assert any("nenhum resultado calculado" in f["regra"] for f in r.falhas)
 
 
 def test_validacao_reprovada_nao_torna_o_caso_validado():
@@ -2753,7 +2786,7 @@ def test_mesma_fonte_primaria_nos_tres_casos_reprova():
                    for c in _TRES_CASOS_HOMOLOGAVEIS)
     r = validar.validar_independencia_dos_casos(mesmos)
     assert not r.ok
-    assert any("mesma evidência primária" in f["regra"] for f in r.falhas)
+    assert any("artefato primário reutilizado" in f["regra"] for f in r.falhas)
 
 
 def test_assinatura_documental_repetida_reprova():
@@ -2917,3 +2950,529 @@ def test_modelo_yaml_continua_valido_com_o_novo_schema(ficha_em_branco):
     assert caso.id_exemplar is None
     assert all(p.aplicacoes == () for p in caso.perfis)
     assert caso.secoes_preenchidas == ()
+
+
+# ===========================================================================
+# Fechamento antes dos dados reais
+#
+# Produção compara CÁLCULO com janela real. Sem cálculo, não há conferência —
+# e nesta sprint não existe motor nenhum.
+# ===========================================================================
+
+def _receita_com_resultados():
+    """Receita homologável + resultados calculados de FIXTURE.
+
+    O conteúdo é `PLACEHOLDER_DE_TESTE`: existe para exercitar o encadeamento
+    conferência → resultado, nunca para simular fabricação."""
+    from dataclasses import replace
+    return replace(_receita_homologavel(),
+                   resultados_calculados=tuple(
+                       _resultado_calculado(c.identificador)
+                       for c in _TRES_CASOS_HOMOLOGAVEIS))
+
+
+# ---- produção exige resultado calculado ------------------------------------
+
+def test_producao_nao_abre_sem_resultado_calculado(biblioteca):
+    """Documentação completa — três casos, duas aprovações, três conferências —
+    e ZERO resultados calculados. A produção continua fechada."""
+    receita = _receita_homologavel()
+    assert len(receita.casos_reais) == 3
+    assert len(receita.aprovacoes) == 2
+    assert len(receita.conferencias) == 3
+    assert receita.resultados_calculados == ()
+
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("nenhum resultado calculado" in f["regra"] for f in r.falhas)
+
+
+def test_receita_oficial_da_e4d_nao_tem_resultado_calculado(receita, biblioteca):
+    assert receita.resultados_calculados == ()
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+
+
+def test_conferencia_sem_resultado_calculo_id_reprova():
+    from composicao.modelos import ConferenciaCasoContraReceita
+    with pytest.raises(ReceitaErro, match="resultado_calculo_id"):
+        ConferenciaCasoContraReceita(
+            caso_id="CASO_A_PEQUENO", resultado=ResultadoAprovacao.APROVADO,
+            responsavel="Bruno", data="2026-08-10",
+            fonte_id="FONTE-CONFERENCIA")
+
+
+def test_conferencia_com_resultado_inexistente_reprova(biblioteca):
+    from dataclasses import replace
+    receita = replace(_receita_com_resultados(),
+                      conferencias=tuple(
+                          _conferencia(c.identificador,
+                                       resultado_calculo_id="RES-FANTASMA")
+                          for c in _TRES_CASOS_HOMOLOGAVEIS))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("resultado calculado inexistente" in str(f["encontrado"])
+               for f in r.falhas)
+
+
+def test_resultado_de_outro_caso_reprova(biblioteca):
+    from dataclasses import replace
+    receita = replace(
+        _receita_com_resultados(),
+        conferencias=(_conferencia("CASO_A_PEQUENO",
+                                   resultado_calculo_id="RES-CASO_B_MEDIO"),)
+        + tuple(_conferencia(c.identificador)
+                for c in _TRES_CASOS_HOMOLOGAVEIS[1:]))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("pertence ao caso" in str(f["encontrado"]) for f in r.falhas)
+
+
+def test_resultado_de_outra_receita_reprova(biblioteca):
+    from dataclasses import replace
+    intruso = _resultado_calculado("CASO_A_PEQUENO", receita_codigo="OUTRA")
+    receita = replace(_receita_com_resultados(),
+                      resultados_calculados=(intruso,)
+                      + _receita_com_resultados().resultados_calculados[1:])
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("pertence à receita" in str(f["encontrado"]) for f in r.falhas)
+
+
+def test_resultado_vazio_nao_conta_como_calculo(biblioteca):
+    from composicao.modelos import ResultadoCalculoCaso
+    from dataclasses import replace
+    vazio = ResultadoCalculoCaso(id_resultado="RES-CASO_A_PEQUENO",
+                                 caso_id="CASO_A_PEQUENO",
+                                 receita_codigo="TESTE",
+                                 gerado_por="fixture")
+    assert not vazio.tem_conteudo
+    receita = replace(_receita_com_resultados(),
+                      resultados_calculados=(vazio,)
+                      + _receita_com_resultados().resultados_calculados[1:])
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("sem componentes" in str(f["encontrado"]) for f in r.falhas)
+
+
+def test_com_resultado_completo_a_producao_abre(biblioteca):
+    """Fecha o contrato: com tudo — inclusive resultado calculado — o gate
+    abre. É a prova de que o bloqueio anterior era pela ausência do cálculo, e
+    não por um `False` embutido."""
+    r = validar.validar_prontidao_para_producao(_receita_com_resultados(),
+                                                biblioteca)
+    assert r.ok, r.descrever()
+
+
+# ---- conferência: cobertura de componentes ---------------------------------
+
+def test_componentes_conferidos_incompletos_reprovam(biblioteca):
+    from dataclasses import replace
+    parcial = tuple(f"TESTE:{p}" for p in PERFIS[:5])
+    receita = replace(
+        _receita_com_resultados(),
+        conferencias=(_conferencia("CASO_A_PEQUENO", componentes=parcial),)
+        + tuple(_conferencia(c.identificador)
+                for c in _TRES_CASOS_HOMOLOGAVEIS[1:]))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("não conferidos" in str(f["encontrado"]) for f in r.falhas)
+
+
+def test_componentes_conferidos_duplicados_reprovam(biblioteca):
+    from dataclasses import replace
+    dobrado = tuple(f"TESTE:{p}" for p in PERFIS) + ("TESTE:SU-001",)
+    receita = replace(
+        _receita_com_resultados(),
+        conferencias=(_conferencia("CASO_A_PEQUENO", componentes=dobrado),)
+        + tuple(_conferencia(c.identificador)
+                for c in _TRES_CASOS_HOMOLOGAVEIS[1:]))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("duplicados" in str(f["encontrado"]) for f in r.falhas)
+
+
+def test_componente_conferido_fora_do_resultado_reprova(biblioteca):
+    from dataclasses import replace
+    inventado = tuple(f"TESTE:{p}" for p in PERFIS) + ("TESTE:SU-999",)
+    receita = replace(
+        _receita_com_resultados(),
+        conferencias=(_conferencia("CASO_A_PEQUENO", componentes=inventado),)
+        + tuple(_conferencia(c.identificador)
+                for c in _TRES_CASOS_HOMOLOGAVEIS[1:]))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("não estão no resultado" in str(f["encontrado"])
+               for f in r.falhas)
+
+
+# ---- conferência: quem pode assinar ----------------------------------------
+
+@pytest.mark.parametrize("tipo,estado", [
+    ("catalogo", EstadoConhecimento.CONFIRMADO_CATALOGO),
+    ("manifesto_promocao", EstadoConhecimento.CONFIRMADO_BIBLIOTECA_OFICIAL),
+    ("foto", EstadoConhecimento.CONFIRMADO_CASO_REAL),
+    ("croqui", EstadoConhecimento.CONFIRMADO_CASO_REAL),
+])
+def test_conferencia_assinada_por_fonte_inapta_reprova(biblioteca, tipo, estado):
+    """Uma foto mostra a janela; ela não registra que alguém comparou número a
+    número o resultado calculado com a peça."""
+    from dataclasses import replace
+    inapta = FonteEvidencia(
+        id_fonte="FONTE-INAPTA", tipo=tipo,
+        referencia="curadoria/campo/evidencia.pdf", descricao="",
+        estado=estado, responsavel="Bruno", data="2026-08-10")
+    base = _receita_com_resultados()
+    receita = replace(
+        base, fontes=base.fontes + (inapta,),
+        conferencias=(_conferencia("CASO_A_PEQUENO", id_fonte="FONTE-INAPTA"),)
+        + tuple(_conferencia(c.identificador)
+                for c in _TRES_CASOS_HOMOLOGAVEIS[1:]))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("conferência exige tipo" in str(f["encontrado"])
+               for f in r.falhas)
+
+
+def test_responsavel_da_conferencia_divergente_reprova(biblioteca):
+    from dataclasses import replace
+    base = _receita_com_resultados()
+    conf = replace(_conferencia("CASO_A_PEQUENO"), responsavel="Anderson")
+    receita = replace(base, conferencias=(conf,)
+                      + tuple(_conferencia(c.identificador)
+                              for c in _TRES_CASOS_HOMOLOGAVEIS[1:]))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("assinada por" in str(f["encontrado"]) for f in r.falhas)
+
+
+def test_data_da_conferencia_divergente_reprova(biblioteca):
+    from dataclasses import replace
+    base = _receita_com_resultados()
+    conf = replace(_conferencia("CASO_A_PEQUENO"), data="2026-09-01")
+    receita = replace(base, conferencias=(conf,)
+                      + tuple(_conferencia(c.identificador)
+                              for c in _TRES_CASOS_HOMOLOGAVEIS[1:]))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("datada em" in str(f["encontrado"]) for f in r.falhas)
+
+
+# ---- aplicações do perfil no caso real -------------------------------------
+
+def _ficha_com_aplicacoes(ficha_em_branco, aplicacoes, codigo="SU-003"):
+    d = copy.deepcopy(ficha_em_branco)
+    d["fontes"] = [{"id_fonte": "FONTE-ARB", "tipo": "especialista_de_dominio",
+                    "referencia": "curadoria/campo/arbitragem.md",
+                    "descricao": "papéis", "estado": "CONFIRMADO_ESPECIALISTA",
+                    "responsavel": "Bruno", "data": "2026-08-10"}]
+    d["perfis"][codigo] = {"observacoes_gerais": "perfil em duas laterais",
+                           "aplicacoes": aplicacoes}
+    return d
+
+
+def test_perfil_com_aplicacoes_passa_pelo_fluxo_completo(ficha_em_branco):
+    """validar ficha → converter → validar integridade, com DUAS aplicações do
+    mesmo perfil. Antes, a integridade procurava `perfil.funcao`, campo que
+    deixou de existir."""
+    d = _ficha_com_aplicacoes(ficha_em_branco, [
+        {"id_componente": "MARCO-ESQ", "funcao": "MARCO_LATERAL_ESQUERDO",
+         "quantidade": 1, "orientacao": "vertical",
+         "estado": "CONFIRMADO_ESPECIALISTA", "fontes_ids": ["FONTE-ARB"]},
+        {"id_componente": "MARCO-DIR", "funcao": "MARCO_LATERAL_DIREITO",
+         "quantidade": 1, "orientacao": "vertical",
+         "estado": "CONFIRMADO_ESPECIALISTA", "fontes_ids": ["FONTE-ARB"]}])
+    assert fontes.validar_estrutura_ficha(d, "x").ok
+
+    caso = fontes.converter_ficha_em_caso_real(d, "x")
+    su003 = next(p for p in caso.perfis if p.codigo_perfil == "SU-003")
+    assert len(su003.aplicacoes) == 2
+
+    r = validar.validar_integridade_caso_real(caso, PERFIS)
+    # reprova por falta de medidas/cortes, NUNCA por campos antigos do perfil
+    motivos = " ".join(f["regra"] for f in r.falhas)
+    assert "funcao" not in motivos
+    assert not any("perfis.SU-003.aplicacoes" in str(f["alvo"])
+                   for f in r.falhas), r.descrever()
+
+
+@pytest.mark.parametrize("faltando", ["id_componente", "funcao", "quantidade",
+                                      "orientacao"])
+def test_aplicacao_confirmada_incompleta_reprova(ficha_em_branco, faltando):
+    completa = {"id_componente": "MARCO-ESQ",
+                "funcao": "MARCO_LATERAL_ESQUERDO", "quantidade": 1,
+                "orientacao": "vertical", "estado": "CONFIRMADO_ESPECIALISTA",
+                "fontes_ids": ["FONTE-ARB"]}
+    completa.pop(faltando)
+    caso = fontes.converter_ficha_em_caso_real(
+        _ficha_com_aplicacoes(ficha_em_branco, [completa]), "x")
+    r = validar.validar_integridade_caso_real(caso, PERFIS)
+    falhas = [f for f in r.falhas if "aplicacoes[0]" in str(f["alvo"])]
+    assert falhas, r.descrever()
+    assert faltando in str(falhas[0]["encontrado"])
+
+
+def test_aplicacao_confirmada_sem_fonte_reprova(ficha_em_branco):
+    """A ficha já barra: estado confirmado sem `fontes_ids` é afirmação firme
+    apoiada em nada."""
+    d = _ficha_com_aplicacoes(ficha_em_branco, [
+        {"id_componente": "MARCO-ESQ", "funcao": "MARCO_LATERAL_ESQUERDO",
+         "quantidade": 1, "orientacao": "vertical",
+         "estado": "CONFIRMADO_ESPECIALISTA"}])
+    r = fontes.validar_estrutura_ficha(d, "x")
+    assert not r.ok
+    assert any("evidência não sustenta o estado" in f["regra"]
+               for f in r.falhas)
+
+    # e o modelo montado em código também é cobrado na integridade
+    from composicao.modelos import AplicacaoPerfil, PerfilNoCasoReal
+    from dataclasses import replace
+    ap = AplicacaoPerfil(id_componente="MARCO-ESQ",
+                         funcao=PapelComponente.MARCO_LATERAL_ESQUERDO,
+                         quantidade=1, orientacao="vertical",
+                         estado=EstadoConhecimento.CONFIRMADO_ESPECIALISTA)
+    caso = replace(_TRES_CASOS_HOMOLOGAVEIS[0],
+                   perfis=(PerfilNoCasoReal(codigo_perfil="SU-003",
+                                            aplicacoes=(ap,)),))
+    res = validar.validar_integridade_caso_real(caso, PERFIS)
+    assert any("sem evidência apta" in f["regra"] for f in res.falhas)
+
+
+def test_aplicacao_parcial_fica_registrada_sem_provar(ficha_em_branco):
+    caso = fontes.converter_ficha_em_caso_real(
+        _ficha_com_aplicacoes(ficha_em_branco,
+                              [{"funcao": "MARCO_LATERAL_ESQUERDO"}]), "x")
+    su003 = next(p for p in caso.perfis if p.codigo_perfil == "SU-003")
+    assert su003.aplicacoes[0].funcao is PapelComponente.MARCO_LATERAL_ESQUERDO
+    r = validar.validar_integridade_caso_real(caso, PERFIS)
+    assert not any("aplicacoes[0]" in str(f["alvo"]) for f in r.falhas)
+
+
+def test_id_componente_duplicado_reprova_programaticamente():
+    """A unicidade não pode viver só no YAML: objeto montado em código também
+    tem de ser cobrado."""
+    from composicao.modelos import AplicacaoPerfil, PerfilNoCasoReal
+    from dataclasses import replace
+    ap = AplicacaoPerfil(id_componente="MESMO",
+                         funcao=PapelComponente.MARCO_LATERAL_ESQUERDO,
+                         quantidade=1, orientacao="vertical",
+                         estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
+                         fontes_ids=("FONTE-CASO-A",))
+    caso = replace(_TRES_CASOS_HOMOLOGAVEIS[0],
+                   perfis=(PerfilNoCasoReal(codigo_perfil="SU-003",
+                                            aplicacoes=(ap,)),
+                           PerfilNoCasoReal(codigo_perfil="SU-041",
+                                            aplicacoes=(ap,))))
+    r = validar.validar_integridade_caso_real(caso, PERFIS)
+    assert not r.ok
+    assert any("id_componente duplicado" in f["regra"] for f in r.falhas)
+
+
+# ---- integridade dos artefatos nos gates -----------------------------------
+
+@pytest.fixture
+def receita_com_artefato(tmp_path):
+    """Receita cuja evidência é um arquivo real dentro de uma raiz isolada."""
+    import hashlib
+    from dataclasses import replace
+    raiz = tmp_path / "repo"
+    (raiz / "curadoria").mkdir(parents=True)
+    alvo = raiz / "curadoria" / "arbitragem.md"
+    alvo.write_bytes(b"decisao do especialista")
+    fonte = FonteEvidencia(
+        id_fonte="FONTE-APROVACAO", tipo="especialista_de_dominio",
+        referencia="curadoria/arbitragem.md", descricao="",
+        estado=EstadoConhecimento.CONFIRMADO_ESPECIALISTA,
+        responsavel="Bruno", data="2026-08-10",
+        sha256=hashlib.sha256(b"decisao do especialista").hexdigest())
+    base = _receita_completa()
+    componentes = tuple(_componente_confirmado(p, fontes=(fonte,))
+                        for p in PERFIS)
+    # TODA evidência da receita aponta para o mesmo artefato: o teste isola a
+    # verificação de integridade, sem ruído de outras fontes.
+    regras_corte = tuple(replace(g, fontes=(fonte,),
+                                 estado=EstadoConhecimento.CONFIRMADO_ESPECIALISTA)
+                         for g in base.regras_corte)
+    regras_vidro = tuple(replace(g, fontes=(fonte,),
+                                 estado=EstadoConhecimento.CONFIRMADO_ESPECIALISTA)
+                         for g in base.regras_vidro)
+    acessorios = tuple(replace(a, fontes=(fonte,),
+                               estado=EstadoConhecimento.CONFIRMADO_ESPECIALISTA)
+                       for a in base.regras_acessorios)
+    return raiz, replace(base, componentes=componentes, fontes=(fonte,),
+                         regras_corte=regras_corte, regras_vidro=regras_vidro,
+                         regras_acessorios=acessorios), alvo
+
+
+def test_artefato_alterado_bloqueia_o_gate_de_calculo(receita_com_artefato,
+                                                      biblioteca):
+    raiz, receita, alvo = receita_com_artefato
+    assert validar.validar_prontidao_para_calculo(receita, biblioteca, raiz).ok
+
+    alvo.write_bytes(b"decisao trocada depois")
+    r = validar.validar_prontidao_para_calculo(receita, biblioteca, raiz)
+    assert not r.ok
+    assert any("alterado após o registro" in f["regra"] for f in r.falhas)
+
+
+def test_artefato_removido_bloqueia_o_gate_de_calculo(receita_com_artefato,
+                                                      biblioteca):
+    raiz, receita, alvo = receita_com_artefato
+    alvo.unlink()
+    r = validar.validar_prontidao_para_calculo(receita, biblioteca, raiz)
+    assert not r.ok
+    assert any("inexistente" in f["regra"] for f in r.falhas)
+
+
+def test_symlink_para_fora_da_raiz_reprova(tmp_path):
+    """`startswith` aceitaria um symlink que sai da árvore."""
+    import hashlib
+    fora = tmp_path / "repo-fora"
+    fora.mkdir()
+    (fora / "segredo.pdf").write_bytes(b"conteudo externo")
+    raiz = tmp_path / "repo"
+    raiz.mkdir()
+    (raiz / "link").symlink_to(fora, target_is_directory=True)
+
+    fonte = FonteEvidencia(
+        id_fonte="FONTE-LINK", tipo="foto", referencia="link/segredo.pdf",
+        descricao="", estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
+        responsavel="Bruno", data="2026-08-10",
+        sha256=hashlib.sha256(b"conteudo externo").hexdigest())
+    r = validar.validar_artefato_de_evidencia(fonte, raiz)
+    assert not r.ok
+    assert any("fora da raiz" in f["regra"] for f in r.falhas)
+
+
+def test_diretorio_irmao_com_mesmo_prefixo_nao_e_descendente(tmp_path):
+    """`/tmp/x/repo-fora` não é descendente de `/tmp/x/repo`, embora o texto
+    comece igual — era exatamente o que `startswith` deixava passar."""
+    raiz = tmp_path / "repo"
+    raiz.mkdir()
+    irmao = tmp_path / "repo-fora"
+    irmao.mkdir()
+    (irmao / "a.pdf").write_bytes(b"x")
+
+    assert str(irmao).startswith(str(raiz)), "o prefixo textual coincide"
+    assert not validar._dentro_da_raiz(irmao / "a.pdf", raiz)
+    assert validar._dentro_da_raiz(raiz / "curadoria" / "a.pdf", raiz)
+
+
+def test_registrar_evidencia_usa_contencao_por_componentes():
+    from composicao import cli
+    assert cli.main(["registrar-evidencia", "../fora/a.pdf"]) == 1
+
+
+def test_fonte_do_manifesto_e4c_tem_hash_verificavel():
+    """Artefato imutável do evento E.4C: o hash fica registrado, e qualquer
+    alteração posterior aparece."""
+    from composicao import receita as receita_mod
+    fonte = receita_mod.FONTE_PROMOCAO_E4C
+    assert fonte.sha256 and len(fonte.sha256) == 64
+    assert fonte.tamanho_bytes
+    assert validar.validar_artefato_de_evidencia(fonte, fontes.RAIZ).ok
+
+
+# ---- independência por fingerprint -----------------------------------------
+
+def _fonte_com_hash(id_fonte, tipo, referencia, conteudo):
+    import hashlib
+    return FonteEvidencia(
+        id_fonte=id_fonte, tipo=tipo, referencia=referencia, descricao="",
+        estado=EstadoConhecimento.CONFIRMADO_CASO_REAL, responsavel="Bruno",
+        data="2026-08-10", sha256=hashlib.sha256(conteudo).hexdigest())
+
+
+def test_lista_compartilhada_com_foto_propria_ainda_reprova():
+    """Ter uma foto própria ao lado não torna a lista compartilhada em
+    evidência independente."""
+    from dataclasses import replace
+    lista = _fonte_com_hash("FONTE-LISTA-UNICA", "lista_de_corte_real",
+                            "curadoria/campo/lista.pdf", b"lista unica")
+    casos = tuple(
+        replace(c, fontes=(lista,
+                           _fonte_com_hash(f"FONTE-FOTO-{i}", "foto",
+                                           f"curadoria/campo/foto{i}.jpg",
+                                           f"foto {i}".encode())))
+        for i, c in enumerate(_TRES_CASOS_HOMOLOGAVEIS))
+    r = validar.validar_independencia_dos_casos(casos)
+    assert not r.ok
+    assert any("artefato primário reutilizado" in f["regra"] for f in r.falhas)
+
+
+def test_mesmo_conteudo_em_caminhos_diferentes_reprova():
+    """O mesmo croqui copiado para três pastas continua sendo um artefato."""
+    from dataclasses import replace
+    casos = tuple(
+        replace(c, fontes=(_fonte_com_hash(
+            f"FONTE-CROQUI-{i}", "croqui",
+            f"curadoria/campo/caso{i}/croqui.jpg", b"mesmo croqui"),))
+        for i, c in enumerate(_TRES_CASOS_HOMOLOGAVEIS))
+    r = validar.validar_independencia_dos_casos(casos)
+    assert not r.ok
+    assert any("artefato primário reutilizado" in f["regra"] for f in r.falhas)
+
+
+def test_artefatos_distintos_passam():
+    from dataclasses import replace
+    casos = tuple(
+        replace(c, fontes=(_fonte_com_hash(
+            f"FONTE-LISTA-{i}", "lista_de_corte_real",
+            f"curadoria/campo/caso{i}/lista.pdf", f"lista {i}".encode()),))
+        for i, c in enumerate(_TRES_CASOS_HOMOLOGAVEIS))
+    assert validar.validar_independencia_dos_casos(casos).ok
+
+
+def test_catalogo_pode_ser_compartilhado_entre_casos():
+    """Catálogo fala do produto, não do exemplar."""
+    from dataclasses import replace
+    catalogo = FonteEvidencia(
+        id_fonte="FONTE-CAT", tipo="catalogo",
+        referencia="dados_exemplo/catalogo.pdf", descricao="",
+        estado=EstadoConhecimento.CONFIRMADO_CATALOGO)
+    casos = tuple(replace(c, fontes=c.fontes + (catalogo,))
+                  for c in _TRES_CASOS_HOMOLOGAVEIS)
+    assert validar.validar_independencia_dos_casos(casos).ok
+
+
+# ---- procedência sobrevive à serialização ----------------------------------
+
+def test_regra_adicional_preserva_origem_no_para_dict():
+    """Nenhuma evidência descoberta em campo pode perder a procedência ao ser
+    serializada."""
+    regra = _regra_adicional()
+    d = regra.para_dict()
+    assert d["origem_do_alvo"] == "DESCOBERTO_EM_CAMPO"
+    assert d["descricao"] == "regra descoberta em campo"
+    reconstruida = RegraDimensional(
+        identificador=d["identificador"], descricao=d["descricao"],
+        alvo=d["alvo"], origem_do_alvo=d["origem_do_alvo"])
+    assert reconstruida.origem_do_alvo == regra.origem_do_alvo
+    assert reconstruida.descricao == regra.descricao
+    assert json.dumps(d, ensure_ascii=False)
+
+
+def test_acessorio_adicional_preserva_descricao_e_origem_no_para_dict():
+    regra = RegraAcessorio(identificador="X", item="trinco",
+                           descricao="trinco visto na visita",
+                           origem_do_item="DECIDIDO_POR_ESPECIALISTA")
+    d = regra.para_dict()
+    assert d["descricao"] == "trinco visto na visita"
+    assert d["origem_do_item"] == "DECIDIDO_POR_ESPECIALISTA"
+    reconstruida = RegraAcessorio(
+        identificador=d["identificador"], item=d["item"],
+        descricao=d["descricao"], origem_do_item=d["origem_do_item"])
+    assert reconstruida == regra
+    assert json.dumps(d, ensure_ascii=False)
+
+
+def test_receita_preliminar_continua_sem_valor_tecnico(receita):
+    """O invariante da sprint, repetido depois de tudo."""
+    assert receita.componentes == ()
+    assert receita.resultados_calculados == ()
+    assert receita.conferencias == ()
+    assert receita.casos_reais == ()
+    for regra in receita.regras_dimensionais:
+        assert regra.expressao is None and regra.variaveis == ()
+    for a in receita.regras_acessorios:
+        assert a.quantidade_expressao is None and a.posicao is None
