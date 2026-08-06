@@ -143,6 +143,30 @@ A mesma matriz vale para a receita inteira — `ComponenteReceita`,
 IDs. Sem isso a receita teria dois pesos: a ficha do especialista era cobrada e
 a receita não.
 
+### Perfil não é componente
+
+```text
+perfil oficial      o produto extrudado (SU-003)
+ocorrência funcional  um uso dele na janela, com papel e posição
+peça cortada        uma linha da lista de corte
+```
+
+O mesmo perfil pode aparecer em duas laterais, nas duas folhas, em papéis
+diferentes e com comprimentos diferentes. Por isso a receita separa:
+
+```text
+perfis_disponiveis   INVENTÁRIO — os oito perfis oficiais
+componentes          OCORRÊNCIAS funcionais — zero, uma ou várias por perfil
+```
+
+A receita preliminar tem **oito no inventário e zero ocorrências**. Criar oito
+componentes afirmaria "um perfil, um papel" — e o SU-003 pode ser marco
+esquerdo e direito ao mesmo tempo. Quantas ocorrências existem é exatamente o
+que falta perguntar.
+
+Na ficha, cada perfil tem uma lista de `aplicacoes`, cada uma com
+`id_componente` único.
+
 ### Cobertura estrutural da tipologia
 
 Independe dos estados de conhecimento: uma receita preliminar pode ter tudo
@@ -150,15 +174,22 @@ pendente, mas não pode estar **incompleta**. `validar_cobertura_estrutural_rece
 entra nos três gates e exige:
 
 ```text
-oito componentes    um por perfil oficial, sem duplicata, sem intruso,
+inventário          os oito perfis oficiais, sem duplicata, sem intruso,
                     com GEO e associação coerentes
+ocorrências         identificador único; perfil dentro do inventário
 tipologia           sistema Suprema, duas folhas
-nove alvos          um registro por alvo dimensional, sem duplicata
-seis acessórios     um requisito por item, sem duplicata
+nove alvos BASE     um registro por alvo dimensional, sem duplicata
+seis acessórios BASE um requisito por item, sem duplicata
 ```
 
-A verificação **não** assume qual papel cada perfil exerce — garante só que as
-oito peças oficiais estão cobertas.
+As listas são **cobertura mínima, não universo fechado**. Um alvo ou acessório
+descoberto na serralheria é aceito desde que declare `origem_do_alvo` /
+`origem_do_item` (`DESCOBERTO_EM_CAMPO` ou `DECIDIDO_POR_ESPECIALISTA`) e uma
+descrição. Item extra silencioso, não; item legítimo recusado por não estar na
+lista preliminar, também não.
+
+O gate de cálculo exige ao menos uma ocorrência registrada e confirmada: saber
+quais perfis existem não é saber como a janela se monta.
 
 ### Cada afirmação carrega o seu estado e a sua evidência
 
@@ -230,6 +261,48 @@ exige ao menos um corte com perfil, comprimento e quantidade, e ao menos um
 vidro com folha, largura, altura e espessura. Lista de objetos vazios mantém
 `RECEBIDO_PARCIAL`.
 
+### Estudo não é homologação
+
+```text
+validar_caso_para_estudo()       os dados do caso estão completos?
+validar_caso_contra_receita()    a receita produz ESTA janela?
+```
+
+São perguntas diferentes. Uma lista de corte impecável pode não ter nada a ver
+com os componentes registrados. Cada corte cita `componente_id`; a comparação
+exige todo componente confirmado representado, perfil coerente, quantidade
+agregada igual à da receita, vidros presentes e acessórios calculados
+presentes.
+
+O gate de produção exige uma `ConferenciaCasoContraReceita` **aprovada por
+caso** — com cortes, vidros e acessórios efetivamente vistos e sem
+divergências.
+
+### Três casos, três janelas
+
+Medidas diferentes não provam independência: a mesma lista de corte pode ser
+reaproveitada com números trocados. Cada caso precisa de `id_exemplar`
+auditável (ordem de produção, orçamento, etiqueta, código interno), evidência
+**primária** própria — medição, foto, croqui, lista de corte — e assinatura
+documental distinta. Catálogo e biblioteca podem ser compartilhados: falam do
+produto, não do exemplar.
+
+### Evidência local confirmada tem hash
+
+Caminho bem formado não prova que o arquivo existe nem que continua o mesmo.
+Fonte com `forma_referencia: arquivo` e estado confirmado exige `sha256`
+(opcionalmente `tamanho_bytes`); a validação confere existência, arquivo
+regular, resolução dentro da raiz e hash atual. URL e identificador externo não
+exigem arquivo local.
+
+```bash
+python -m composicao.cli registrar-evidencia <caminho> --id-fonte FONTE-X
+```
+
+O comando calcula e imprime — **não** edita a ficha: registrar evidência é ato
+do especialista, e um comando que escrevesse sozinho carimbaria como conferido
+um arquivo que ninguém olhou.
+
 ### Caso validado tem registro estruturado
 
 `VALIDADO` deixou de ser uma string que qualquer código podia escrever. Ele é
@@ -245,6 +318,12 @@ nem de uma `list`. **Todas** as coleções são copiadas para tuplas na
 construção — fontes, observações, variáveis, `fontes_ids`, as listas do caso
 real e as da receita —, então alterar a lista original depois não muda o
 registro, e a coleção do modelo não tem `append`.
+
+Os números são validados **no modelo**, não só no carregador de YAML:
+`validar_decimal_positivo_finito` recusa `NaN`, `Infinity`, zero, negativo e
+tipo diferente de `Decimal`; `validar_inteiro_positivo_estrito` recusa `bool`
+(em Python `isinstance(True, int)` é verdadeiro). Objeto construído em código
+recebe a mesma proteção da ficha.
 
 `dados_adicionais` é congelado recursivamente (`MappingProxyType`, `tuple`,
 `frozenset`); `para_dict()` devolve cópia nova e mutável, e mexer nela não
