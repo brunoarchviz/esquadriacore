@@ -29,31 +29,41 @@ def cmd_diagnosticar(args) -> int:
     rec = _receita(args.tipologia)
     bib = fontes.carregar_biblioteca_oficial()
     codigos = {g.codigo for g in bib.geometrias}
-    presentes = [c for c in rec.componentes if c.perfil.id_geometria in codigos]
+    presentes = [p for p in rec.perfis_disponiveis
+                 if p.id_geometria in codigos]
 
     print(f"tipologia: {rec.codigo} — {rec.nome}")
     print(f"sistema  : {rec.sistema}, {rec.quantidade_folhas} folhas")
     print(f"estado   : {rec.estado}")
     print()
-    print(f"{len(presentes)} de {len(rec.componentes)} geometrias oficiais "
-          f"disponíveis (biblioteca com {len(codigos)})")
+    print(f"{len(presentes)} de {len(rec.perfis_disponiveis)} geometrias "
+          f"oficiais disponíveis (biblioteca com {len(codigos)})")
     print()
-    print(f"{'perfil':9s} {'GEO':14s} {'associação':16s} {'papel':18s} "
-          f"{'qtd':>4s}  estado")
+    print("INVENTÁRIO — perfis disponíveis para a tipologia")
+    print(f"{'perfil':9s} {'GEO':14s} {'associação':16s} ocorrências")
+    for ref in rec.perfis_disponiveis:
+        marca = "" if ref.id_geometria in codigos else "  <-- AUSENTE"
+        ocorrencias = rec.componentes_do_perfil(ref.codigo_perfil)
+        print(f"{ref.codigo_perfil:9s} {ref.id_geometria:14s} "
+              f"{ref.perfil_id_oficial:16s} {len(ocorrencias)}{marca}")
+    print()
+    print(f"OCORRÊNCIAS funcionais registradas: {len(rec.componentes)}")
+    print("  (um perfil pode exercer vários papéis; quantas ocorrências "
+          "existem é o que falta descobrir)")
     for c in rec.componentes:
-        marca = "" if c.perfil.id_geometria in codigos else "  <-- AUSENTE"
         qtd = "-" if c.quantidade is None else str(c.quantidade)
-        print(f"{c.perfil.codigo_perfil:9s} {c.perfil.id_geometria:14s} "
-              f"{c.perfil.perfil_id_oficial:16s} {c.papel.value:18s} "
-              f"{qtd:>4s}  {c.estado.value}{marca}")
+        print(f"  {c.identificador:28s} {c.perfil.codigo_perfil:9s} "
+              f"{c.papel.value:24s} {qtd:>4s}  {c.estado.value}")
 
     refs = validar.validar_referencias_geometricas(rec, bib)
     print()
     print(f"referências geométricas: {'APROVADAS' if refs.ok else 'REPROVADAS'}")
     if not refs.ok:
         print(refs.descrever())
-    print(f"papéis funcionais  : {len([c for c in rec.componentes if c.confirmado])}"
-          f"/{len(rec.componentes)} confirmados")
+    print()
+    print(f"papéis funcionais  : "
+          f"{len([c for c in rec.componentes if c.confirmado])}"
+          f"/{len(rec.componentes)} ocorrências confirmadas")
     print(f"regras de corte    : "
           f"{len([r for r in rec.regras_corte if r.calculavel])}"
           f"/{len(rec.regras_corte)} confirmadas")
@@ -127,6 +137,42 @@ def cmd_validar_ficha(args) -> int:
     return 0 if estrutura.ok else 1
 
 
+def cmd_registrar_evidencia(args) -> int:
+    """Calcula o hash de um artefato para você COLAR na ficha.
+
+    Não edita a ficha: registrar evidência é ato do especialista, e um comando
+    que escrevesse sozinho poderia carimbar como conferido um arquivo que
+    ninguém olhou."""
+    import hashlib
+    raiz = fontes.RAIZ
+    alvo = Path(args.caminho)
+    if alvo.is_absolute():
+        try:
+            relativo = alvo.resolve().relative_to(raiz)
+        except ValueError:
+            print(f"erro: {alvo} está fora do repositório ({raiz})",
+                  file=sys.stderr)
+            return 1
+    else:
+        relativo = alvo
+    completo = (raiz / relativo).resolve()
+    if not str(completo).startswith(str(raiz.resolve())):
+        print(f"erro: caminho resolve fora da raiz do repositório: {relativo}",
+              file=sys.stderr)
+        return 1
+    if not completo.is_file():
+        print(f"erro: arquivo inexistente ou não regular: {relativo}",
+              file=sys.stderr)
+        return 1
+
+    dados = completo.read_bytes()
+    print(f"# cole em fontes: — id_fonte {args.id_fonte or '<defina>'}")
+    print(f"referencia: {relativo.as_posix()}")
+    print(f"sha256: {hashlib.sha256(dados).hexdigest()}")
+    print(f"tamanho_bytes: {len(dados)}")
+    return 0
+
+
 def cmd_prontidao(args) -> int:
     rec = _receita(args.tipologia)
     bib = fontes.carregar_biblioteca_oficial()
@@ -180,6 +226,12 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("caminho")
     p.add_argument("--json", action="store_true")
     p.set_defaults(func=cmd_validar_ficha)
+
+    p = sub.add_parser("registrar-evidencia",
+                       help="calcula sha256 de um artefato (não edita a ficha)")
+    p.add_argument("caminho")
+    p.add_argument("--id-fonte", dest="id_fonte", default=None)
+    p.set_defaults(func=cmd_registrar_evidencia)
 
     p = sub.add_parser("prontidao", help="relatório de gates e pendências")
     p.add_argument("--tipologia", default=receita_mod.CODIGO_TIPOLOGIA,

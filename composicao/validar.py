@@ -15,15 +15,16 @@ sistema. Sem eles, a única saída seria inventar um número.
 """
 from __future__ import annotations
 
-from .modelos import (ALVOS_DIMENSIONAIS, ESCOPOS_DE_APROVACAO,
+from .modelos import (ALVOS_DIMENSIONAIS_BASE, ESCOPOS_DE_APROVACAO,
                       ESTADO_CASO_VALIDADO, ESTADOS_CONFIRMADOS,
                       ESTADOS_NAO_CALCULAVEIS, IDENTIFICADORES_DE_CASO,
-                      ITENS_DE_ACESSORIO, TIPOS_APTOS_PARA_VALIDAR_CASO,
+                      ITENS_DE_ACESSORIO_BASE, TIPOS_APTOS_PARA_VALIDAR_CASO,
                       CasoRealFabricacao, EstadoConhecimento, ReceitaErro,
                       ReceitaTipologia, ResultadoAprovacao, ResultadoValidacao,
                       aprovacoes_por_escopo,
                       incompatibilidades_da_afirmacao,
                       incompatibilidades_das_fontes_embutidas,
+                      assinatura_documental_caso, fontes_primarias_do_caso,
                       indice_fontes_receita, problemas_da_fonte_de_aprovacao)
 
 from .fontes import PERFIS_SUPREMA_E4C as PERFIS_OFICIAIS
@@ -38,6 +39,7 @@ CASOS_EXIGIDOS_PARA_PRODUCAO = IDENTIFICADORES_DE_CASO
 
 
 ORIGEM_CASO = "caso real de fabricação"
+ORIGEM_ARTEFATO = "artefato de evidência no repositório"
 
 # Campos sem os quais o item não descreve uma peça: uma lista de corte com
 # `CorteReal()` vazio tem comprimento zero de informação.
@@ -70,8 +72,16 @@ def validar_referencias_geometricas(receita: ReceitaTipologia,
     codigos = {g.codigo for g in biblioteca.geometrias}
     assoc = {a.perfil_id: a.geometria_padrao_id for a in biblioteca.associacoes}
 
-    for comp in receita.componentes:
-        p = comp.perfil
+    # Inventário E ocorrências: as duas citam a biblioteca, e as duas precisam
+    # resolver. Conferir só as ocorrências deixaria a receita preliminar —
+    # que ainda não tem nenhuma — sem verificação alguma.
+    referencias = list(receita.perfis_disponiveis) + [c.perfil for c
+                                                      in receita.componentes]
+    vistos = set()
+    for p in referencias:
+        if p in vistos:
+            continue
+        vistos.add(p)
         if p.id_geometria not in codigos:
             r = r.somar(_reprovar(p.codigo_perfil, "geometria inexistente",
                                   None, p.id_geometria, ORIGEM_BIBLIOTECA))
@@ -149,55 +159,61 @@ def validar_cobertura_estrutural_receita(receita: ReceitaTipologia) -> Resultado
         r = r.somar(_reprovar(receita.codigo, "quantidade de folhas divergente",
                               receita.quantidade_folhas, 2, ORIGEM_RECEITA))
 
-    # --- componentes: exatamente os oito perfis oficiais
-    codigos = [c.perfil.codigo_perfil for c in receita.componentes]
-    faltando = [p for p in PERFIS_OFICIAIS if p not in codigos]
+    # --- INVENTÁRIO: os oito perfis oficiais precisam estar disponíveis.
+    # Não se exige um componente por perfil: um perfil pode aparecer em zero,
+    # uma ou várias ocorrências funcionais, e quantas é o que falta descobrir.
+    disponiveis = list(receita.codigos_disponiveis)
+    faltando = [p for p in PERFIS_OFICIAIS if p not in disponiveis]
     if faltando:
-        r = r.somar(_reprovar(receita.codigo, "perfis oficiais ausentes",
+        r = r.somar(_reprovar(receita.codigo,
+                              "perfis oficiais ausentes do inventário",
                               faltando, list(PERFIS_OFICIAIS), ORIGEM_RECEITA))
-    duplicados = sorted({c for c in codigos if codigos.count(c) > 1})
-    if duplicados:
-        r = r.somar(_reprovar(receita.codigo, "perfil duplicado na receita",
-                              duplicados, "um componente por perfil",
-                              ORIGEM_RECEITA))
-    intrusos = sorted({c for c in codigos if c not in PERFIS_OFICIAIS})
+    inv_dup = sorted({p for p in disponiveis if disponiveis.count(p) > 1})
+    if inv_dup:
+        r = r.somar(_reprovar(receita.codigo, "perfil duplicado no inventário",
+                              inv_dup, "uma entrada por perfil", ORIGEM_RECEITA))
+    intrusos = sorted({p for p in disponiveis if p not in PERFIS_OFICIAIS})
     if intrusos:
         r = r.somar(_reprovar(receita.codigo, "perfil fora do microlote oficial",
                               intrusos, list(PERFIS_OFICIAIS), ORIGEM_RECEITA))
+    for ref in receita.perfis_disponiveis:
+        if ref.id_geometria != f"GEO-{ref.codigo_perfil}":
+            r = r.somar(_reprovar(ref.codigo_perfil, "referência GEO divergente",
+                                  ref.id_geometria, f"GEO-{ref.codigo_perfil}",
+                                  ORIGEM_RECEITA))
+        if ref.perfil_id_oficial != f"ALCOA-{ref.codigo_perfil}":
+            r = r.somar(_reprovar(ref.codigo_perfil,
+                                  "associação oficial divergente",
+                                  ref.perfil_id_oficial,
+                                  f"ALCOA-{ref.codigo_perfil}", ORIGEM_RECEITA))
+
+    # --- OCORRÊNCIAS funcionais: quantas quiser, com identificador único e
+    # perfil que exista no inventário.
+    fora_do_inventario = sorted({c.perfil.codigo_perfil
+                                 for c in receita.componentes
+                                 if c.perfil.codigo_perfil not in disponiveis})
+    if fora_do_inventario:
+        r = r.somar(_reprovar(receita.codigo,
+                              "componente usa perfil fora do inventário",
+                              fora_do_inventario, disponiveis, ORIGEM_RECEITA))
     ids = [c.identificador for c in receita.componentes]
     ids_dup = sorted({i for i in ids if ids.count(i) > 1})
     if ids_dup:
         r = r.somar(_reprovar(receita.codigo,
                               "identificador de componente duplicado", ids_dup,
                               "identificadores únicos", ORIGEM_RECEITA))
-    for c in receita.componentes:
-        if c.perfil.id_geometria != f"GEO-{c.perfil.codigo_perfil}":
-            r = r.somar(_reprovar(c.identificador, "referência GEO divergente",
-                                  c.perfil.id_geometria,
-                                  f"GEO-{c.perfil.codigo_perfil}",
-                                  ORIGEM_RECEITA))
-        if c.perfil.perfil_id_oficial != f"ALCOA-{c.perfil.codigo_perfil}":
-            r = r.somar(_reprovar(c.identificador,
-                                  "associação oficial divergente",
-                                  c.perfil.perfil_id_oficial,
-                                  f"ALCOA-{c.perfil.codigo_perfil}",
-                                  ORIGEM_RECEITA))
-
-    # --- regras dimensionais: exatamente um registro por alvo
+    # --- regras dimensionais: os alvos BASE precisam existir; alvos novos são
+    # bem-vindos desde que declarem de onde vieram (o modelo já cobra isso).
     alvos = [g.alvo for g in receita.regras_dimensionais]
-    ausentes = [a for a in ALVOS_DIMENSIONAIS if a not in alvos]
+    ausentes = [a for a in ALVOS_DIMENSIONAIS_BASE if a not in alvos]
     if ausentes:
-        r = r.somar(_reprovar(receita.codigo, "alvo dimensional ausente",
-                              ausentes, list(ALVOS_DIMENSIONAIS),
+        r = r.somar(_reprovar(receita.codigo, "alvo dimensional base ausente",
+                              ausentes, list(ALVOS_DIMENSIONAIS_BASE),
                               ORIGEM_RECEITA))
     alvo_dup = sorted({a for a in alvos if alvos.count(a) > 1})
     if alvo_dup:
         r = r.somar(_reprovar(receita.codigo, "alvo dimensional duplicado",
                               alvo_dup, "uma regra por alvo", ORIGEM_RECEITA))
-    extras = sorted({a for a in alvos if a not in ALVOS_DIMENSIONAIS})
-    if extras:
-        r = r.somar(_reprovar(receita.codigo, "alvo dimensional desconhecido",
-                              extras, list(ALVOS_DIMENSIONAIS), ORIGEM_RECEITA))
     ids_regra = [g.identificador for g in receita.todas_as_regras]
     regra_dup = sorted({i for i in ids_regra if ids_regra.count(i) > 1})
     if regra_dup:
@@ -207,20 +223,16 @@ def validar_cobertura_estrutural_receita(receita: ReceitaTipologia) -> Resultado
 
     # --- acessórios: exatamente um requisito por item necessário
     itens = [a.item for a in receita.regras_acessorios]
-    falta_acess = [i for i in ITENS_DE_ACESSORIO if i not in itens]
+    falta_acess = [i for i in ITENS_DE_ACESSORIO_BASE if i not in itens]
     if falta_acess:
-        r = r.somar(_reprovar(receita.codigo, "requisito de acessório ausente",
-                              falta_acess, list(ITENS_DE_ACESSORIO),
+        r = r.somar(_reprovar(receita.codigo,
+                              "requisito de acessório base ausente",
+                              falta_acess, list(ITENS_DE_ACESSORIO_BASE),
                               ORIGEM_RECEITA))
     acess_dup = sorted({i for i in itens if itens.count(i) > 1})
     if acess_dup:
         r = r.somar(_reprovar(receita.codigo, "acessório duplicado", acess_dup,
                               "um requisito por item", ORIGEM_RECEITA))
-    acess_extra = sorted({i for i in itens if i not in ITENS_DE_ACESSORIO})
-    if acess_extra:
-        r = r.somar(_reprovar(receita.codigo, "acessório desconhecido",
-                              acess_extra, list(ITENS_DE_ACESSORIO),
-                              ORIGEM_RECEITA))
     return r
 
 
@@ -293,8 +305,15 @@ def caso_validado(caso: CasoRealFabricacao, perfis_oficiais=()) -> bool:
 # ---------------------------------------------------------------------------
 
 def validar_componentes_confirmados(receita: ReceitaTipologia) -> ResultadoValidacao:
-    """Reprova enquanto qualquer componente não estiver plenamente confirmado."""
+    """Reprova enquanto qualquer componente não estiver plenamente confirmado.
+
+    Receita sem nenhuma ocorrência funcional não calcula nada: ela sabe quais
+    perfis existem, não como a janela se monta."""
     r = ResultadoValidacao.aprovado()
+    if not receita.componentes:
+        r = r.somar(_reprovar(
+            receita.codigo, "nenhuma ocorrência funcional registrada", 0,
+            "> 0 componentes com papel, quantidade e posição", ORIGEM_RECEITA))
     for comp in receita.componentes:
         pend = comp.pendencias()
         if pend:
@@ -428,6 +447,232 @@ def validar_integridade_caso_real(caso: CasoRealFabricacao,
     return r
 
 
+# ---------------------------------------------------------------------------
+# Estudo × homologação
+# ---------------------------------------------------------------------------
+
+def validar_caso_para_estudo(caso: CasoRealFabricacao,
+                             perfis_oficiais=()) -> ResultadoValidacao:
+    """Mínimo para COMEÇAR a estudar uma derivação — não para homologar.
+
+    Um caso com um corte e um vidro já permite investigar; ele não prova que a
+    receita inteira produz aquela janela."""
+    return validar_integridade_caso_real(caso, perfis_oficiais or PERFIS_OFICIAIS)
+
+
+def validar_caso_contra_receita(caso: CasoRealFabricacao,
+                                receita: ReceitaTipologia) -> ResultadoValidacao:
+    """A janela real corresponde, peça a peça, ao que a receita declara.
+
+    Integridade do caso responde "os dados estão completos?". Isto responde
+    "a receita produz ESTA janela?" — e são perguntas diferentes: uma lista de
+    corte impecável pode não ter nada a ver com os componentes registrados."""
+    r = ResultadoValidacao.aprovado()
+    ident = caso.identificador or "caso sem identificador"
+    confirmados = [c for c in receita.componentes if c.confirmado]
+    if not confirmados:
+        return _reprovar(ident, "receita sem componentes confirmados", 0,
+                         "> 0 ocorrências funcionais confirmadas", ORIGEM_CASO)
+
+    por_id = {c.identificador: c for c in confirmados}
+    cortes_por_componente: dict = {}
+    for i, corte in enumerate(caso.cortes):
+        alvo = f"{ident}.cortes[{i}]"
+        if not corte.componente_id:
+            r = r.somar(_reprovar(alvo, "corte sem componente_id", None,
+                                  sorted(por_id), ORIGEM_CASO))
+            continue
+        comp = por_id.get(corte.componente_id)
+        if comp is None:
+            r = r.somar(_reprovar(alvo, "corte cita componente desconhecido",
+                                  corte.componente_id, sorted(por_id),
+                                  ORIGEM_CASO))
+            continue
+        if corte.perfil != comp.perfil.codigo_perfil:
+            r = r.somar(_reprovar(
+                alvo, "perfil do corte diverge do componente", corte.perfil,
+                comp.perfil.codigo_perfil, ORIGEM_CASO))
+        cortes_por_componente.setdefault(corte.componente_id, 0)
+        cortes_por_componente[corte.componente_id] += (corte.quantidade or 0)
+
+    for comp in confirmados:
+        total = cortes_por_componente.get(comp.identificador)
+        if total is None:
+            r = r.somar(_reprovar(comp.identificador,
+                                  "componente sem corte correspondente", None,
+                                  f"{comp.quantidade} peça(s)", ORIGEM_CASO))
+        elif comp.quantidade is not None and total != comp.quantidade:
+            r = r.somar(_reprovar(
+                comp.identificador, "quantidade agregada divergente", total,
+                comp.quantidade, ORIGEM_CASO))
+
+    if not caso.vidros:
+        r = r.somar(_reprovar(ident, "caso sem vidros para conferir", 0,
+                              "> 0 chapas", ORIGEM_CASO))
+    calculaveis = [a.item for a in receita.regras_acessorios if a.calculavel]
+    presentes = {a.item for a in caso.acessorios if a.item}
+    faltando = [i for i in calculaveis if i not in presentes]
+    if faltando:
+        r = r.somar(_reprovar(ident, "acessório calculado ausente do caso",
+                              faltando, calculaveis, ORIGEM_CASO))
+    return r
+
+
+def conferencia_valida_do_caso(receita: ReceitaTipologia,
+                               caso: CasoRealFabricacao) -> tuple[str, ...]:
+    """Problemas da conferência do caso contra a receita."""
+    ident = caso.identificador or ""
+    registros = receita.conferencia_do_caso(ident)
+    if not registros:
+        return (f"{ident}: sem conferência contra a receita",)
+    if len(registros) > 1:
+        return (f"{ident}: {len(registros)} conferências para o mesmo caso — "
+                f"conflito não se resolve pela ordem",)
+    conf = registros[0]
+    problemas = []
+    if not conf.aprovada:
+        problemas.append(
+            f"{ident}: conferência {conf.resultado.value}"
+            + (f" com divergências {list(conf.divergencias)}"
+               if conf.divergencias else "")
+            + ("" if conf.cortes_conferidos and conf.vidros_conferidos
+               and conf.acessorios_conferidos
+               else " — cortes, vidros e acessórios precisam ter sido vistos"))
+    indice = indice_fontes_receita(receita)
+    fonte = indice.get(conf.fonte_id) or caso.indice_fontes.get(conf.fonte_id)
+    if fonte is None:
+        problemas.append(f"{ident}: conferência cita fonte não registrada "
+                         f"({conf.fonte_id})")
+    elif fonte.estado in ESTADOS_NAO_CALCULAVEIS:
+        problemas.append(f"{ident}: fonte da conferência está "
+                         f"{fonte.estado.value}")
+    return tuple(problemas)
+
+
+# ---------------------------------------------------------------------------
+# Independência documental dos casos
+# ---------------------------------------------------------------------------
+
+def validar_independencia_dos_casos(casos) -> ResultadoValidacao:
+    """Três janelas, não a mesma três vezes.
+
+    Medidas diferentes não bastam: a mesma lista de corte pode ser reaproveitada
+    com números trocados. Exemplar, evidência primária e assinatura documental
+    têm de ser distintos."""
+    r = ResultadoValidacao.aprovado()
+    casos = tuple(casos)
+
+    sem_exemplar = [c.identificador for c in casos if not c.id_exemplar]
+    if sem_exemplar:
+        r = r.somar(_reprovar("-", "caso sem id_exemplar", sem_exemplar,
+                              "ordem de produção, orçamento, etiqueta ou "
+                              "código interno", ORIGEM_CASO))
+    exemplares = [c.id_exemplar for c in casos if c.id_exemplar]
+    repetidos = sorted({e for e in exemplares if exemplares.count(e) > 1})
+    if repetidos:
+        r = r.somar(_reprovar("-", "mesmo exemplar usado em mais de um caso",
+                             repetidos, "um exemplar por caso", ORIGEM_CASO))
+
+    vistas_primarias: dict = {}
+    for c in casos:
+        primarias = fontes_primarias_do_caso(c)
+        if not primarias:
+            r = r.somar(_reprovar(c.identificador or "-",
+                                  "caso sem evidência primária própria", [],
+                                  "medição, foto, croqui ou lista de corte",
+                                  ORIGEM_CASO))
+            continue
+        for outro, anteriores in vistas_primarias.items():
+            comuns = primarias & anteriores
+            if comuns and primarias == anteriores:
+                r = r.somar(_reprovar(
+                    c.identificador or "-",
+                    "mesma evidência primária de outro caso", sorted(comuns),
+                    f"evidência própria (compartilhada com {outro})",
+                    ORIGEM_CASO))
+        vistas_primarias[c.identificador] = primarias
+
+    assinaturas: dict = {}
+    for c in casos:
+        a = assinatura_documental_caso(c)
+        if a in assinaturas:
+            r = r.somar(_reprovar(
+                c.identificador or "-", "assinatura documental repetida",
+                [assinaturas[a], c.identificador],
+                "documentos distintos", ORIGEM_CASO))
+        assinaturas[a] = c.identificador
+    return r
+
+
+# ---------------------------------------------------------------------------
+# Artefatos de evidência
+# ---------------------------------------------------------------------------
+
+def validar_artefato_de_evidencia(fonte, raiz_repositorio) -> ResultadoValidacao:
+    """A evidência local existe e continua sendo a que foi registrada.
+
+    Um caminho bem formado não prova nada: o arquivo pode não existir, ou ter
+    sido substituído depois. `sha256` é o que transforma a referência em prova."""
+    from pathlib import Path as _P
+    if fonte.forma_referencia != "arquivo":
+        return ResultadoValidacao.aprovado()      # URL/identificador externo
+    if fonte.estado in ESTADOS_NAO_CALCULAVEIS:
+        return ResultadoValidacao.aprovado()      # pendente não precisa provar
+
+    raiz = _P(raiz_repositorio).resolve()
+    alvo = (raiz / fonte.referencia)
+    try:
+        resolvido = alvo.resolve()
+    except OSError:
+        resolvido = alvo
+    if not str(resolvido).startswith(str(raiz)):
+        return _reprovar(fonte.id_fonte, "artefato resolve fora da raiz",
+                         fonte.referencia, f"dentro de {raiz}", ORIGEM_ARTEFATO)
+    if not resolvido.exists():
+        return _reprovar(fonte.id_fonte, "artefato inexistente",
+                         fonte.referencia, "arquivo presente no repositório",
+                         ORIGEM_ARTEFATO)
+    if not resolvido.is_file():
+        return _reprovar(fonte.id_fonte, "artefato não é arquivo regular",
+                         fonte.referencia, "arquivo regular", ORIGEM_ARTEFATO)
+    if not fonte.sha256:
+        return _reprovar(fonte.id_fonte, "evidência confirmada sem sha256",
+                         None, "sha256 do arquivo registrado", ORIGEM_ARTEFATO)
+
+    import hashlib
+    dados = resolvido.read_bytes()
+    atual = hashlib.sha256(dados).hexdigest()
+    r = ResultadoValidacao.aprovado()
+    if atual != fonte.sha256:
+        r = r.somar(_reprovar(fonte.id_fonte, "artefato alterado após o registro",
+                              atual[:16], fonte.sha256[:16], ORIGEM_ARTEFATO))
+    if fonte.tamanho_bytes is not None and len(dados) != fonte.tamanho_bytes:
+        r = r.somar(_reprovar(fonte.id_fonte, "tamanho do artefato divergente",
+                              len(dados), fonte.tamanho_bytes, ORIGEM_ARTEFATO))
+    return r
+
+
+def validar_artefatos_do_caso(caso: CasoRealFabricacao,
+                              raiz_repositorio) -> ResultadoValidacao:
+    r = ResultadoValidacao.aprovado()
+    for f in caso.fontes:
+        r = r.somar(validar_artefato_de_evidencia(f, raiz_repositorio))
+    return r
+
+
+def validar_artefatos_da_receita(receita: ReceitaTipologia,
+                                 raiz_repositorio) -> ResultadoValidacao:
+    r = ResultadoValidacao.aprovado()
+    try:
+        indice = indice_fontes_receita(receita)
+    except ReceitaErro as e:
+        return _reprovar(receita.codigo, "registro de fontes inconsistente",
+                         str(e), "um id_fonte por evidência", ORIGEM_RECEITA)
+    for fonte in indice.values():
+        r = r.somar(validar_artefato_de_evidencia(fonte, raiz_repositorio))
+    return r
+
+
 def validar_prontidao_para_visualizacao(receita: ReceitaTipologia,
                                         biblioteca) -> ResultadoValidacao:
     """Visualização PRELIMINAR: mostrar os perfis que existem, sem montá-los.
@@ -475,7 +720,15 @@ def validar_prontidao_para_producao(receita: ReceitaTipologia,
     fabricada não autoriza corte de alumínio."""
     r = validar_prontidao_para_calculo(receita, biblioteca)
     r = r.somar(validar_casos_reais_independentes(receita))
+    r = r.somar(validar_independencia_dos_casos(receita.casos_reais))
     r = r.somar(validar_aprovacoes(receita))
+    for caso in receita.casos_reais:
+        r = r.somar(validar_caso_contra_receita(caso, receita))
+        for motivo in conferencia_valida_do_caso(receita, caso):
+            r = r.somar(_reprovar(caso.identificador or "-",
+                                  "conferência contra a receita inválida",
+                                  motivo, "uma conferência APROVADA por caso",
+                                  ORIGEM_CASO))
     return r
 
 

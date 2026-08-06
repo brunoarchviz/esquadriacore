@@ -10,6 +10,18 @@
 #   - Nome de campo com erro de digitação REPROVA a ficha, com sugestão do nome
 #     certo. Nada é ignorado em silêncio.
 #
+# PERFIL NÃO É COMPONENTE
+#   Perfil é o produto extrudado (SU-003). Componente é uma OCORRÊNCIA funcional
+#   dele na janela. O mesmo perfil pode aparecer em duas laterais, nas duas
+#   folhas, em papéis diferentes e com comprimentos diferentes — por isso cada
+#   perfil tem uma LISTA de `aplicacoes`, e não um papel só.
+#
+# EVIDÊNCIA LOCAL CONFIRMADA TEM HASH
+#   Fonte com `forma_referencia: arquivo` e estado confirmado precisa de
+#   `sha256` (e, se quiser, `tamanho_bytes`). Caminho não prova que o arquivo
+#   existe nem que continua o mesmo. Calcule com:
+#     python -m composicao.cli registrar-evidencia <caminho> --id-fonte FONTE-X
+#
 # EVIDÊNCIA É CITADA POR ID
 #   Cada fonte em `fontes:` tem um `id_fonte` único (FONTE-ALGUMA-COISA). Cada
 #   afirmação cita as suas com `fontes_ids: [FONTE-001]`. Citar por TIPO seria
@@ -69,6 +81,11 @@ tipologia:
 # ou CASO_C_GRANDE. Largura e altura podem compartilhar a mesma evidência.
 caso_real:
   identificador:
+  # Identificação AUDITÁVEL do exemplar físico: ordem de produção, número do
+  # orçamento, etiqueta da peça ou código interno da serralheria. É isto que
+  # prova que os três casos são três janelas, e não a mesma com números
+  # trocados. Não invente o valor.
+  id_exemplar:
   largura_total_mm:
   altura_total_mm:
   estado:
@@ -95,72 +112,73 @@ vista:
 # `orientacao`: vertical, horizontal, ou como você descreve o corte
 perfis:
   SU-001:
-    funcao:
-    quantidade:
-    orientacao:
-    observacoes:
+    observacoes_gerais:
     estado:
     fontes_ids: []
     dados_adicionais: {}
+    # Uma entrada por OCORRÊNCIA do perfil na janela. O mesmo perfil pode ser
+    # marco esquerdo e direito, ou aparecer nas duas folhas: cada uso é uma
+    # aplicação, com id_componente próprio e único.
+    # Ex.: - id_componente: MARCO-LATERAL-ESQUERDO
+    #        funcao: MARCO_LATERAL_ESQUERDO
+    #        quantidade: 1
+    #        orientacao: vertical
+    #        folha:
+    #        posicao: lateral esquerda do marco
+    #        estado: CONFIRMADO_ESPECIALISTA
+    #        fontes_ids: [FONTE-ARBITRAGEM-PAPEIS]
+    #        dados_adicionais: {}
+    aplicacoes: []
   SU-002:
-    funcao:
-    quantidade:
-    orientacao:
-    observacoes:
+    observacoes_gerais:
     estado:
     fontes_ids: []
     dados_adicionais: {}
+    aplicacoes: []
   SU-003:
-    funcao:
-    quantidade:
-    orientacao:
-    observacoes:
+    observacoes_gerais:
     estado:
     fontes_ids: []
     dados_adicionais: {}
+    aplicacoes: []
   SU-039:
-    funcao:
-    quantidade:
-    orientacao:
-    observacoes:
+    observacoes_gerais:
     estado:
     fontes_ids: []
     dados_adicionais: {}
+    aplicacoes: []
   SU-040:
-    funcao:
-    quantidade:
-    orientacao:
-    observacoes:
+    observacoes_gerais:
     estado:
     fontes_ids: []
     dados_adicionais: {}
+    aplicacoes: []
   SU-041:
-    funcao:
-    quantidade:
-    orientacao:
-    observacoes:
+    observacoes_gerais:
     estado:
     fontes_ids: []
     dados_adicionais: {}
+    aplicacoes: []
   SU-053:
-    funcao:
-    quantidade:
-    orientacao:
-    observacoes:
+    observacoes_gerais:
     estado:
     fontes_ids: []
     dados_adicionais: {}
+    aplicacoes: []
   SU-102:
-    funcao:
-    quantidade:
-    orientacao:
-    observacoes:
+    observacoes_gerais:
     estado:
     fontes_ids: []
     dados_adicionais: {}
+    aplicacoes: []
 
 # Lista de corte REAL da janela acima. Uma entrada por peça cortada.
-# Ex.: - perfil: SU-001
+# `componente_id` liga a peça à aplicação que a produziu: sem ele, dois cortes
+# do mesmo perfil com comprimentos diferentes não dizem qual é o marco e qual
+# é a travessa. Pode ficar vazio enquanto os papéis não estiverem levantados —
+# o caso fica parcial.
+# Ex.: - componente_id: MARCO-LATERAL-ESQUERDO
+#        perfil: SU-001
 #        comprimento_mm: 1460
 #        quantidade: 1
 #        angulo: "90"
@@ -223,6 +241,8 @@ croquis: []
 #        estado: CONFIRMADO_CASO_REAL
 #        responsavel: Bruno
 #        data: "2026-08-10"
+#        sha256: <64 hex, calculado pelo comando registrar-evidencia>
+#        tamanho_bytes: 184320
 #      - id_fonte: FONTE-ARBITRAGEM-PAPEIS
 #        tipo: especialista_de_dominio
 #        referencia: curadoria/campo/caso_a/confirmacao_perfis.md
@@ -230,6 +250,7 @@ croquis: []
 #        estado: CONFIRMADO_ESPECIALISTA
 #        responsavel: Bruno
 #        data: "2026-08-10"
+#        sha256: <64 hex>
 fontes: []
 
 # O que ficou em aberto na visita, com suas palavras.

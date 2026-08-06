@@ -32,7 +32,8 @@ from .modelos import (ESTADO_CASO_AGUARDANDO, ESTADO_CASO_PARCIAL,
                       TIPOS_DE_FONTE, AcessorioReal, Afirmacao, BagueteReal,
                       CasoRealFabricacao, CorteReal, CroquiCasoReal,
                       EstadoConhecimento, FolgaReal, FonteEvidencia,
-                      PapelComponente, PerfilNoCasoReal, ReceitaErro,
+                      AplicacaoPerfil, PapelComponente, PerfilNoCasoReal,
+                      ReceitaErro,
                       ReferenciaPerfilOficial, ResultadoValidacao,
                       SobreposicaoReal, VidroReal, VistaCasoReal,
                       _RE_ID_FONTE, data_invalida,
@@ -66,13 +67,15 @@ CAMPOS_RAIZ = ("versao_ficha", "tipologia", "caso_real", "vista", "perfis",
                "sobreposicoes", "croquis", "fontes", "duvidas",
                "dados_adicionais")
 CAMPOS_TIPOLOGIA = ("codigo",)
-CAMPOS_CASO_REAL = ("identificador", "largura_total_mm", "altura_total_mm") \
-    + CAMPOS_AFIRMACAO
+CAMPOS_CASO_REAL = ("identificador", "id_exemplar", "largura_total_mm",
+                    "altura_total_mm") + CAMPOS_AFIRMACAO
 CAMPOS_VISTA = VistaCasoReal.CAMPOS + CAMPOS_AFIRMACAO
-CAMPOS_PERFIL = ("funcao", "quantidade", "orientacao", "observacoes") \
-    + CAMPOS_AFIRMACAO
-CAMPOS_CORTE = ("perfil", "comprimento_mm", "quantidade", "angulo",
-                "observacao") + CAMPOS_AFIRMACAO
+# O perfil traz observações gerais e uma LISTA de aplicações: o mesmo perfil
+# pode ser marco esquerdo e direito, e um bloco único forçaria escolher um só.
+CAMPOS_PERFIL = ("observacoes_gerais", "aplicacoes") + CAMPOS_AFIRMACAO
+CAMPOS_APLICACAO = AplicacaoPerfil.CAMPOS + CAMPOS_AFIRMACAO
+CAMPOS_CORTE = ("componente_id", "perfil", "comprimento_mm", "quantidade",
+                "angulo", "observacao") + CAMPOS_AFIRMACAO
 CAMPOS_VIDRO = ("folha", "largura_mm", "altura_mm", "espessura_mm",
                 "observacao") + CAMPOS_AFIRMACAO
 CAMPOS_BAGUETE = ("perfil", "comprimento_mm", "quantidade", "lado_de_encaixe",
@@ -88,7 +91,8 @@ CAMPOS_SOBREPOSICAO = ("entre", "valor_mm", "observacao") + CAMPOS_AFIRMACAO
 # mesmo fato — uma com estado e outra sem — entrariam em conflito.
 CAMPOS_CROQUI = ("tipo", "referencia", "descricao")
 CAMPOS_FONTE = ("id_fonte", "tipo", "referencia", "descricao", "estado",
-                "responsavel", "data", "forma_referencia")
+                "responsavel", "data", "forma_referencia", "sha256",
+                "tamanho_bytes")
 
 SECOES_LISTA = ("cortes", "vidros", "baguetes", "acessorios", "folgas",
                 "sobreposicoes", "croquis", "fontes", "duvidas")
@@ -483,6 +487,47 @@ def _validar_itens_de_lista(dados: dict, secao: str, ids_disponiveis,
     return r
 
 
+def _validar_aplicacoes(bloco: dict, alvo: str, ids_disponiveis, origem,
+                        fontes_tipadas, ids_componente: set) -> ResultadoValidacao:
+    """Cada aplicação é uma ocorrência funcional, com `id_componente` único."""
+    r = ResultadoValidacao.aprovado()
+    aplicacoes = bloco.get("aplicacoes")
+    if aplicacoes is None:
+        return r
+    if not isinstance(aplicacoes, list):
+        return _reprovar(f"{alvo}.aplicacoes", "aplicacoes tem de ser lista",
+                         type(aplicacoes).__name__, "lista", origem)
+    for i, ap in enumerate(aplicacoes):
+        sub = f"{alvo}.aplicacoes[{i}]"
+        if not isinstance(ap, dict):
+            r = r.somar(_reprovar(sub, "aplicação tem de ser mapeamento",
+                                  type(ap).__name__, "mapeamento", origem))
+            continue
+        r = r.somar(_campos_desconhecidos(ap, CAMPOS_APLICACAO, sub, origem))
+        r = r.somar(_validar_afirmacao(ap, sub, ids_disponiveis, origem,
+                                       fontes_tipadas))
+        ident = _texto(ap.get("id_componente"))
+        if ident is not None:
+            if ident in ids_componente:
+                r = r.somar(_reprovar(f"{sub}.id_componente",
+                                      "id_componente duplicado", ident,
+                                      "identificador único na ficha", origem))
+            ids_componente.add(ident)
+        funcao = _texto(ap.get("funcao"))
+        if funcao is not None:
+            try:
+                PapelComponente(funcao)
+            except ValueError:
+                r = r.somar(_reprovar(
+                    f"{sub}.funcao", "função desconhecida", funcao,
+                    _sugestao(funcao, [p.value for p in PapelComponente]),
+                    origem))
+        _, res = _inteiro_positivo(ap.get("quantidade"), f"{sub}.quantidade",
+                                   origem)
+        r = r.somar(res)
+    return r
+
+
 def validar_estrutura_ficha(dados: dict,
                             origem: str = "ficha") -> ResultadoValidacao:
     """Estrutura, não conteúdo. Campo em branco é legítimo; campo inventado não.
@@ -558,6 +603,7 @@ def validar_estrutura_ficha(dados: dict,
         r = r.somar(_reprovar("perfis", "perfis tem de ser mapeamento",
                               type(perfis).__name__, "mapeamento", origem))
         perfis = {}
+    ids_componente: set = set()
     for codigo, bloco in (perfis or {}).items():
         if codigo not in PERFIS_SUPREMA_E4C:
             r = r.somar(_reprovar(f"perfis.{codigo}",
@@ -576,18 +622,8 @@ def validar_estrutura_ficha(dados: dict,
         r = r.somar(_campos_desconhecidos(bloco, CAMPOS_PERFIL, alvo, origem))
         r = r.somar(_validar_afirmacao(bloco, alvo, ids_disponiveis, origem,
                                        fontes_tipadas))
-        funcao = _texto(bloco.get("funcao"))
-        if funcao is not None:
-            try:
-                PapelComponente(funcao)
-            except ValueError:
-                r = r.somar(_reprovar(
-                    f"{alvo}.funcao", "função desconhecida", funcao,
-                    _sugestao(funcao, [p.value for p in PapelComponente]),
-                    origem))
-        _, res = _inteiro_positivo(bloco.get("quantidade"),
-                                   f"{alvo}.quantidade", origem)
-        r = r.somar(res)
+        r = r.somar(_validar_aplicacoes(bloco, alvo, ids_disponiveis, origem,
+                                        fontes_tipadas, ids_componente))
 
     for secao in SECOES_LISTA:
         if secao == "fontes":
@@ -652,16 +688,27 @@ def converter_ficha_em_caso_real(dados: dict,
         bloco = (dados.get("perfis") or {}).get(codigo) or {}
         if not isinstance(bloco, dict):
             bloco = {}
-        funcao = _texto(bloco.get("funcao"))
+        aplicacoes = []
+        for ap in (bloco.get("aplicacoes") or []):
+            if not isinstance(ap, dict):
+                continue
+            funcao = _texto(ap.get("funcao"))
+            aplicacoes.append(AplicacaoPerfil(
+                id_componente=_texto(ap.get("id_componente")),
+                funcao=PapelComponente(funcao) if funcao else None,
+                quantidade=_int(ap.get("quantidade")),
+                orientacao=_texto(ap.get("orientacao")),
+                folha=_texto(ap.get("folha")),
+                posicao=_texto(ap.get("posicao")),
+                **_afirmacao_kwargs(ap)))
         perfis.append(PerfilNoCasoReal(
             codigo_perfil=codigo,
-            funcao=PapelComponente(funcao) if funcao else None,
-            quantidade=_int(bloco.get("quantidade")),
-            orientacao=_texto(bloco.get("orientacao")),
-            observacoes=_texto(bloco.get("observacoes")),
+            observacoes_gerais=_texto(bloco.get("observacoes_gerais")),
+            aplicacoes=tuple(aplicacoes),
             **_afirmacao_kwargs(bloco)))
 
     cortes = _converter_lista(dados, "cortes", lambda i: CorteReal(
+        componente_id=_texto(i.get("componente_id")),
         perfil=_texto(i.get("perfil")),
         comprimento_mm=_dec(i.get("comprimento_mm")),
         quantidade=_int(i.get("quantidade")),
@@ -706,13 +753,16 @@ def converter_ficha_em_caso_real(dados: dict,
             estado=EstadoConhecimento(_texto(f.get("estado"))
                                       or EstadoConhecimento.PENDENTE.value),
             responsavel=_texto(f.get("responsavel")), data=_texto(f.get("data")),
-            forma_referencia=_texto(f.get("forma_referencia")) or "arquivo"))
+            forma_referencia=_texto(f.get("forma_referencia")) or "arquivo",
+            sha256=_texto(f.get("sha256")),
+            tamanho_bytes=_int(f.get("tamanho_bytes"))))
     duvidas = tuple(str(d) for d in (dados.get("duvidas") or []) if not _vazio(d))
     extra_raiz = dados.get("dados_adicionais")
 
     estado_dim = _texto(caso.get("estado"))
     parcial = CasoRealFabricacao(
         identificador=_texto(caso.get("identificador")),
+        id_exemplar=_texto(caso.get("id_exemplar")),
         largura_total_mm=_dec(caso.get("largura_total_mm")),
         altura_total_mm=_dec(caso.get("altura_total_mm")),
         estado_dimensoes=EstadoConhecimento(estado_dim) if estado_dim else None,
@@ -769,6 +819,13 @@ def extrair_campos_preenchidos(dados: dict) -> tuple[dict, ...]:
                 if not _vazio(bloco.get(campo)):
                     preenchidos.append({"escopo": f"perfis.{codigo}",
                                         "campo": campo, "valor": bloco[campo]})
+            for i, ap in enumerate(bloco.get("aplicacoes") or []):
+                if isinstance(ap, dict):
+                    for campo in CAMPOS_APLICACAO:
+                        if not _vazio(ap.get(campo)):
+                            preenchidos.append({
+                                "escopo": f"perfis.{codigo}.aplicacoes[{i}]",
+                                "campo": campo, "valor": ap[campo]})
     for secao in SECOES_LISTA:
         itens = dados.get(secao)
         if not isinstance(itens, list):
@@ -834,8 +891,12 @@ def extrair_decisoes_confirmadas(dados: dict) -> tuple[dict, ...]:
     if isinstance(perfis, dict):
         for codigo, bloco in perfis.items():
             _registrar_confirmacoes(confirmadas, f"perfis.{codigo}", bloco,
-                                    ("funcao", "quantidade", "orientacao"),
-                                    indice)
+                                    ("observacoes_gerais",), indice)
+            for i, ap in enumerate((bloco or {}).get("aplicacoes") or []):
+                _registrar_confirmacoes(
+                    confirmadas, f"perfis.{codigo}.aplicacoes[{i}]", ap,
+                    ("id_componente", "funcao", "quantidade", "orientacao",
+                     "folha", "posicao"), indice)
 
     for secao in SECOES_DE_AFIRMACAO:
         itens = dados.get(secao)
@@ -873,10 +934,9 @@ def extrair_pendencias(dados: dict) -> tuple[dict, ...]:
     for codigo in PERFIS_SUPREMA_E4C:
         bloco = perfis.get(codigo)
         bloco = bloco if isinstance(bloco, dict) else {}
-        for campo in ("funcao", "quantidade", "orientacao", "fontes_ids"):
-            if _vazio(bloco.get(campo)):
-                pendencias.append({"escopo": f"perfis.{codigo}",
-                                   "campo": campo})
+        if _vazio(bloco.get("aplicacoes")):
+            pendencias.append({"escopo": f"perfis.{codigo}",
+                               "campo": "aplicacoes"})
 
     for secao in SECOES_DE_AFIRMACAO:
         if _vazio(dados.get(secao)):
