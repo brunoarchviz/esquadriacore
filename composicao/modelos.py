@@ -114,10 +114,12 @@ _RE_DATA = re.compile(r"\d{4}-\d{2}-\d{2}")
 # índice por `tipo` faria a segunda sobrescrever a primeira em silêncio.
 FORMATO_ID_FONTE = "FONTE-[A-Z0-9_-]+"
 _RE_ID_FONTE = re.compile(r"FONTE-[A-Z0-9_-]+")
+_RE_SHA256 = re.compile(r"[0-9a-f]{64}")
 
-# Alvos que uma regra dimensional pode governar. Declarar o alvo não cria a
-# fórmula: é só o vocabulário do que ainda falta responder.
-ALVOS_DIMENSIONAIS = (
+# Alvos que já sabemos que a tipologia precisa responder. É cobertura MÍNIMA,
+# não universo fechado: a serralheria pode revelar uma regra que ninguém previu,
+# e recusá-la por não estar nesta lista jogaria fora conhecimento novo.
+ALVOS_DIMENSIONAIS_BASE = (
     "corte_marco_superior",
     "corte_marco_inferior",
     "corte_marco_lateral",
@@ -128,6 +130,14 @@ ALVOS_DIMENSIONAIS = (
     "corte_baguete_horizontal",
     "corte_baguete_vertical",
 )
+
+# De onde veio um alvo ou acessório que não estava na lista base. Item extra
+# sem procedência é item extra silencioso — e aí a lista deixaria de significar
+# alguma coisa.
+ORIGEM_DESCOBERTO_EM_CAMPO = "DESCOBERTO_EM_CAMPO"
+ORIGEM_DECIDIDO_POR_ESPECIALISTA = "DECIDIDO_POR_ESPECIALISTA"
+ORIGENS_DE_ITEM_ADICIONAL = (ORIGEM_DESCOBERTO_EM_CAMPO,
+                             ORIGEM_DECIDIDO_POR_ESPECIALISTA)
 
 ESTADO_RECEITA_PRELIMINAR = "PRELIMINAR_AGUARDANDO_DADOS_DE_CAMPO"
 
@@ -208,6 +218,41 @@ def descongelar_dados_adicionais(valor):
     if isinstance(valor, (set, frozenset)):
         return sorted(descongelar_dados_adicionais(v) for v in valor)
     return valor
+
+
+def validar_decimal_positivo_finito(valor, campo: str) -> None:
+    """Medida preenchida é `Decimal` finito e positivo. Vazia é `None`.
+
+    O carregador de YAML já cobrava isso, mas objeto construído em código
+    passava direto: `CorteReal(comprimento_mm=Decimal("NaN"))` viraria uma peça
+    com medida que não é número. A fronteira tem de estar no modelo."""
+    if valor is None:
+        return
+    if not isinstance(valor, Decimal):
+        raise ReceitaErro(
+            f"{campo}: medida tem de ser Decimal, recebido "
+            f"{type(valor).__name__} ({valor!r})")
+    if not valor.is_finite():
+        raise ReceitaErro(f"{campo}: medida não finita ({valor})")
+    if valor <= 0:
+        raise ReceitaErro(
+            f"{campo}: medida {valor} — real é positiva; desconhecida é None")
+
+
+def validar_inteiro_positivo_estrito(valor, campo: str) -> None:
+    """Quantidade preenchida é `int` positivo. `True` não é quantidade.
+
+    Em Python `isinstance(True, int)` é verdadeiro: sem esta checagem,
+    `quantidade=True` viraria uma peça."""
+    if valor is None:
+        return
+    if isinstance(valor, bool) or not isinstance(valor, int):
+        raise ReceitaErro(
+            f"{campo}: quantidade tem de ser int, recebido "
+            f"{type(valor).__name__} ({valor!r})")
+    if valor <= 0:
+        raise ReceitaErro(
+            f"{campo}: quantidade {valor} — desconhecida é None, nunca 0")
 
 
 def data_invalida(valor: str) -> str | None:
@@ -312,6 +357,8 @@ class FonteEvidencia:
     responsavel: str | None = None
     data: str | None = None
     forma_referencia: str = FORMA_ARQUIVO
+    sha256: str | None = None
+    tamanho_bytes: int | None = None
 
     def __post_init__(self):
         if not _RE_ID_FONTE.fullmatch(self.id_fonte or ""):
@@ -343,6 +390,12 @@ class FonteEvidencia:
             if motivo:
                 raise ReceitaErro(
                     f"{self.id_fonte}: data {self.data!r} {motivo}")
+        if self.sha256 is not None and not _RE_SHA256.fullmatch(self.sha256):
+            raise ReceitaErro(
+                f"{self.id_fonte}: sha256 fora do formato ({self.sha256!r}) — "
+                f"esperado 64 dígitos hexadecimais minúsculos")
+        validar_inteiro_positivo_estrito(self.tamanho_bytes,
+                                         f"{self.id_fonte}.tamanho_bytes")
 
     @property
     def tem_autoria(self) -> bool:
@@ -358,7 +411,8 @@ class FonteEvidencia:
                 "referencia": self.referencia,
                 "descricao": self.descricao, "estado": self.estado.value,
                 "responsavel": self.responsavel, "data": self.data,
-                "forma_referencia": self.forma_referencia}
+                "forma_referencia": self.forma_referencia,
+                "sha256": self.sha256, "tamanho_bytes": self.tamanho_bytes}
 
 
 def indexar_fontes(fontes) -> dict:
@@ -546,10 +600,8 @@ class ComponenteReceita:
         object.__setattr__(self, "observacoes",
                            como_tupla(self.observacoes,
                                       f"{self.identificador}.observacoes"))
-        if self.quantidade is not None and self.quantidade <= 0:
-            raise ReceitaErro(
-                f"{self.identificador}: quantidade {self.quantidade!r} — "
-                f"desconhecida é None, nunca 0")
+        validar_inteiro_positivo_estrito(self.quantidade,
+                                         f"{self.identificador}.quantidade")
 
     @property
     def confirmado(self) -> bool:
@@ -606,6 +658,7 @@ class RegraDimensional:
     unidade: str = "mm"
     estado: EstadoConhecimento = EstadoConhecimento.PENDENTE
     fontes: tuple[FonteEvidencia, ...] = ()
+    origem_do_alvo: str | None = None
 
     def __post_init__(self):
         object.__setattr__(self, "fontes",
@@ -613,9 +666,18 @@ class RegraDimensional:
         object.__setattr__(self, "variaveis",
                            como_tupla(self.variaveis,
                                       f"{self.identificador}.variaveis"))
-        if self.alvo not in ALVOS_DIMENSIONAIS:
-            raise ReceitaErro(
-                f"{self.identificador}: alvo desconhecido {self.alvo!r}")
+        # Alvo fora da lista base é legítimo — a serralheria pode revelar uma
+        # regra que ninguém previu. O que não se aceita é item extra SILENCIOSO:
+        # ele precisa dizer de onde veio e o que é.
+        if self.alvo not in ALVOS_DIMENSIONAIS_BASE:
+            if self.origem_do_alvo not in ORIGENS_DE_ITEM_ADICIONAL:
+                raise ReceitaErro(
+                    f"{self.identificador}: alvo {self.alvo!r} fora da lista "
+                    f"base exige origem_do_alvo em "
+                    f"{list(ORIGENS_DE_ITEM_ADICIONAL)}")
+            if not self.descricao:
+                raise ReceitaErro(
+                    f"{self.identificador}: alvo adicional sem descrição")
         if self.estado in ESTADOS_CONFIRMADOS and not self.expressao:
             raise ReceitaErro(
                 f"{self.identificador}: regra confirmada sem expressão")
@@ -650,8 +712,8 @@ class RegraDimensional:
 
 # Itens de acessório que uma correr de duas folhas precisa ter respondidos.
 # Listar o item é registrar a PERGUNTA — não afirma modelo nem quantidade.
-ITENS_DE_ACESSORIO = ("roldanas", "fecho", "contra_fecho", "escovas",
-                      "vedacoes", "fixacoes")
+ITENS_DE_ACESSORIO_BASE = ("roldanas", "fecho", "contra_fecho", "escovas",
+                           "vedacoes", "fixacoes")
 
 
 @dataclass(frozen=True)
@@ -663,12 +725,23 @@ class RegraAcessorio:
     posicao: str | None = None
     estado: EstadoConhecimento = EstadoConhecimento.PENDENTE
     fontes: tuple[FonteEvidencia, ...] = ()
+    descricao: str = ""
+    origem_do_item: str | None = None
 
     def __post_init__(self):
         object.__setattr__(self, "fontes",
                            como_tupla(self.fontes, f"{self.identificador}.fontes"))
         if not self.item:
             raise ReceitaErro(f"{self.identificador}: item vazio")
+        if self.item not in ITENS_DE_ACESSORIO_BASE:
+            if self.origem_do_item not in ORIGENS_DE_ITEM_ADICIONAL:
+                raise ReceitaErro(
+                    f"{self.identificador}: acessório {self.item!r} fora da "
+                    f"lista base exige origem_do_item em "
+                    f"{list(ORIGENS_DE_ITEM_ADICIONAL)}")
+            if not self.descricao:
+                raise ReceitaErro(
+                    f"{self.identificador}: acessório adicional sem descrição")
         if self.estado in ESTADOS_CONFIRMADOS:
             if not self.quantidade_expressao:
                 raise ReceitaErro(
@@ -777,28 +850,70 @@ class VistaCasoReal(Afirmacao):
 
 
 @dataclass(frozen=True)
-class PerfilNoCasoReal(Afirmacao):
-    """O que a ficha diz sobre um perfil. `funcao` chega como texto e só vira
-    `PapelComponente` depois de validada — texto inválido não é convertido em
-    palpite."""
-    codigo_perfil: str = ""
+class AplicacaoPerfil(Afirmacao):
+    """UMA ocorrência funcional de um perfil na janela.
+
+    O mesmo perfil pode aparecer em duas laterais, nas duas folhas, em papéis
+    diferentes e com comprimentos diferentes. Um bloco único por perfil forçaria
+    a ficha a escolher um papel só — e o segundo uso sumiria."""
+    id_componente: str | None = None
     funcao: PapelComponente | None = None
     quantidade: int | None = None
     orientacao: str | None = None
-    observacoes: str | None = None
+    folha: str | None = None
+    posicao: str | None = None
 
-    CAMPOS = ("funcao", "quantidade", "orientacao", "observacoes")
+    CAMPOS = ("id_componente", "funcao", "quantidade", "orientacao", "folha",
+              "posicao")
+
+    def __post_init__(self):
+        super().__post_init__()
+        validar_inteiro_positivo_estrito(self.quantidade,
+                                         "aplicacao.quantidade")
 
     @property
-    def vazio(self) -> bool:
+    def vazia(self) -> bool:
         return not any(getattr(self, c) for c in self.CAMPOS) \
             and not self.fontes_ids and not self.dados_adicionais
 
     def para_dict(self) -> dict:
-        d = {"codigo_perfil": self.codigo_perfil,
+        d = {"id_componente": self.id_componente,
              "funcao": self.funcao.value if self.funcao else None,
              "quantidade": self.quantidade, "orientacao": self.orientacao,
-             "observacoes": self.observacoes}
+             "folha": self.folha, "posicao": self.posicao}
+        d.update(self._base_dict())
+        return d
+
+
+@dataclass(frozen=True)
+class PerfilNoCasoReal(Afirmacao):
+    """O que a ficha diz sobre um perfil — e suas APLICAÇÕES na janela.
+
+    Perfil é o produto extrudado; aplicação é o papel que ele exerce numa
+    posição. Confundir os dois faria o sistema afirmar que o SU-003 tem uma
+    única função, quando ele pode ser marco esquerdo e direito ao mesmo tempo."""
+    codigo_perfil: str = ""
+    observacoes_gerais: str | None = None
+    aplicacoes: tuple[AplicacaoPerfil, ...] = ()
+
+    CAMPOS = ("observacoes_gerais",)
+
+    def __post_init__(self):
+        super().__post_init__()
+        object.__setattr__(self, "aplicacoes",
+                           como_tupla(self.aplicacoes,
+                                      f"perfis.{self.codigo_perfil}.aplicacoes"))
+
+    @property
+    def vazio(self) -> bool:
+        return (not self.observacoes_gerais and not self.fontes_ids
+                and not self.dados_adicionais
+                and all(a.vazia for a in self.aplicacoes))
+
+    def para_dict(self) -> dict:
+        d = {"codigo_perfil": self.codigo_perfil,
+             "observacoes_gerais": self.observacoes_gerais,
+             "aplicacoes": [a.para_dict() for a in self.aplicacoes]}
         d.update(self._base_dict())
         return d
 
@@ -806,15 +921,26 @@ class PerfilNoCasoReal(Afirmacao):
 @dataclass(frozen=True)
 class CorteReal(Afirmacao):
     """Uma peça efetivamente cortada. É o dado do qual uma fórmula futura
-    poderá ser DERIVADA — nunca o contrário."""
+    poderá ser DERIVADA — nunca o contrário.
+
+    `componente_id` liga a peça à ocorrência funcional que a produziu. Sem
+    isso, dois cortes do mesmo perfil com comprimentos diferentes não dizem
+    qual é o marco e qual é a travessa."""
     perfil: str | None = None
     comprimento_mm: Decimal | None = None
     quantidade: int | None = None
     angulo: str | None = None
     observacao: str | None = None
+    componente_id: str | None = None
+
+    def __post_init__(self):
+        super().__post_init__()
+        validar_decimal_positivo_finito(self.comprimento_mm,
+                                        "corte.comprimento_mm")
+        validar_inteiro_positivo_estrito(self.quantidade, "corte.quantidade")
 
     def para_dict(self) -> dict:
-        d = {"perfil": self.perfil,
+        d = {"perfil": self.perfil, "componente_id": self.componente_id,
              "comprimento_mm": (str(self.comprimento_mm)
                                 if self.comprimento_mm is not None else None),
              "quantidade": self.quantidade, "angulo": self.angulo,
@@ -830,6 +956,12 @@ class VidroReal(Afirmacao):
     altura_mm: Decimal | None = None
     espessura_mm: Decimal | None = None
     observacao: str | None = None
+
+    def __post_init__(self):
+        super().__post_init__()
+        for campo in ("largura_mm", "altura_mm", "espessura_mm"):
+            validar_decimal_positivo_finito(getattr(self, campo),
+                                            f"vidro.{campo}")
 
     def para_dict(self) -> dict:
         d = {"folha": self.folha,
@@ -852,6 +984,12 @@ class BagueteReal(Afirmacao):
     lado_de_encaixe: str | None = None
     observacao: str | None = None
 
+    def __post_init__(self):
+        super().__post_init__()
+        validar_decimal_positivo_finito(self.comprimento_mm,
+                                        "baguete.comprimento_mm")
+        validar_inteiro_positivo_estrito(self.quantidade, "baguete.quantidade")
+
     def para_dict(self) -> dict:
         d = {"perfil": self.perfil,
              "comprimento_mm": (str(self.comprimento_mm)
@@ -870,6 +1008,10 @@ class AcessorioReal(Afirmacao):
     posicao: str | None = None
     observacao: str | None = None
 
+    def __post_init__(self):
+        super().__post_init__()
+        validar_inteiro_positivo_estrito(self.quantidade, "acessorio.quantidade")
+
     def para_dict(self) -> dict:
         d = {"item": self.item, "quantidade": self.quantidade,
              "posicao": self.posicao, "observacao": self.observacao}
@@ -884,6 +1026,10 @@ class FolgaReal(Afirmacao):
     medido_por: str | None = None
     observacao: str | None = None
 
+    def __post_init__(self):
+        super().__post_init__()
+        validar_decimal_positivo_finito(self.valor_mm, "folga.valor_mm")
+
     def para_dict(self) -> dict:
         d = {"entre": self.entre,
              "valor_mm": str(self.valor_mm) if self.valor_mm is not None else None,
@@ -897,6 +1043,10 @@ class SobreposicaoReal(Afirmacao):
     entre: str | None = None
     valor_mm: Decimal | None = None
     observacao: str | None = None
+
+    def __post_init__(self):
+        super().__post_init__()
+        validar_decimal_positivo_finito(self.valor_mm, "sobreposicao.valor_mm")
 
     def para_dict(self) -> dict:
         d = {"entre": self.entre,
@@ -979,6 +1129,7 @@ class CasoRealFabricacao:
     dúvidas perderia exatamente o que foi caro de obter — a visita à
     serralheria."""
     identificador: str | None = None
+    id_exemplar: str | None = None
     largura_total_mm: Decimal | None = None
     altura_total_mm: Decimal | None = None
     estado_dimensoes: EstadoConhecimento | None = None
@@ -1022,17 +1173,8 @@ class CasoRealFabricacao:
                 f"'{ESTADO_CASO_VALIDADO}' NÃO se escreve: é derivado de uma "
                 f"ValidacaoCasoReal aprovada.")
         for campo in ("largura_total_mm", "altura_total_mm"):
-            v = getattr(self, campo)
-            if v is None:
-                continue
-            if not isinstance(v, Decimal):
-                raise ReceitaErro(
-                    f"{self.identificador}: {campo} tem de ser Decimal, "
-                    f"recebido {type(v).__name__}")
-            if v <= 0:
-                raise ReceitaErro(
-                    f"{self.identificador}: {campo}={v} — medida real é "
-                    f"positiva; desconhecida é None")
+            validar_decimal_positivo_finito(getattr(self, campo),
+                                            f"{self.identificador}.{campo}")
         try:
             indexar_fontes(self.fontes)
         except ReceitaErro as e:
@@ -1066,6 +1208,8 @@ class CasoRealFabricacao:
         preenchidas = []
         if self.identificador:
             preenchidas.append("identificador")
+        if self.id_exemplar:
+            preenchidas.append("id_exemplar")
         if self.largura_total_mm is not None:
             preenchidas.append("largura_total_mm")
         if self.altura_total_mm is not None:
@@ -1102,6 +1246,7 @@ class CasoRealFabricacao:
     def para_dict(self) -> dict:
         return {
             "identificador": self.identificador,
+            "id_exemplar": self.id_exemplar,
             "largura_total_mm": (str(self.largura_total_mm)
                                  if self.largura_total_mm is not None else None),
             "altura_total_mm": (str(self.altura_total_mm)
@@ -1221,6 +1366,98 @@ def problemas_da_fonte_de_aprovacao(aprovacao: "AprovacaoEspecialista",
     return tuple(problemas)
 
 
+@dataclass(frozen=True)
+class ConferenciaCasoContraReceita:
+    """Registro de que a receita foi comparada, item a item, com uma janela real.
+
+    Sem isto, "caso validado" significa apenas que os dados do caso estão
+    íntegros — nada garante que a receita PRODUZ aquele caso. É a diferença
+    entre ter a lista de corte e ter conferido a lista contra o que o sistema
+    calcularia."""
+    caso_id: str
+    resultado: ResultadoAprovacao
+    responsavel: str
+    data: str
+    fonte_id: str
+    componentes_conferidos: tuple[str, ...] = ()
+    cortes_conferidos: bool = False
+    vidros_conferidos: bool = False
+    acessorios_conferidos: bool = False
+    divergencias: tuple[str, ...] = ()
+
+    def __post_init__(self):
+        object.__setattr__(self, "componentes_conferidos",
+                           como_tupla(self.componentes_conferidos,
+                                      "conferencia.componentes_conferidos"))
+        object.__setattr__(self, "divergencias",
+                           como_tupla(self.divergencias,
+                                      "conferencia.divergencias"))
+        if not isinstance(self.resultado, ResultadoAprovacao):
+            raise ReceitaErro(
+                f"conferência com resultado inválido: {self.resultado!r}")
+        for campo in ("caso_id", "responsavel", "data", "fonte_id"):
+            if not str(getattr(self, campo) or "").strip():
+                raise ReceitaErro(f"conferência sem {campo}")
+        motivo = data_invalida(self.data)
+        if motivo:
+            raise ReceitaErro(f"conferência: data {self.data!r} {motivo}")
+        if not _RE_ID_FONTE.fullmatch(self.fonte_id):
+            raise ReceitaErro(
+                f"conferência com fonte_id fora do formato: {self.fonte_id!r}")
+
+    @property
+    def aprovada(self) -> bool:
+        """Aprovada de verdade: sem divergências e com as três frentes vistas."""
+        return (self.resultado is ResultadoAprovacao.APROVADO
+                and not self.divergencias
+                and self.cortes_conferidos and self.vidros_conferidos
+                and self.acessorios_conferidos)
+
+    def para_dict(self) -> dict:
+        return {"caso_id": self.caso_id, "resultado": self.resultado.value,
+                "responsavel": self.responsavel, "data": self.data,
+                "fonte_id": self.fonte_id,
+                "componentes_conferidos": list(self.componentes_conferidos),
+                "cortes_conferidos": self.cortes_conferidos,
+                "vidros_conferidos": self.vidros_conferidos,
+                "acessorios_conferidos": self.acessorios_conferidos,
+                "divergencias": list(self.divergencias)}
+
+
+def assinatura_documental_caso(caso: CasoRealFabricacao) -> str:
+    """Impressão digital do EXEMPLAR — não das medidas.
+
+    Medidas diferentes não provam três janelas: a mesma lista de corte pode ser
+    reaproveitada com números trocados. A assinatura junta exemplar, medidas,
+    evidência primária, cortes e vidros; duas iguais são o mesmo documento."""
+    import hashlib
+    partes = [
+        f"exemplar={caso.id_exemplar or ''}",
+        f"dimensoes={caso.largura_total_mm}x{caso.altura_total_mm}",
+        "fontes=" + ";".join(sorted(
+            f"{f.id_fonte}|{f.tipo}|{f.referencia}|{f.sha256 or ''}"
+            for f in caso.fontes)),
+        "cortes=" + ";".join(sorted(
+            f"{c.componente_id or ''}|{c.perfil}|{c.comprimento_mm}|{c.quantidade}"
+            for c in caso.cortes)),
+        "vidros=" + ";".join(sorted(
+            f"{v.folha}|{v.largura_mm}|{v.altura_mm}|{v.espessura_mm}"
+            for v in caso.vidros)),
+    ]
+    return hashlib.sha256("\n".join(partes).encode("utf-8")).hexdigest()
+
+
+def fontes_primarias_do_caso(caso: CasoRealFabricacao) -> frozenset:
+    """Evidência que IDENTIFICA esta janela física.
+
+    Catálogo e biblioteca podem ser compartilhados entre casos — falam do
+    produto, não do exemplar. Medição, foto, croqui e lista de corte, não."""
+    primarias = {"medicao_fisica", "foto", "croqui", "lista_de_corte_real",
+                 "validacao_caso_real"}
+    return frozenset(f"{f.tipo}:{f.referencia}" for f in caso.fontes
+                     if f.tipo in primarias)
+
+
 # ---------------------------------------------------------------------------
 # Receita da tipologia
 # ---------------------------------------------------------------------------
@@ -1236,6 +1473,7 @@ class ReceitaTipologia:
     nome: str
     sistema: str
     quantidade_folhas: int
+    perfis_disponiveis: tuple[ReferenciaPerfilOficial, ...] = ()
     componentes: tuple[ComponenteReceita, ...] = ()
     regras_corte: tuple[RegraDimensional, ...] = ()
     regras_vidro: tuple[RegraDimensional, ...] = ()
@@ -1244,9 +1482,11 @@ class ReceitaTipologia:
     fontes: tuple[FonteEvidencia, ...] = ()
     estado: str = ESTADO_RECEITA_PRELIMINAR
     aprovacoes: tuple[AprovacaoEspecialista, ...] = ()
+    conferencias: tuple[ConferenciaCasoContraReceita, ...] = ()
     perguntas_abertas: tuple[str, ...] = ()
 
     COLECOES = {
+        "perfis_disponiveis": ReferenciaPerfilOficial,
         "componentes": ComponenteReceita,
         "regras_corte": RegraDimensional,
         "regras_vidro": RegraDimensional,
@@ -1254,6 +1494,7 @@ class ReceitaTipologia:
         "casos_reais": CasoRealFabricacao,
         "fontes": FonteEvidencia,
         "aprovacoes": AprovacaoEspecialista,
+        "conferencias": ConferenciaCasoContraReceita,
         "perguntas_abertas": str,
     }
 
@@ -1283,11 +1524,23 @@ class ReceitaTipologia:
     def preliminar(self) -> bool:
         return self.estado == ESTADO_RECEITA_PRELIMINAR
 
-    def componente(self, codigo_perfil: str) -> ComponenteReceita:
+    @property
+    def codigos_disponiveis(self) -> tuple[str, ...]:
+        return tuple(p.codigo_perfil for p in self.perfis_disponiveis)
+
+    def componentes_do_perfil(self, codigo_perfil: str) -> tuple[ComponenteReceita, ...]:
+        """Todas as ocorrências daquele perfil — podem ser zero, uma ou várias."""
+        return tuple(c for c in self.componentes
+                     if c.perfil.codigo_perfil == codigo_perfil)
+
+    def componente_por_id(self, identificador: str) -> ComponenteReceita | None:
         for c in self.componentes:
-            if c.perfil.codigo_perfil == codigo_perfil:
+            if c.identificador == identificador:
                 return c
-        raise ReceitaErro(f"{self.codigo}: sem componente para {codigo_perfil}")
+        return None
+
+    def conferencia_do_caso(self, caso_id: str):
+        return tuple(c for c in self.conferencias if c.caso_id == caso_id)
 
 
 def indice_fontes_receita(receita: ReceitaTipologia) -> dict:

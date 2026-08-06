@@ -49,10 +49,10 @@ def gerar_relatorio_prontidao(receita: ReceitaTipologia,
                               biblioteca) -> dict:
     """Documento único com geometrias, componentes, regras, casos e gates."""
     codigos = {g.codigo for g in biblioteca.geometrias}
-    disponiveis = sorted(c.perfil.id_geometria for c in receita.componentes
-                         if c.perfil.id_geometria in codigos)
-    ausentes = sorted(c.perfil.id_geometria for c in receita.componentes
-                      if c.perfil.id_geometria not in codigos)
+    disponiveis = sorted(p.id_geometria for p in receita.perfis_disponiveis
+                         if p.id_geometria in codigos)
+    ausentes = sorted(p.id_geometria for p in receita.perfis_disponiveis
+                      if p.id_geometria not in codigos)
 
     confirmados = [c.identificador for c in receita.componentes if c.confirmado]
     pendentes = [{"componente": c.identificador,
@@ -86,8 +86,12 @@ def gerar_relatorio_prontidao(receita: ReceitaTipologia,
                       "estado": receita.estado},
         "geometrias": {"disponiveis": disponiveis, "ausentes": ausentes,
                        "total_na_biblioteca": len(codigos)},
+        "perfis_disponiveis": [p.codigo_perfil
+                               for p in receita.perfis_disponiveis],
         "componentes": {"confirmados": confirmados, "pendentes": pendentes,
-                        "total": len(receita.componentes)},
+                        "total": len(receita.componentes),
+                        "_nota": ("ocorrências funcionais; um perfil pode "
+                                  "aparecer em zero, uma ou várias")},
         "regras": {"confirmadas": regras_confirmadas,
                    "pendentes": regras_pendentes,
                    "total": len(receita.regras_dimensionais)},
@@ -140,8 +144,12 @@ def relatorio_em_markdown(relatorio: dict) -> str:
                f"- ausentes: {len(g['ausentes'])}"]
 
     c = relatorio["componentes"]
-    linhas += ["", "## Componentes", "",
-               f"- confirmados: {len(c['confirmados'])} de {c['total']}",
+    linhas += ["", "## Perfis disponíveis (inventário)", "",
+               f"- {', '.join(relatorio['perfis_disponiveis']) or '—'}",
+               "", "## Ocorrências funcionais", "",
+               f"- registradas: {c['total']} "
+               f"(um perfil pode aparecer em várias)",
+               f"- confirmadas: {len(c['confirmados'])}",
                f"- pendentes: {len(c['pendentes'])}", ""]
     for p in c["pendentes"]:
         linhas.append(f"  - `{p['perfil']}` — {'; '.join(p['pendencias'])}")

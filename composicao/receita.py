@@ -14,10 +14,9 @@ erro só apareceria no alumínio cortado.
 from __future__ import annotations
 
 from .fontes import PERFIS_SUPREMA_E4C, referencia_oficial
-from .modelos import (ESTADO_RECEITA_PRELIMINAR, ITENS_DE_ACESSORIO,
-                      ComponenteReceita, EstadoConhecimento, FonteEvidencia,
-                      PapelComponente, ReceitaTipologia, RegraAcessorio,
-                      RegraDimensional)
+from .modelos import (ESTADO_RECEITA_PRELIMINAR, ITENS_DE_ACESSORIO_BASE,
+                      EstadoConhecimento, FonteEvidencia, ReceitaTipologia,
+                      RegraAcessorio, RegraDimensional)
 
 CODIGO_TIPOLOGIA = "SUPREMA_CORRER_2F"
 NOME_TIPOLOGIA = "Janela Suprema de correr com duas folhas"
@@ -63,6 +62,7 @@ ALVOS_DE_VIDRO = (
 PERGUNTAS_ABERTAS = (
     "Qual perfil cumpre cada papel na janela (marco, travessa, montante, "
     "encontro central, mão-de-amigo, baguete)?",
+    "Um mesmo perfil aparece em mais de uma posição? Em quais, e quantas vezes?",
     "Quantas peças de cada perfil entram numa janela de duas folhas?",
     "Qual a orientação de corte de cada peça (vertical, horizontal, 45°)?",
     "Qual o desconto de corte de cada perfil em relação à medida de vão?",
@@ -74,28 +74,6 @@ PERGUNTAS_ABERTAS = (
     "Qual folha corre no trilho interno e qual no externo, vista de que lado?",
     "Onde fica o fecho e qual o sentido de movimento de cada folha?",
 )
-
-
-def _componente_preliminar(codigo_perfil: str) -> ComponenteReceita:
-    """Referência oficial ao perfil, SEM papel atribuído.
-
-    O estado é `PENDENTE` e o papel é `NAO_CONFIRMADO` de propósito: a única
-    evidência que existe é a de que o perfil está na biblioteca."""
-    return ComponenteReceita(
-        identificador=f"{CODIGO_TIPOLOGIA}:{codigo_perfil}",
-        perfil=referencia_oficial(codigo_perfil),
-        papel=PapelComponente.NAO_CONFIRMADO,
-        quantidade=None,
-        orientacao=None,
-        folha=None,
-        posicao=None,
-        estado=EstadoConhecimento.PENDENTE,
-        fontes=(FONTE_PROMOCAO_E4C,),
-        observacoes=(
-            "perfil oficial disponível; papel funcional na tipologia ainda "
-            "não confirmado pelo especialista de domínio",
-        ),
-    )
 
 
 def _regra_pendente(alvo: str, descricao: str, grupo: str) -> RegraDimensional:
@@ -119,6 +97,7 @@ def _regra_acessorio_pendente(item: str) -> RegraAcessorio:
     return RegraAcessorio(
         identificador=f"{CODIGO_TIPOLOGIA}:acessorio:{item}",
         item=item,
+        descricao=f"Quantidade e posição de {item} na janela",
         quantidade_expressao=None,
         posicao=None,
         estado=EstadoConhecimento.PENDENTE,
@@ -130,7 +109,6 @@ def construir_receita_preliminar() -> ReceitaTipologia:
     """Receita preliminar — determinística e sem efeito colateral.
 
     Não lê disco, não altera nada, e duas chamadas produzem receitas iguais."""
-    componentes = tuple(_componente_preliminar(c) for c in PERFIS_SUPREMA_E4C)
     regras_corte = tuple(_regra_pendente(a, d, "corte") for a, d in ALVOS_DE_CORTE)
     regras_vidro = tuple(_regra_pendente(a, d, "vidro") for a, d in ALVOS_DE_VIDRO)
     return ReceitaTipologia(
@@ -138,11 +116,18 @@ def construir_receita_preliminar() -> ReceitaTipologia:
         nome=NOME_TIPOLOGIA,
         sistema=SISTEMA,
         quantidade_folhas=QUANTIDADE_FOLHAS,
-        componentes=componentes,
+        # INVENTÁRIO: os oito perfis estão disponíveis para a tipologia.
+        # OCORRÊNCIAS: vazias de propósito — quantas peças de cada perfil, em
+        # que papel e em que posição, é exatamente o que ainda não se sabe.
+        # Criar oito componentes aqui afirmaria "um perfil, um papel", e o
+        # SU-003 pode ser marco esquerdo E direito ao mesmo tempo.
+        perfis_disponiveis=tuple(referencia_oficial(c)
+                                 for c in PERFIS_SUPREMA_E4C),
+        componentes=(),
         regras_corte=regras_corte,
         regras_vidro=regras_vidro,
         regras_acessorios=tuple(_regra_acessorio_pendente(i)
-                                for i in ITENS_DE_ACESSORIO),
+                                for i in ITENS_DE_ACESSORIO_BASE),
         casos_reais=(),
         fontes=(FONTE_PROMOCAO_E4C,),
         estado=ESTADO_RECEITA_PRELIMINAR,
