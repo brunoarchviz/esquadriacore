@@ -24,7 +24,9 @@ from .modelos import (ALVOS_DIMENSIONAIS_BASE, ESCOPOS_DE_APROVACAO,
                       aprovacoes_por_escopo,
                       incompatibilidades_da_afirmacao,
                       incompatibilidades_das_fontes_embutidas,
-                      assinatura_documental_caso, fontes_primarias_do_caso,
+                      TIPOS_APTOS_PARA_CONFERIR_RECEITA,
+                      assinatura_documental_caso,
+                      fingerprints_primarios_do_caso,
                       indice_fontes_receita, problemas_da_fonte_de_aprovacao)
 
 from .fontes import PERFIS_SUPREMA_E4C as PERFIS_OFICIAIS
@@ -438,11 +440,32 @@ def validar_integridade_caso_real(caso: CasoRealFabricacao,
     if not caso.vista.vazia:
         r = r.somar(_validar_item_de_caso(caso.vista, f"{ident}.vista",
                                           (), indice))
+
+    # Perfil e APLICAÇÃO são coisas diferentes: o perfil só responde por
+    # `observacoes_gerais`; papel, quantidade e orientação vivem em cada
+    # ocorrência. Cobrar `perfil.funcao` era procurar campo que não existe mais.
+    ids_componente: dict = {}
     for perfil in caso.perfis:
-        if not perfil.vazio:
+        alvo_perfil = f"{ident}.perfis.{perfil.codigo_perfil}"
+        if perfil.observacoes_gerais and perfil.estado is not None:
+            r = r.somar(_validar_item_de_caso(perfil, alvo_perfil, (), indice))
+        for i, ap in enumerate(perfil.aplicacoes):
+            if ap.vazia:
+                continue
+            alvo = f"{alvo_perfil}.aplicacoes[{i}]"
+            if ap.id_componente:
+                if ap.id_componente in ids_componente:
+                    r = r.somar(_reprovar(
+                        alvo, "id_componente duplicado no caso",
+                        ap.id_componente,
+                        f"único (já usado em {ids_componente[ap.id_componente]})",
+                        ORIGEM_CASO))
+                ids_componente[ap.id_componente] = alvo
+            if ap.estado in ESTADOS_NAO_CALCULAVEIS or ap.estado is None:
+                continue          # aplicação parcial fica registrada, não prova
             r = r.somar(_validar_item_de_caso(
-                perfil, f"{ident}.perfis.{perfil.codigo_perfil}",
-                ("funcao", "quantidade", "orientacao"), indice))
+                ap, alvo, ("id_componente", "funcao", "quantidade",
+                           "orientacao"), indice))
 
     return r
 
@@ -520,7 +543,11 @@ def validar_caso_contra_receita(caso: CasoRealFabricacao,
 
 def conferencia_valida_do_caso(receita: ReceitaTipologia,
                                caso: CasoRealFabricacao) -> tuple[str, ...]:
-    """Problemas da conferência do caso contra a receita."""
+    """Problemas da conferência do caso contra o RESULTADO CALCULADO.
+
+    "Conferi cortes, vidros e acessórios" é afirmação sem objeto enquanto não
+    existe um resultado para comparar. A conferência aponta para um
+    `ResultadoCalculoCaso`; sem ele, não há o que conferir."""
     ident = caso.identificador or ""
     registros = receita.conferencia_do_caso(ident)
     if not registros:
@@ -538,14 +565,68 @@ def conferencia_valida_do_caso(receita: ReceitaTipologia,
             + ("" if conf.cortes_conferidos and conf.vidros_conferidos
                and conf.acessorios_conferidos
                else " — cortes, vidros e acessórios precisam ter sido vistos"))
+
+    # --- resultado calculado
+    resultado = receita.resultado_calculado(conf.resultado_calculo_id)
+    if resultado is None:
+        problemas.append(
+            f"{ident}: conferência cita resultado calculado inexistente "
+            f"({conf.resultado_calculo_id}) — não há o que conferir")
+    else:
+        if resultado.caso_id != ident:
+            problemas.append(
+                f"{ident}: resultado {resultado.id_resultado} pertence ao caso "
+                f"{resultado.caso_id}")
+        if resultado.receita_codigo != receita.codigo:
+            problemas.append(
+                f"{ident}: resultado {resultado.id_resultado} pertence à receita "
+                f"{resultado.receita_codigo}, não a {receita.codigo}")
+        if not resultado.tem_conteudo:
+            problemas.append(
+                f"{ident}: resultado {resultado.id_resultado} sem componentes, "
+                f"cortes ou vidros calculados")
+        else:
+            conferidos = list(conf.componentes_conferidos)
+            duplicados = sorted({c for c in conferidos
+                                 if conferidos.count(c) > 1})
+            if duplicados:
+                problemas.append(f"{ident}: componentes conferidos duplicados "
+                                 f"{duplicados}")
+            calculados = set(resultado.componentes)
+            faltando = sorted(calculados - set(conferidos))
+            if faltando:
+                problemas.append(f"{ident}: componentes calculados não "
+                                 f"conferidos {faltando}")
+            sobrando = sorted(set(conferidos) - calculados)
+            if sobrando:
+                problemas.append(f"{ident}: conferiu componentes que não estão "
+                                 f"no resultado {sobrando}")
+
+    # --- assinatura
     indice = indice_fontes_receita(receita)
     fonte = indice.get(conf.fonte_id) or caso.indice_fontes.get(conf.fonte_id)
     if fonte is None:
         problemas.append(f"{ident}: conferência cita fonte não registrada "
                          f"({conf.fonte_id})")
-    elif fonte.estado in ESTADOS_NAO_CALCULAVEIS:
+        return tuple(problemas)
+    if fonte.estado in ESTADOS_NAO_CALCULAVEIS:
         problemas.append(f"{ident}: fonte da conferência está "
                          f"{fonte.estado.value}")
+    if fonte.tipo not in TIPOS_APTOS_PARA_CONFERIR_RECEITA:
+        problemas.append(
+            f"{ident}: fonte {fonte.id_fonte} é {fonte.tipo!r} — conferência "
+            f"exige tipo em {sorted(TIPOS_APTOS_PARA_CONFERIR_RECEITA)}")
+    if not fonte.autoria_completa:
+        problemas.append(f"{ident}: fonte da conferência sem autoria completa")
+    else:
+        if fonte.responsavel.strip() != conf.responsavel.strip():
+            problemas.append(
+                f"{ident}: conferência assinada por {conf.responsavel!r} com "
+                f"evidência de {fonte.responsavel!r}")
+        if fonte.data != conf.data:
+            problemas.append(
+                f"{ident}: conferência datada em {conf.data} com evidência de "
+                f"{fonte.data}")
     return tuple(problemas)
 
 
@@ -573,24 +654,28 @@ def validar_independencia_dos_casos(casos) -> ResultadoValidacao:
         r = r.somar(_reprovar("-", "mesmo exemplar usado em mais de um caso",
                              repetidos, "um exemplar por caso", ORIGEM_CASO))
 
-    vistas_primarias: dict = {}
+    # Artefato primário é identificado pelo CONTEÚDO (sha256) quando há hash:
+    # a mesma lista de corte copiada para três pastas continua sendo um
+    # artefato só. Ter uma foto própria ao lado não torna a lista compartilhada
+    # em evidência independente.
+    dono_do_artefato: dict = {}
     for c in casos:
-        primarias = fontes_primarias_do_caso(c)
+        primarias = fingerprints_primarios_do_caso(c)
         if not primarias:
             r = r.somar(_reprovar(c.identificador or "-",
                                   "caso sem evidência primária própria", [],
                                   "medição, foto, croqui ou lista de corte",
                                   ORIGEM_CASO))
             continue
-        for outro, anteriores in vistas_primarias.items():
-            comuns = primarias & anteriores
-            if comuns and primarias == anteriores:
+        for fp in sorted(primarias):
+            anterior = dono_do_artefato.get(fp)
+            if anterior is not None and anterior != c.identificador:
                 r = r.somar(_reprovar(
                     c.identificador or "-",
-                    "mesma evidência primária de outro caso", sorted(comuns),
-                    f"evidência própria (compartilhada com {outro})",
+                    "artefato primário reutilizado entre casos", fp,
+                    f"evidência exclusiva (já usada por {anterior})",
                     ORIGEM_CASO))
-        vistas_primarias[c.identificador] = primarias
+            dono_do_artefato[fp] = c.identificador
 
     assinaturas: dict = {}
     for c in casos:
@@ -608,6 +693,16 @@ def validar_independencia_dos_casos(casos) -> ResultadoValidacao:
 # Artefatos de evidência
 # ---------------------------------------------------------------------------
 
+def _dentro_da_raiz(caminho, raiz) -> bool:
+    """Contenção por componentes de caminho, não por prefixo de texto."""
+    from pathlib import Path as _P
+    try:
+        _P(caminho).relative_to(_P(raiz))
+        return True
+    except ValueError:
+        return False
+
+
 def validar_artefato_de_evidencia(fonte, raiz_repositorio) -> ResultadoValidacao:
     """A evidência local existe e continua sendo a que foi registrada.
 
@@ -622,10 +717,13 @@ def validar_artefato_de_evidencia(fonte, raiz_repositorio) -> ResultadoValidacao
     raiz = _P(raiz_repositorio).resolve()
     alvo = (raiz / fonte.referencia)
     try:
-        resolvido = alvo.resolve()
+        resolvido = alvo.resolve()          # resolve symlinks
     except OSError:
         resolvido = alvo
-    if not str(resolvido).startswith(str(raiz)):
+    # `startswith` aceitaria `/tmp/repo-fora` como se estivesse em `/tmp/repo`,
+    # e um symlink apontando para fora passaria. `relative_to` compara
+    # componentes de caminho, não prefixo de texto.
+    if not _dentro_da_raiz(resolvido, raiz):
         return _reprovar(fonte.id_fonte, "artefato resolve fora da raiz",
                          fonte.referencia, f"dentro de {raiz}", ORIGEM_ARTEFATO)
     if not resolvido.exists():
@@ -674,7 +772,8 @@ def validar_artefatos_da_receita(receita: ReceitaTipologia,
 
 
 def validar_prontidao_para_visualizacao(receita: ReceitaTipologia,
-                                        biblioteca) -> ResultadoValidacao:
+                                        biblioteca,
+                                        raiz_repositorio=None) -> ResultadoValidacao:
     """Visualização PRELIMINAR: mostrar os perfis que existem, sem montá-los.
 
     Aceita papéis pendentes — desde que a receita se declare preliminar. O que
@@ -696,10 +795,15 @@ def validar_prontidao_para_visualizacao(receita: ReceitaTipologia,
     return r.somar(ResultadoValidacao.aprovado(avisos))
 
 
-def validar_prontidao_para_calculo(receita: ReceitaTipologia,
-                                   biblioteca) -> ResultadoValidacao:
-    """Cálculo oficial: tudo confirmado, sem exceção."""
+def validar_prontidao_para_calculo(receita: ReceitaTipologia, biblioteca,
+                                   raiz_repositorio=None) -> ResultadoValidacao:
+    """Cálculo oficial: tudo confirmado, sem exceção.
+
+    Inclui a integridade dos ARTEFATOS: uma evidência que sumiu ou foi trocada
+    depois do registro não sustenta mais o que sustentava."""
     r = validar_referencias_geometricas(receita, biblioteca)
+    if raiz_repositorio is not None:
+        r = r.somar(validar_artefatos_da_receita(receita, raiz_repositorio))
     r = r.somar(validar_cobertura_estrutural_receita(receita))
     r = r.somar(validar_fontes(receita))
     r = r.somar(validar_componentes_confirmados(receita))
@@ -712,17 +816,25 @@ def validar_prontidao_para_calculo(receita: ReceitaTipologia,
     return r
 
 
-def validar_prontidao_para_producao(receita: ReceitaTipologia,
-                                    biblioteca) -> ResultadoValidacao:
+def validar_prontidao_para_producao(receita: ReceitaTipologia, biblioteca,
+                                    raiz_repositorio=None) -> ResultadoValidacao:
     """Produção: cálculo válido E conferido contra janelas reais.
 
     Fórmula que fecha na aritmética e nunca foi conferida contra uma janela
     fabricada não autoriza corte de alumínio."""
-    r = validar_prontidao_para_calculo(receita, biblioteca)
+    r = validar_prontidao_para_calculo(receita, biblioteca, raiz_repositorio)
     r = r.somar(validar_casos_reais_independentes(receita))
     r = r.somar(validar_independencia_dos_casos(receita.casos_reais))
     r = r.somar(validar_aprovacoes(receita))
+    if not receita.resultados_calculados:
+        r = r.somar(_reprovar(
+            receita.codigo, "nenhum resultado calculado para conferir", 0,
+            "um ResultadoCalculoCaso por caso — produção compara o cálculo "
+            "com a janela real, e não existe cálculo nesta sprint",
+            ORIGEM_RECEITA))
     for caso in receita.casos_reais:
+        if raiz_repositorio is not None:
+            r = r.somar(validar_artefatos_do_caso(caso, raiz_repositorio))
         r = r.somar(validar_caso_contra_receita(caso, receita))
         for motivo in conferencia_valida_do_caso(receita, caso):
             r = r.somar(_reprovar(caso.identificador or "-",

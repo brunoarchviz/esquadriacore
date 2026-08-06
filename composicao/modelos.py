@@ -96,7 +96,7 @@ TIPOS_DE_FONTE = frozenset({
     "catalogo", "medicao_fisica", "especialista_de_dominio",
     "lista_de_corte_real", "software_externo", "foto", "croqui",
     "tabela_de_fabricacao", "manifesto_promocao", "biblioteca_oficial",
-    "validacao_caso_real",
+    "validacao_caso_real", "conferencia_caso_receita",
 })
 
 # Como a `referencia` da fonte deve ser lida. A regra de caminho relativo vale
@@ -153,7 +153,8 @@ TIPOS_QUE_SUSTENTAM = {
         "especialista_de_dominio"}),
     EstadoConhecimento.CONFIRMADO_CASO_REAL: frozenset({
         "medicao_fisica", "foto", "croqui", "lista_de_corte_real",
-        "software_externo", "tabela_de_fabricacao", "validacao_caso_real"}),
+        "software_externo", "tabela_de_fabricacao", "validacao_caso_real",
+        "conferencia_caso_receita"}),
     EstadoConhecimento.DERIVADO_DE_REGRA_APROVADA: frozenset({
         "especialista_de_dominio", "tabela_de_fabricacao", "software_externo"}),
 }
@@ -165,6 +166,15 @@ TIPOS_QUE_SUSTENTAM = {
 TIPOS_APTOS_PARA_VALIDAR_CASO = frozenset({
     "validacao_caso_real", "especialista_de_dominio", "lista_de_corte_real",
     "tabela_de_fabricacao",
+})
+
+# Quem pode assinar a CONFERÊNCIA do resultado calculado contra o caso real.
+# Uma foto mostra a janela; ela não registra que alguém comparou número a
+# número. Catálogo, manifesto e biblioteca falam do produto, não desta
+# comparação.
+TIPOS_APTOS_PARA_CONFERIR_RECEITA = frozenset({
+    "conferencia_caso_receita", "especialista_de_dominio",
+    "validacao_caso_real",
 })
 
 
@@ -707,6 +717,7 @@ class RegraDimensional:
                 "descricao": self.descricao, "alvo": self.alvo,
                 "expressao": self.expressao, "variaveis": list(self.variaveis),
                 "unidade": self.unidade, "estado": self.estado.value,
+                "origem_do_alvo": self.origem_do_alvo,
                 "fontes": [f.para_dict() for f in self.fontes]}
 
 
@@ -772,6 +783,8 @@ class RegraAcessorio:
         return {"identificador": self.identificador, "item": self.item,
                 "quantidade_expressao": self.quantidade_expressao,
                 "posicao": self.posicao, "estado": self.estado.value,
+                "descricao": self.descricao,
+                "origem_do_item": self.origem_do_item,
                 "fontes": [f.para_dict() for f in self.fontes]}
 
 
@@ -1367,6 +1380,48 @@ def problemas_da_fonte_de_aprovacao(aprovacao: "AprovacaoEspecialista",
 
 
 @dataclass(frozen=True)
+class ResultadoCalculoCaso:
+    """A saída que o motor de cálculo produzirá — quando existir.
+
+    O contrato existe agora para que a conferência possa apontar para ELE. Sem
+    isso, "conferi cortes, vidros e acessórios" é uma afirmação sem objeto:
+    conferiu contra o quê? Nesta sprint nenhuma receita tem resultado, e é por
+    isso que o gate de produção continua fechado."""
+    id_resultado: str
+    caso_id: str
+    receita_codigo: str
+    gerado_por: str
+    componentes: tuple = ()
+    cortes: tuple = ()
+    vidros: tuple = ()
+    acessorios: tuple = ()
+    versao_motor: str | None = None
+
+    def __post_init__(self):
+        for campo in ("componentes", "cortes", "vidros", "acessorios"):
+            object.__setattr__(self, campo,
+                               como_tupla(getattr(self, campo),
+                                          f"resultado.{campo}"))
+        for campo in ("id_resultado", "caso_id", "receita_codigo", "gerado_por"):
+            if not str(getattr(self, campo) or "").strip():
+                raise ReceitaErro(f"resultado de cálculo sem {campo}")
+
+    @property
+    def tem_conteudo(self) -> bool:
+        """Resultado vazio não prova cálculo nenhum."""
+        return bool(self.componentes and self.cortes and self.vidros)
+
+    def para_dict(self) -> dict:
+        return {"id_resultado": self.id_resultado, "caso_id": self.caso_id,
+                "receita_codigo": self.receita_codigo,
+                "gerado_por": self.gerado_por,
+                "versao_motor": self.versao_motor,
+                "componentes": list(self.componentes),
+                "cortes": list(self.cortes), "vidros": list(self.vidros),
+                "acessorios": list(self.acessorios)}
+
+
+@dataclass(frozen=True)
 class ConferenciaCasoContraReceita:
     """Registro de que a receita foi comparada, item a item, com uma janela real.
 
@@ -1379,6 +1434,7 @@ class ConferenciaCasoContraReceita:
     responsavel: str
     data: str
     fonte_id: str
+    resultado_calculo_id: str = ""
     componentes_conferidos: tuple[str, ...] = ()
     cortes_conferidos: bool = False
     vidros_conferidos: bool = False
@@ -1395,9 +1451,13 @@ class ConferenciaCasoContraReceita:
         if not isinstance(self.resultado, ResultadoAprovacao):
             raise ReceitaErro(
                 f"conferência com resultado inválido: {self.resultado!r}")
-        for campo in ("caso_id", "responsavel", "data", "fonte_id"):
+        for campo in ("caso_id", "responsavel", "data", "fonte_id",
+                      "resultado_calculo_id"):
             if not str(getattr(self, campo) or "").strip():
-                raise ReceitaErro(f"conferência sem {campo}")
+                raise ReceitaErro(
+                    f"conferência sem {campo}"
+                    + (" — conferir exige um resultado calculado para comparar"
+                       if campo == "resultado_calculo_id" else ""))
         motivo = data_invalida(self.data)
         if motivo:
             raise ReceitaErro(f"conferência: data {self.data!r} {motivo}")
@@ -1417,6 +1477,7 @@ class ConferenciaCasoContraReceita:
         return {"caso_id": self.caso_id, "resultado": self.resultado.value,
                 "responsavel": self.responsavel, "data": self.data,
                 "fonte_id": self.fonte_id,
+                "resultado_calculo_id": self.resultado_calculo_id,
                 "componentes_conferidos": list(self.componentes_conferidos),
                 "cortes_conferidos": self.cortes_conferidos,
                 "vidros_conferidos": self.vidros_conferidos,
@@ -1447,15 +1508,39 @@ def assinatura_documental_caso(caso: CasoRealFabricacao) -> str:
     return hashlib.sha256("\n".join(partes).encode("utf-8")).hexdigest()
 
 
-def fontes_primarias_do_caso(caso: CasoRealFabricacao) -> frozenset:
+TIPOS_DE_EVIDENCIA_PRIMARIA = frozenset({
+    "medicao_fisica", "foto", "croqui", "lista_de_corte_real",
+    "validacao_caso_real", "conferencia_caso_receita",
+})
+
+
+def fingerprint_fonte_primaria(fonte: FonteEvidencia) -> str:
+    """Identidade do ARTEFATO, não do caminho.
+
+    O mesmo arquivo copiado para três pastas continua sendo um artefato só: por
+    isso o hash manda quando existe. Sem ele, três cópias do mesmo croqui
+    passariam como três evidências independentes."""
+    if fonte.sha256:
+        return f"sha256:{fonte.sha256}"
+    if fonte.forma_referencia == FORMA_URL:
+        return f"url:{fonte.referencia.strip().rstrip('/').lower()}"
+    if fonte.forma_referencia == FORMA_IDENTIFICADOR_EXTERNO:
+        return f"id:{fonte.referencia.strip()}"
+    return f"arquivo:{fonte.referencia.strip()}"
+
+
+def fingerprints_primarios_do_caso(caso: CasoRealFabricacao) -> frozenset:
     """Evidência que IDENTIFICA esta janela física.
 
-    Catálogo e biblioteca podem ser compartilhados entre casos — falam do
-    produto, não do exemplar. Medição, foto, croqui e lista de corte, não."""
-    primarias = {"medicao_fisica", "foto", "croqui", "lista_de_corte_real",
-                 "validacao_caso_real"}
-    return frozenset(f"{f.tipo}:{f.referencia}" for f in caso.fontes
-                     if f.tipo in primarias)
+    Catálogo, manifesto e biblioteca podem ser compartilhados entre casos —
+    falam do produto, não do exemplar."""
+    return frozenset(fingerprint_fonte_primaria(f) for f in caso.fontes
+                     if f.tipo in TIPOS_DE_EVIDENCIA_PRIMARIA)
+
+
+def fontes_primarias_do_caso(caso: CasoRealFabricacao) -> frozenset:
+    """Compatibilidade: fingerprints da evidência primária."""
+    return fingerprints_primarios_do_caso(caso)
 
 
 # ---------------------------------------------------------------------------
@@ -1482,6 +1567,7 @@ class ReceitaTipologia:
     fontes: tuple[FonteEvidencia, ...] = ()
     estado: str = ESTADO_RECEITA_PRELIMINAR
     aprovacoes: tuple[AprovacaoEspecialista, ...] = ()
+    resultados_calculados: tuple[ResultadoCalculoCaso, ...] = ()
     conferencias: tuple[ConferenciaCasoContraReceita, ...] = ()
     perguntas_abertas: tuple[str, ...] = ()
 
@@ -1494,6 +1580,7 @@ class ReceitaTipologia:
         "casos_reais": CasoRealFabricacao,
         "fontes": FonteEvidencia,
         "aprovacoes": AprovacaoEspecialista,
+        "resultados_calculados": ResultadoCalculoCaso,
         "conferencias": ConferenciaCasoContraReceita,
         "perguntas_abertas": str,
     }
@@ -1541,6 +1628,12 @@ class ReceitaTipologia:
 
     def conferencia_do_caso(self, caso_id: str):
         return tuple(c for c in self.conferencias if c.caso_id == caso_id)
+
+    def resultado_calculado(self, id_resultado: str):
+        for r in self.resultados_calculados:
+            if r.id_resultado == id_resultado:
+                return r
+        return None
 
 
 def indice_fontes_receita(receita: ReceitaTipologia) -> dict:
