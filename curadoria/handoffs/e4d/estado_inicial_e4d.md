@@ -288,9 +288,52 @@ apontar. **Não há motor de cálculo nesta sprint**, e a receita tem
 `resultados_calculados = ()` — por isso o gate de produção continua fechado,
 mesmo com três casos, duas aprovações e três conferências documentadas.
 
-A conferência é assinada por fonte apta (`conferencia_caso_receita`,
-`especialista_de_dominio` ou `validacao_caso_real`), com responsável e data
-coerentes com a evidência. `componentes_conferidos` não é decorativo: quando há
+`ResultadoCalculoCaso.origem` separa `MOTOR_CALCULO` de `FIXTURE_TESTE`.
+Fixture **nunca** abre produção: sem isso, uma tupla montada num teste abriria
+o mesmo portão que a saída de um motor real — e o portão libera corte de
+alumínio. Resultado de motor exige `versao_motor`, senão o cálculo não é
+reproduzível.
+
+A saída é tipada: `CorteCalculado`, `VidroCalculado` e `AcessorioCalculado`,
+com os mesmos invariantes numéricos do resto (Decimal positivo e finito, int
+positivo e não `bool`). Uma tupla de strings deixou de ser aceita como lista de
+fabricação.
+
+`validar_resultado_contra_caso()` compara **estruturalmente** o cálculo com a
+janela real — cortes, vidros e acessórios, campo a campo. A comparação é
+**exata**: não existe tolerância aprovada, e inventar uma esconderia justamente
+a divergência que o caso real serve para revelar. Divergência objetiva fecha a
+produção mesmo com a conferência marcada `APROVADO`: os booleanos registram que
+alguém olhou, não que os números batem.
+
+`validar_resultado_calculado()` exige componentes, cortes, vidros — e
+acessórios quando a receita tem acessórios calculáveis. `id_resultado` é único;
+vários resultados do mesmo caso podem coexistir com IDs diferentes, e a
+conferência resolve exatamente o que cita.
+
+**Invariante durável da E.4D:**
+
+```text
+visualização preliminar   pode abrir
+cálculo                   fechado na receita oficial
+produção                  fechado em QUALQUER fixture
+```
+
+A abertura real do gate de produção pertence à sprint que integrar o motor de
+cálculo e reproduzir os três casos reais.
+
+A conferência é assinada por fonte apta — e o par (tipo, estado) tem de ser
+coerente:
+
+```text
+conferencia_caso_receita  →  CONFIRMADO_CASO_REAL
+validacao_caso_real       →  CONFIRMADO_CASO_REAL
+especialista_de_dominio   →  CONFIRMADO_ESPECIALISTA
+```
+
+Um `especialista_de_dominio` marcado como `CONFIRMADO_CASO_REAL` é procedência
+trocada, e "estado não pendente" não basta. Responsável e data também têm de
+bater com a evidência. `componentes_conferidos` não é decorativo: quando há
 resultado, ele tem de cobrir exatamente os componentes calculados — sem
 duplicata, sem omissão e sem componente que não está no resultado.
 
@@ -310,10 +353,14 @@ produto, não do exemplar.
 
 ### Integridade dos artefatos entra nos gates
 
-`validar_prontidao_para_calculo` e `..._para_producao` aceitam
+`validar_prontidao_para_calculo` e `..._para_producao` recebem
 `raiz_repositorio` e conferem a integridade de toda evidência local
 confirmada. Evidência que sumiu ou foi trocada depois do registro não sustenta
 mais o que sustentava — e isso bloqueia o gate, não é aviso.
+
+**Sem raiz, a verificação não é pulada: o gate fecha.** `raiz=None` desligava a
+checagem em silêncio, e um gate que ignora a evidência ausente é pior do que
+não ter checagem — dá a impressão de que alguém conferiu.
 
 A CLI passa a raiz **real** do repositório, não o diretório de trabalho.
 

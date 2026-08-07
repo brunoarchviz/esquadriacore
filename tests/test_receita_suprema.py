@@ -62,11 +62,14 @@ def _fonte(estado=EstadoConhecimento.CONFIRMADO_ESPECIALISTA, responsavel="Bruno
                     if estado is EstadoConhecimento.CONFIRMADO_ESPECIALISTA
                     else "lista_de_corte_real")
     id_fonte = id_fonte or f"FONTE-TESTE-{estado.value.replace('_', '-')}"
+    # `identificador_externo`: a fonte de teste é um marcador, não um arquivo.
+    # Declará-la como arquivo faria o gate cobrar um artefato que não existe.
     return FonteEvidencia(
         id_fonte=id_fonte, tipo=tipo,
-        referencia="curadoria/handoffs/e4d/estado_inicial_e4d.md",
+        referencia=f"DECISAO-TESTE-{estado.value}",
         descricao="decisão registrada em teste", estado=estado,
-        responsavel=responsavel, data=data)
+        responsavel=responsavel, data=data,
+        forma_referencia="identificador_externo")
 
 
 def _regra_acessorio_confirmada(item="roldanas"):
@@ -80,16 +83,18 @@ def _regra_acessorio_confirmada(item="roldanas"):
 # Fonte de especialista com autoria completa, datada no dia da aprovação.
 FONTE_APROVACAO = FonteEvidencia(
     id_fonte="FONTE-APROVACAO", tipo="especialista_de_dominio",
-    referencia="curadoria/handoffs/e4d/estado_inicial_e4d.md",
+    referencia="ARBITRAGEM-FINAL-TESTE",
     descricao="arbitragem final", estado=EstadoConhecimento.CONFIRMADO_ESPECIALISTA,
-    responsavel="Bruno", data="2026-08-10")
+    responsavel="Bruno", data="2026-08-10",
+    forma_referencia="identificador_externo")
 
 # Evidência do caso real: lista de corte de verdade, não parecer.
 FONTE_CASO = FonteEvidencia(
     id_fonte="FONTE-CASO-01", tipo="lista_de_corte_real",
-    referencia="curadoria/campo/lista_a.pdf", descricao="lista de corte real",
+    referencia="LISTA-CASO-01", descricao="lista de corte real",
     estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
-    responsavel="Bruno", data="2026-08-10")
+    responsavel="Bruno", data="2026-08-10",
+    forma_referencia="identificador_externo")
 
 
 def _aprovacao(escopo, resultado=ResultadoAprovacao.APROVADO,
@@ -127,10 +132,10 @@ def _fonte_do_caso(id_fonte, ident):
     """Evidência PRIMÁRIA — própria de cada exemplar."""
     return FonteEvidencia(
         id_fonte=id_fonte, tipo="lista_de_corte_real",
-        referencia=f"curadoria/campo/{ident.lower()}/lista.pdf",
-        descricao="lista de corte real",
+        referencia=f"LISTA-{ident}", descricao="lista de corte real",
         estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
-        responsavel="Bruno", data="2026-08-10")
+        responsavel="Bruno", data="2026-08-10",
+        forma_referencia="identificador_externo")
 
 
 def _caso_validado(ident, largura, altura, validacao=None,
@@ -174,10 +179,11 @@ _TRES_CASOS_HOMOLOGAVEIS = None      # preenchido após os helpers
 
 FONTE_CONFERENCIA = FonteEvidencia(
     id_fonte="FONTE-CONFERENCIA", tipo="conferencia_caso_receita",
-    referencia="curadoria/campo/conferencia.md",
+    referencia="CONFERENCIA-TESTE",
     descricao="comparação do resultado calculado com a janela real",
     estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
-    responsavel="Bruno", data="2026-08-10")
+    responsavel="Bruno", data="2026-08-10",
+    forma_referencia="identificador_externo")
 
 
 def _conferencia(caso_id, id_fonte="FONTE-CONFERENCIA",
@@ -194,18 +200,32 @@ def _conferencia(caso_id, id_fonte="FONTE-CONFERENCIA",
         acessorios_conferidos=True, divergencias=divergencias)
 
 
-def _resultado_calculado(caso_id, receita_codigo="TESTE"):
-    """Resultado com CONTEÚDO de teste — nenhum número real de fabricação.
+def _resultado_calculado(caso_id, receita_codigo="TESTE", **kw):
+    """Resultado de FIXTURE, espelhando o caso homologável.
 
-    Existe só para provar o encadeamento conferência → resultado; a E.4D não
-    tem motor de cálculo, e a receita oficial continua com zero resultados."""
-    from composicao.modelos import ResultadoCalculoCaso
-    return ResultadoCalculoCaso(
+    Os números são artificiais e servem só para exercitar estrutura e
+    comparação. `origem=FIXTURE_TESTE` garante que ele nunca abre produção — a
+    E.4D não tem motor de cálculo."""
+    from composicao.modelos import (AcessorioCalculado, CorteCalculado,
+                                    ITENS_DE_ACESSORIO_BASE,
+                                    OrigemResultadoCalculo,
+                                    ResultadoCalculoCaso, VidroCalculado)
+    base = dict(
         id_resultado=f"RES-{caso_id}", caso_id=caso_id,
         receita_codigo=receita_codigo, gerado_por="fixture de teste",
+        origem=OrigemResultadoCalculo.FIXTURE_TESTE,
         componentes=tuple(f"TESTE:{p}" for p in PERFIS),
-        cortes=("PLACEHOLDER_DE_TESTE",), vidros=("PLACEHOLDER_DE_TESTE",),
-        acessorios=("PLACEHOLDER_DE_TESTE",))
+        cortes=tuple(CorteCalculado(componente_id=f"TESTE:{p}", perfil=p,
+                                    comprimento_mm=Decimal("1000"),
+                                    quantidade=1) for p in PERFIS),
+        vidros=(VidroCalculado(folha="1", largura_mm=Decimal("500"),
+                               altura_mm=Decimal("900"),
+                               espessura_mm=Decimal("6")),),
+        acessorios=tuple(AcessorioCalculado(item=i, quantidade=2,
+                                            posicao="janela")
+                         for i in ITENS_DE_ACESSORIO_BASE))
+    base.update(kw)
+    return ResultadoCalculoCaso(**base)
 
 
 def _componente_confirmado(codigo="SU-001", **kw):
@@ -2025,8 +2045,9 @@ def test_modelo_vazio_e_gates_permanecem(receita, biblioteca, ficha_em_branco):
 
 FONTE_CATALOGO = FonteEvidencia(
     id_fonte="FONTE-CATALOGO", tipo="catalogo",
-    referencia="dados_exemplo/catalago-alcoa.pdf", descricao="catálogo",
-    estado=EstadoConhecimento.CONFIRMADO_CATALOGO)
+    referencia="CATALOGO-ALCOA-TESTE", descricao="catálogo",
+    estado=EstadoConhecimento.CONFIRMADO_CATALOGO,
+    forma_referencia="identificador_externo")
 
 
 # ---- compatibilidade aplicada à receita inteira ----------------------------
@@ -3042,10 +3063,12 @@ def test_resultado_de_outra_receita_reprova(biblioteca):
 def test_resultado_vazio_nao_conta_como_calculo(biblioteca):
     from composicao.modelos import ResultadoCalculoCaso
     from dataclasses import replace
+    from composicao.modelos import OrigemResultadoCalculo
     vazio = ResultadoCalculoCaso(id_resultado="RES-CASO_A_PEQUENO",
                                  caso_id="CASO_A_PEQUENO",
                                  receita_codigo="TESTE",
-                                 gerado_por="fixture")
+                                 gerado_por="fixture",
+                                 origem=OrigemResultadoCalculo.FIXTURE_TESTE)
     assert not vazio.tem_conteudo
     receita = replace(_receita_com_resultados(),
                       resultados_calculados=(vazio,)
@@ -3055,13 +3078,18 @@ def test_resultado_vazio_nao_conta_como_calculo(biblioteca):
     assert any("sem componentes" in str(f["encontrado"]) for f in r.falhas)
 
 
-def test_com_resultado_completo_a_producao_abre(biblioteca):
-    """Fecha o contrato: com tudo — inclusive resultado calculado — o gate
-    abre. É a prova de que o bloqueio anterior era pela ausência do cálculo, e
-    não por um `False` embutido."""
-    r = validar.validar_prontidao_para_producao(_receita_com_resultados(),
-                                                biblioteca)
-    assert r.ok, r.descrever()
+def test_resultado_de_fixture_nunca_abre_producao(biblioteca):
+    """O invariante da sprint: NENHUMA fixture abre produção.
+
+    Um resultado montado em teste tem `origem=FIXTURE_TESTE` e não libera
+    fabricação. A abertura real do gate pertence à sprint que integrar o motor
+    de cálculo e reproduzir os três casos reais."""
+    receita = _receita_com_resultados()
+    assert all(not x.de_motor for x in receita.resultados_calculados)
+    r = validar.validar_prontidao_para_producao(receita, biblioteca,
+                                                fontes.RAIZ)
+    assert not r.ok
+    assert any("FIXTURE_TESTE" in str(f["encontrado"]) for f in r.falhas)
 
 
 # ---- conferência: cobertura de componentes ---------------------------------
@@ -3476,3 +3504,356 @@ def test_receita_preliminar_continua_sem_valor_tecnico(receita):
         assert regra.expressao is None and regra.variaveis == ()
     for a in receita.regras_acessorios:
         assert a.quantidade_expressao is None and a.posicao is None
+
+
+# ===========================================================================
+# Gate futuro de produção — a E.4D prepara a fronteira, não a atravessa
+# ===========================================================================
+
+def _cortes_calculados_do(caso):
+    from composicao.modelos import CorteCalculado
+    return tuple(CorteCalculado(componente_id=c.componente_id,
+                                perfil=c.perfil,
+                                comprimento_mm=c.comprimento_mm,
+                                quantidade=c.quantidade)
+                 for c in caso.cortes)
+
+
+# ---- origem do resultado ---------------------------------------------------
+
+def test_placeholder_de_texto_nao_e_saida_de_calculo():
+    """`cortes=("PLACEHOLDER_DE_TESTE",)` deixou de ser aceito: uma tupla de
+    strings não é lista de fabricação."""
+    from composicao.modelos import (OrigemResultadoCalculo,
+                                    ResultadoCalculoCaso)
+    with pytest.raises(ReceitaErro, match="tipo inesperado"):
+        ResultadoCalculoCaso(
+            id_resultado="RES-X", caso_id="CASO_A_PEQUENO",
+            receita_codigo="TESTE", gerado_por="teste",
+            origem=OrigemResultadoCalculo.FIXTURE_TESTE,
+            componentes=("TESTE:SU-001",),
+            cortes=("PLACEHOLDER_DE_TESTE",))
+
+
+def test_resultado_de_motor_exige_versao_do_motor():
+    from composicao.modelos import (OrigemResultadoCalculo,
+                                    ResultadoCalculoCaso)
+    with pytest.raises(ReceitaErro, match="versao_motor"):
+        ResultadoCalculoCaso(
+            id_resultado="RES-X", caso_id="CASO_A_PEQUENO",
+            receita_codigo="TESTE", gerado_por="motor",
+            origem=OrigemResultadoCalculo.MOTOR_CALCULO)
+
+
+def test_origem_invalida_reprova():
+    from composicao.modelos import ResultadoCalculoCaso
+    with pytest.raises(ReceitaErro, match="origem inválida"):
+        ResultadoCalculoCaso(id_resultado="RES-X", caso_id="C",
+                             receita_codigo="TESTE", gerado_por="x",
+                             origem="MOTOR_CALCULO")
+
+
+def test_receita_oficial_da_e4d_continua_sem_resultados(receita, biblioteca):
+    assert receita.resultados_calculados == ()
+    r = validar.validar_prontidao_para_producao(receita, biblioteca,
+                                                fontes.RAIZ)
+    assert not r.ok
+
+
+def test_e4d_permanece_bloqueada_para_producao_em_qualquer_fixture(biblioteca):
+    """O invariante durável da sprint."""
+    for receita in (_receita_completa(), _receita_homologavel(),
+                    _receita_com_resultados()):
+        r = validar.validar_prontidao_para_producao(receita, biblioteca,
+                                                    fontes.RAIZ)
+        assert not r.ok, receita.codigo
+
+
+def test_receita_preliminar_continua_bloqueada_para_calculo(receita,
+                                                            biblioteca):
+    r = validar.validar_prontidao_para_calculo(receita, biblioteca,
+                                               fontes.RAIZ)
+    assert not r.ok
+
+
+# ---- DTOs tipados ----------------------------------------------------------
+
+@pytest.mark.parametrize("kw", [
+    {"comprimento_mm": Decimal("0")}, {"comprimento_mm": Decimal("NaN")},
+    {"comprimento_mm": 1000}, {"quantidade": 0}, {"quantidade": True},
+    {"componente_id": ""}, {"perfil": ""},
+])
+def test_corte_calculado_invalido_reprova(kw):
+    from composicao.modelos import CorteCalculado
+    base = dict(componente_id="TESTE:SU-001", perfil="SU-001",
+                comprimento_mm=Decimal("1000"), quantidade=1)
+    base.update(kw)
+    with pytest.raises(ReceitaErro):
+        CorteCalculado(**base)
+
+
+@pytest.mark.parametrize("kw", [
+    {"largura_mm": Decimal("-1")}, {"espessura_mm": Decimal("Infinity")},
+    {"folha": ""}, {"altura_mm": 900},
+])
+def test_vidro_calculado_invalido_reprova(kw):
+    from composicao.modelos import VidroCalculado
+    base = dict(folha="1", largura_mm=Decimal("500"),
+                altura_mm=Decimal("900"), espessura_mm=Decimal("6"))
+    base.update(kw)
+    with pytest.raises(ReceitaErro):
+        VidroCalculado(**base)
+
+
+@pytest.mark.parametrize("kw", [
+    {"quantidade": 0}, {"quantidade": True}, {"item": ""}, {"posicao": ""},
+])
+def test_acessorio_calculado_invalido_reprova(kw):
+    from composicao.modelos import AcessorioCalculado
+    base = dict(item="roldanas", quantidade=2, posicao="base")
+    base.update(kw)
+    with pytest.raises(ReceitaErro):
+        AcessorioCalculado(**base)
+
+
+def test_resultado_serializa_os_dtos():
+    d = _resultado_calculado("CASO_A_PEQUENO").para_dict()
+    assert d["origem"] == "FIXTURE_TESTE"
+    assert d["cortes"][0]["comprimento_mm"] == "1000"
+    assert d["vidros"][0]["espessura_mm"] == "6"
+    assert d["acessorios"][0]["quantidade"] == 2
+    assert json.dumps(d, ensure_ascii=False)
+
+
+# ---- resultado precisa conter acessórios -----------------------------------
+
+def test_resultado_sem_acessorios_reprova_quando_a_receita_tem():
+    from dataclasses import replace
+    receita = _receita_completa()
+    sem = replace(_resultado_calculado("CASO_A_PEQUENO"), acessorios=())
+    r = validar.validar_resultado_calculado(sem, receita)
+    assert not r.ok
+    assert any("sem acessórios calculados" in f["regra"] for f in r.falhas)
+
+
+def test_resultado_sem_acessorios_passa_quando_a_receita_nao_tem():
+    from dataclasses import replace
+    receita = replace(_receita_completa(), regras_acessorios=())
+    sem = replace(_resultado_calculado("CASO_A_PEQUENO"), acessorios=())
+    assert validar.validar_resultado_calculado(sem, receita).ok
+
+
+# ---- comparação estrutural resultado × caso --------------------------------
+
+def _caso_e_resultado():
+    caso = _TRES_CASOS_HOMOLOGAVEIS[0]
+    from dataclasses import replace
+    resultado = replace(_resultado_calculado(caso.identificador),
+                        cortes=_cortes_calculados_do(caso))
+    return caso, resultado
+
+
+def test_resultado_igual_ao_caso_passa_na_comparacao():
+    caso, resultado = _caso_e_resultado()
+    r = validar.validar_resultado_contra_caso(resultado, caso,
+                                              _receita_completa())
+    assert r.ok, r.descrever()
+
+
+def test_corte_calculado_diferente_do_real_reprova():
+    """Sem tolerância aprovada, a comparação é exata — inventar folga aqui
+    esconderia justamente a divergência que o caso real revela."""
+    from dataclasses import replace
+    from composicao.modelos import CorteCalculado
+    caso, resultado = _caso_e_resultado()
+    torto = (replace(resultado.cortes[0],
+                     comprimento_mm=Decimal("1001")),) + resultado.cortes[1:]
+    r = validar.validar_resultado_contra_caso(replace(resultado, cortes=torto),
+                                              caso, _receita_completa())
+    assert not r.ok
+    assert any("cortes calculados divergem" in f["regra"] for f in r.falhas)
+
+
+def test_vidro_calculado_diferente_do_real_reprova():
+    from dataclasses import replace
+    caso, resultado = _caso_e_resultado()
+    torto = (replace(resultado.vidros[0], espessura_mm=Decimal("8")),)
+    r = validar.validar_resultado_contra_caso(replace(resultado, vidros=torto),
+                                              caso, _receita_completa())
+    assert not r.ok
+    assert any("vidros calculados divergem" in f["regra"] for f in r.falhas)
+
+
+def test_acessorio_calculado_diferente_do_real_reprova():
+    from dataclasses import replace
+    caso, resultado = _caso_e_resultado()
+    torto = (replace(resultado.acessorios[0], quantidade=4),) \
+        + resultado.acessorios[1:]
+    r = validar.validar_resultado_contra_caso(
+        replace(resultado, acessorios=torto), caso, _receita_completa())
+    assert not r.ok
+    assert any("acessórios calculados divergem" in f["regra"] for f in r.falhas)
+
+
+def test_conferencia_aprovada_nao_salva_resultado_divergente(biblioteca):
+    """Marcar `cortes_conferidos=True` registra que alguém olhou — não que os
+    números batem."""
+    from dataclasses import replace
+    base = _receita_com_resultados()
+    divergente = replace(
+        base.resultados_calculados[0],
+        cortes=(replace(base.resultados_calculados[0].cortes[0],
+                        comprimento_mm=Decimal("9999")),)
+        + base.resultados_calculados[0].cortes[1:])
+    receita = replace(base, resultados_calculados=(divergente,)
+                      + base.resultados_calculados[1:])
+    r = validar.validar_prontidao_para_producao(receita, biblioteca,
+                                                fontes.RAIZ)
+    assert not r.ok
+    assert any("divergem do caso real" in str(f["encontrado"])
+               for f in r.falhas)
+
+
+# ---- unicidade e vínculo dos resultados ------------------------------------
+
+def test_ids_de_resultado_duplicados_reprovam():
+    from dataclasses import replace
+    base = _receita_com_resultados()
+    clone = replace(base.resultados_calculados[1],
+                    id_resultado=base.resultados_calculados[0].id_resultado)
+    receita = replace(base,
+                      resultados_calculados=(base.resultados_calculados[0],
+                                             clone))
+    r = validar.validar_resultados_calculados(receita)
+    assert not r.ok
+    assert any("id_resultado duplicado" in f["regra"] for f in r.falhas)
+
+
+def test_resultados_distintos_do_mesmo_caso_coexistem():
+    """Histórico de recálculos é legítimo — o que não pode é ID repetido."""
+    from dataclasses import replace
+    base = _receita_com_resultados()
+    segundo = replace(base.resultados_calculados[0],
+                      id_resultado="RES-CASO_A_PEQUENO-V2")
+    receita = replace(base, resultados_calculados=base.resultados_calculados
+                      + (segundo,))
+    assert validar.validar_resultados_calculados(receita).ok
+    assert receita.resultado_calculado("RES-CASO_A_PEQUENO-V2") is segundo
+
+
+def test_conferencia_resolve_exatamente_o_id_citado(biblioteca):
+    from dataclasses import replace
+    base = _receita_com_resultados()
+    segundo = replace(base.resultados_calculados[0],
+                      id_resultado="RES-CASO_A_PEQUENO-V2",
+                      cortes=(replace(base.resultados_calculados[0].cortes[0],
+                                      comprimento_mm=Decimal("7777")),)
+                      + base.resultados_calculados[0].cortes[1:])
+    receita = replace(
+        base, resultados_calculados=base.resultados_calculados + (segundo,),
+        conferencias=(_conferencia("CASO_A_PEQUENO",
+                                   resultado_calculo_id="RES-CASO_A_PEQUENO-V2"),)
+        + tuple(_conferencia(c.identificador)
+                for c in _TRES_CASOS_HOMOLOGAVEIS[1:]))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca,
+                                                fontes.RAIZ)
+    assert not r.ok
+    assert any("7777" in str(f["encontrado"]) for f in r.falhas), \
+        "a conferência tem de resolver o resultado que ela cita"
+
+
+def test_resultado_de_caso_inexistente_reprova():
+    from dataclasses import replace
+    base = _receita_com_resultados()
+    intruso = replace(base.resultados_calculados[0],
+                      id_resultado="RES-FANTASMA", caso_id="CASO_C_GRANDE")
+    receita = replace(base, casos_reais=_TRES_CASOS_HOMOLOGAVEIS[:2],
+                      resultados_calculados=(intruso,))
+    r = validar.validar_resultados_calculados(receita)
+    assert not r.ok
+    assert any("caso inexistente" in f["regra"] for f in r.falhas)
+
+
+# ---- raiz obrigatória ------------------------------------------------------
+
+def test_gate_de_calculo_sem_raiz_nao_ignora_artefatos(biblioteca):
+    """`raiz=None` desligava a checagem em silêncio — pior que não tê-la."""
+    from dataclasses import replace
+    fonte_local = FonteEvidencia(
+        id_fonte="FONTE-LOCAL", tipo="especialista_de_dominio",
+        referencia="curadoria/handoffs/e4d/estado_inicial_e4d.md",
+        descricao="", estado=EstadoConhecimento.CONFIRMADO_ESPECIALISTA,
+        responsavel="Bruno", data="2026-08-10")
+    receita = replace(_receita_completa(),
+                      fontes=(FONTE_APROVACAO, fonte_local))
+    r = validar.validar_prontidao_para_calculo(receita, biblioteca)
+    assert not r.ok
+    assert any("sem raiz do repositório" in f["regra"] for f in r.falhas)
+
+
+def test_gate_de_producao_sem_raiz_nao_ignora_artefatos(biblioteca):
+    from dataclasses import replace
+    fonte_local = FonteEvidencia(
+        id_fonte="FONTE-LOCAL-CASO", tipo="lista_de_corte_real",
+        referencia="curadoria/handoffs/e4d/estado_inicial_e4d.md",
+        descricao="", estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
+        responsavel="Bruno", data="2026-08-10")
+    caso = replace(_TRES_CASOS_HOMOLOGAVEIS[0],
+                   fontes=_TRES_CASOS_HOMOLOGAVEIS[0].fontes + (fonte_local,))
+    receita = replace(_receita_com_resultados(),
+                      casos_reais=(caso,) + _TRES_CASOS_HOMOLOGAVEIS[1:])
+    r = validar.validar_prontidao_para_producao(receita, biblioteca)
+    assert not r.ok
+    assert any("sem raiz do repositório" in f["regra"] for f in r.falhas)
+
+
+# ---- compatibilidade semântica da assinatura -------------------------------
+
+@pytest.mark.parametrize("tipo,estado", [
+    ("especialista_de_dominio", EstadoConhecimento.CONFIRMADO_CASO_REAL),
+    ("conferencia_caso_receita", EstadoConhecimento.CONFIRMADO_ESPECIALISTA),
+    ("validacao_caso_real", EstadoConhecimento.CONFIRMADO_CATALOGO),
+])
+def test_par_tipo_estado_incompativel_nao_assina(tipo, estado):
+    """Um especialista afirma CONFIRMADO_ESPECIALISTA; uma conferência de campo
+    afirma CONFIRMADO_CASO_REAL. Trocar os dois é procedência trocada."""
+    from composicao.modelos import estado_incompativel_com_assinatura
+    fonte = FonteEvidencia(
+        id_fonte="FONTE-TROCADA", tipo=tipo, referencia="X-TESTE",
+        descricao="", estado=estado, responsavel="Bruno", data="2026-08-10",
+        forma_referencia="identificador_externo")
+    assert estado_incompativel_com_assinatura(fonte) is not None
+
+
+@pytest.mark.parametrize("tipo,estado", [
+    ("especialista_de_dominio", EstadoConhecimento.CONFIRMADO_ESPECIALISTA),
+    ("conferencia_caso_receita", EstadoConhecimento.CONFIRMADO_CASO_REAL),
+    ("validacao_caso_real", EstadoConhecimento.CONFIRMADO_CASO_REAL),
+])
+def test_par_tipo_estado_compativel_assina(tipo, estado):
+    from composicao.modelos import estado_incompativel_com_assinatura
+    fonte = FonteEvidencia(
+        id_fonte="FONTE-OK", tipo=tipo, referencia="X-TESTE", descricao="",
+        estado=estado, responsavel="Bruno", data="2026-08-10",
+        forma_referencia="identificador_externo")
+    assert estado_incompativel_com_assinatura(fonte) is None
+
+
+def test_especialista_com_estado_de_caso_real_nao_assina_conferencia(biblioteca):
+    from dataclasses import replace
+    trocada = FonteEvidencia(
+        id_fonte="FONTE-TROCADA", tipo="especialista_de_dominio",
+        referencia="ARBITRAGEM-TROCADA", descricao="",
+        estado=EstadoConhecimento.CONFIRMADO_CASO_REAL,
+        responsavel="Bruno", data="2026-08-10",
+        forma_referencia="identificador_externo")
+    base = _receita_com_resultados()
+    receita = replace(
+        base, fontes=base.fontes + (trocada,),
+        conferencias=(_conferencia("CASO_A_PEQUENO", id_fonte="FONTE-TROCADA"),)
+        + tuple(_conferencia(c.identificador)
+                for c in _TRES_CASOS_HOMOLOGAVEIS[1:]))
+    r = validar.validar_prontidao_para_producao(receita, biblioteca,
+                                                fontes.RAIZ)
+    assert not r.ok
+    assert any("assina em" in str(f["encontrado"]) for f in r.falhas)
