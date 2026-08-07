@@ -25,6 +25,8 @@ from .modelos import (ALVOS_DIMENSIONAIS_BASE, ESCOPOS_DE_APROVACAO,
                       incompatibilidades_da_afirmacao,
                       incompatibilidades_das_fontes_embutidas,
                       TIPOS_APTOS_PARA_CONFERIR_RECEITA,
+                      OrigemResultadoCalculo,
+                      estado_incompativel_com_assinatura,
                       assinatura_documental_caso,
                       fingerprints_primarios_do_caso,
                       indice_fontes_receita, problemas_da_fonte_de_aprovacao)
@@ -268,8 +270,7 @@ def problemas_da_validacao_caso(caso: CasoRealFabricacao) -> tuple[str, ...]:
                 f"fonte da validação {f.id_fonte} está {f.estado.value}")
     aptas = [f for f in fontes
              if f.tipo in TIPOS_APTOS_PARA_VALIDAR_CASO
-             and f.estado in (EstadoConhecimento.CONFIRMADO_CASO_REAL,
-                              EstadoConhecimento.CONFIRMADO_ESPECIALISTA)
+             and estado_incompativel_com_assinatura(f) is None
              and f.responsavel and f.data]
     if not aptas:
         problemas.append(
@@ -541,6 +542,102 @@ def validar_caso_contra_receita(caso: CasoRealFabricacao,
     return r
 
 
+def validar_resultado_calculado(resultado, receita: ReceitaTipologia) -> ResultadoValidacao:
+    """A saída tem o que uma lista de fabricação precisa ter.
+
+    O DTO não conhece a receita — por isso a exigência de acessórios vive aqui:
+    é a receita que diz se esta tipologia leva roldana."""
+    r = ResultadoValidacao.aprovado()
+    alvo = resultado.id_resultado
+    if not resultado.componentes:
+        r = r.somar(_reprovar(alvo, "resultado sem componentes calculados", 0,
+                              "> 0", ORIGEM_RECEITA))
+    if not resultado.cortes:
+        r = r.somar(_reprovar(alvo, "resultado sem cortes calculados", 0,
+                              "> 0", ORIGEM_RECEITA))
+    if not resultado.vidros:
+        r = r.somar(_reprovar(alvo, "resultado sem vidros calculados", 0,
+                              "> 0", ORIGEM_RECEITA))
+    if any(a.calculavel for a in receita.regras_acessorios) \
+            and not resultado.acessorios:
+        r = r.somar(_reprovar(
+            alvo, "resultado sem acessórios calculados", 0,
+            "> 0 — a receita tem acessórios calculáveis", ORIGEM_RECEITA))
+    return r
+
+
+def validar_resultados_calculados(receita: ReceitaTipologia) -> ResultadoValidacao:
+    """IDs únicos, casos existentes, receita correta.
+
+    Dois resultados com o mesmo ID fariam `resultado_calculado()` escolher o
+    primeiro em silêncio — e a conferência apontaria para um objeto diferente
+    do que quem a assinou tinha diante dos olhos."""
+    r = ResultadoValidacao.aprovado()
+    ids = [x.id_resultado for x in receita.resultados_calculados]
+    duplicados = sorted({i for i in ids if ids.count(i) > 1})
+    if duplicados:
+        r = r.somar(_reprovar(receita.codigo, "id_resultado duplicado",
+                              duplicados, "identificador único",
+                              ORIGEM_RECEITA))
+    casos = {c.identificador for c in receita.casos_reais}
+    for x in receita.resultados_calculados:
+        if x.caso_id not in casos:
+            r = r.somar(_reprovar(x.id_resultado,
+                                  "resultado de caso inexistente", x.caso_id,
+                                  sorted(c for c in casos if c),
+                                  ORIGEM_RECEITA))
+        if x.receita_codigo != receita.codigo:
+            r = r.somar(_reprovar(x.id_resultado,
+                                  "resultado de outra receita",
+                                  x.receita_codigo, receita.codigo,
+                                  ORIGEM_RECEITA))
+    return r
+
+
+def validar_resultado_contra_caso(resultado, caso: CasoRealFabricacao,
+                                  receita: ReceitaTipologia) -> ResultadoValidacao:
+    """Compara o que o cálculo diz com o que a janela real tem.
+
+    Comparação EXATA: não existe tolerância aprovada, e inventar uma aqui
+    esconderia justamente a divergência que o caso real serve para revelar.
+    Marcar `cortes_conferidos=True` registra que alguém olhou — não que os
+    números batem."""
+    r = ResultadoValidacao.aprovado()
+    alvo = f"{resultado.id_resultado} x {caso.identificador}"
+
+    calc = sorted((c.componente_id, c.perfil, str(c.comprimento_mm),
+                   c.quantidade) for c in resultado.cortes)
+    real = sorted((c.componente_id or "", c.perfil or "",
+                   str(c.comprimento_mm), c.quantidade or 0)
+                  for c in caso.cortes)
+    if calc != real:
+        r = r.somar(_reprovar(alvo, "cortes calculados divergem do caso real",
+                              [x for x in calc if x not in real],
+                              [x for x in real if x not in calc], ORIGEM_CASO))
+
+    calc_v = sorted((v.folha, str(v.largura_mm), str(v.altura_mm),
+                     str(v.espessura_mm)) for v in resultado.vidros)
+    real_v = sorted((v.folha or "", str(v.largura_mm), str(v.altura_mm),
+                     str(v.espessura_mm)) for v in caso.vidros)
+    if calc_v != real_v:
+        r = r.somar(_reprovar(alvo, "vidros calculados divergem do caso real",
+                              [x for x in calc_v if x not in real_v],
+                              [x for x in real_v if x not in calc_v],
+                              ORIGEM_CASO))
+
+    calc_a = sorted((a.item, a.quantidade, a.posicao)
+                    for a in resultado.acessorios)
+    real_a = sorted((a.item or "", a.quantidade or 0, a.posicao or "")
+                    for a in caso.acessorios)
+    if calc_a != real_a:
+        r = r.somar(_reprovar(alvo,
+                              "acessórios calculados divergem do caso real",
+                              [x for x in calc_a if x not in real_a],
+                              [x for x in real_a if x not in calc_a],
+                              ORIGEM_CASO))
+    return r
+
+
 def conferencia_valida_do_caso(receita: ReceitaTipologia,
                                caso: CasoRealFabricacao) -> tuple[str, ...]:
     """Problemas da conferência do caso contra o RESULTADO CALCULADO.
@@ -581,6 +678,19 @@ def conferencia_valida_do_caso(receita: ReceitaTipologia,
             problemas.append(
                 f"{ident}: resultado {resultado.id_resultado} pertence à receita "
                 f"{resultado.receita_codigo}, não a {receita.codigo}")
+        if not resultado.de_motor:
+            problemas.append(
+                f"{ident}: resultado {resultado.id_resultado} tem origem "
+                f"{resultado.origem.value} — só saída de MOTOR_CALCULO libera "
+                f"fabricação")
+        conteudo = validar_resultado_calculado(resultado, receita)
+        if not conteudo.ok:
+            problemas.extend(f["regra"] for f in conteudo.falhas)
+        comparacao = validar_resultado_contra_caso(resultado, caso, receita)
+        if not comparacao.ok:
+            problemas.extend(
+                f"{f['regra']} (calculado={f['encontrado']}, "
+                f"real={f['esperado']})" for f in comparacao.falhas)
         if not resultado.tem_conteudo:
             problemas.append(
                 f"{ident}: resultado {resultado.id_resultado} sem componentes, "
@@ -616,6 +726,10 @@ def conferencia_valida_do_caso(receita: ReceitaTipologia,
         problemas.append(
             f"{ident}: fonte {fonte.id_fonte} é {fonte.tipo!r} — conferência "
             f"exige tipo em {sorted(TIPOS_APTOS_PARA_CONFERIR_RECEITA)}")
+    else:
+        motivo = estado_incompativel_com_assinatura(fonte)
+        if motivo:
+            problemas.append(f"{ident}: fonte {fonte.id_fonte} — {motivo}")
     if not fonte.autoria_completa:
         problemas.append(f"{ident}: fonte da conferência sem autoria completa")
     else:
@@ -771,6 +885,32 @@ def validar_artefatos_da_receita(receita: ReceitaTipologia,
     return r
 
 
+def _tem_evidencia_local_confirmada(fontes) -> bool:
+    return any(f.forma_referencia == "arquivo"
+               and f.estado not in ESTADOS_NAO_CALCULAVEIS for f in fontes)
+
+
+def _verificar_artefatos_obrigatorios(receita: ReceitaTipologia,
+                                      raiz_repositorio) -> ResultadoValidacao:
+    """Sem raiz, a verificação física não é PULADA — o gate fecha.
+
+    `raiz=None` desligava a checagem em silêncio, e um gate que ignora a
+    evidência ausente é pior do que não ter a checagem: dá a impressão de que
+    alguém conferiu."""
+    if raiz_repositorio is not None:
+        return validar_artefatos_da_receita(receita, raiz_repositorio)
+    try:
+        indice = indice_fontes_receita(receita)
+    except ReceitaErro:
+        return ResultadoValidacao.aprovado()
+    if _tem_evidencia_local_confirmada(indice.values()):
+        return _reprovar(
+            receita.codigo, "gate sem raiz do repositório com evidência local",
+            None, "raiz_repositorio para conferir a integridade dos artefatos",
+            ORIGEM_ARTEFATO)
+    return ResultadoValidacao.aprovado()
+
+
 def validar_prontidao_para_visualizacao(receita: ReceitaTipologia,
                                         biblioteca,
                                         raiz_repositorio=None) -> ResultadoValidacao:
@@ -802,8 +942,7 @@ def validar_prontidao_para_calculo(receita: ReceitaTipologia, biblioteca,
     Inclui a integridade dos ARTEFATOS: uma evidência que sumiu ou foi trocada
     depois do registro não sustenta mais o que sustentava."""
     r = validar_referencias_geometricas(receita, biblioteca)
-    if raiz_repositorio is not None:
-        r = r.somar(validar_artefatos_da_receita(receita, raiz_repositorio))
+    r = r.somar(_verificar_artefatos_obrigatorios(receita, raiz_repositorio))
     r = r.somar(validar_cobertura_estrutural_receita(receita))
     r = r.somar(validar_fontes(receita))
     r = r.somar(validar_componentes_confirmados(receita))
@@ -832,9 +971,16 @@ def validar_prontidao_para_producao(receita: ReceitaTipologia, biblioteca,
             "um ResultadoCalculoCaso por caso — produção compara o cálculo "
             "com a janela real, e não existe cálculo nesta sprint",
             ORIGEM_RECEITA))
+    r = r.somar(validar_resultados_calculados(receita))
     for caso in receita.casos_reais:
         if raiz_repositorio is not None:
             r = r.somar(validar_artefatos_do_caso(caso, raiz_repositorio))
+        elif _tem_evidencia_local_confirmada(caso.fontes):
+            r = r.somar(_reprovar(
+                caso.identificador or "-",
+                "gate sem raiz do repositório com evidência local", None,
+                "raiz_repositorio para conferir os artefatos do caso",
+                ORIGEM_ARTEFATO))
         r = r.somar(validar_caso_contra_receita(caso, receita))
         for motivo in conferencia_valida_do_caso(receita, caso):
             r = r.somar(_reprovar(caso.identificador or "-",
