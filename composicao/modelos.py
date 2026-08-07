@@ -172,10 +172,33 @@ TIPOS_APTOS_PARA_VALIDAR_CASO = frozenset({
 # Uma foto mostra a janela; ela não registra que alguém comparou número a
 # número. Catálogo, manifesto e biblioteca falam do produto, não desta
 # comparação.
+# Cada tipo de fonte só assina no estado que lhe corresponde: um especialista
+# afirma CONFIRMADO_ESPECIALISTA, uma conferência de campo afirma
+# CONFIRMADO_CASO_REAL. Aceitar qualquer estado "não pendente" deixaria passar
+# um especialista_de_dominio marcado como caso real — procedência trocada.
+ESTADO_EXIGIDO_POR_TIPO_DE_ASSINATURA = {
+    "conferencia_caso_receita": EstadoConhecimento.CONFIRMADO_CASO_REAL,
+    "validacao_caso_real": EstadoConhecimento.CONFIRMADO_CASO_REAL,
+    "especialista_de_dominio": EstadoConhecimento.CONFIRMADO_ESPECIALISTA,
+    "lista_de_corte_real": EstadoConhecimento.CONFIRMADO_CASO_REAL,
+    "tabela_de_fabricacao": EstadoConhecimento.CONFIRMADO_CASO_REAL,
+}
+
 TIPOS_APTOS_PARA_CONFERIR_RECEITA = frozenset({
     "conferencia_caso_receita", "especialista_de_dominio",
     "validacao_caso_real",
 })
+
+
+def estado_incompativel_com_assinatura(fonte) -> str | None:
+    """Motivo pelo qual o par (tipo, estado) da fonte não assina, ou None."""
+    esperado = ESTADO_EXIGIDO_POR_TIPO_DE_ASSINATURA.get(fonte.tipo)
+    if esperado is None:
+        return f"tipo {fonte.tipo!r} não assina conferência nem validação"
+    if fonte.estado is not esperado:
+        return (f"{fonte.tipo} assina em {esperado.value}, não em "
+                f"{fonte.estado.value}")
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -1379,32 +1402,147 @@ def problemas_da_fonte_de_aprovacao(aprovacao: "AprovacaoEspecialista",
     return tuple(problemas)
 
 
+class OrigemResultadoCalculo(str, Enum):
+    """Quem produziu a saída. Fixture de teste NUNCA libera fabricação.
+
+    Sem esta distinção, uma tupla de strings montada num teste abriria o mesmo
+    portão que a saída de um motor real — e o portão libera corte de alumínio."""
+    MOTOR_CALCULO = "MOTOR_CALCULO"
+    FIXTURE_TESTE = "FIXTURE_TESTE"
+
+
+@dataclass(frozen=True)
+class CorteCalculado:
+    """Uma peça que o cálculo diz que deve ser cortada."""
+    componente_id: str
+    perfil: str
+    comprimento_mm: Decimal
+    quantidade: int
+
+    def __post_init__(self):
+        for campo in ("componente_id", "perfil"):
+            if not str(getattr(self, campo) or "").strip():
+                raise ReceitaErro(f"corte calculado sem {campo}")
+        validar_decimal_positivo_finito(self.comprimento_mm,
+                                        "corte_calculado.comprimento_mm")
+        if self.comprimento_mm is None:
+            raise ReceitaErro("corte calculado sem comprimento_mm")
+        validar_inteiro_positivo_estrito(self.quantidade,
+                                         "corte_calculado.quantidade")
+        if self.quantidade is None:
+            raise ReceitaErro("corte calculado sem quantidade")
+
+    def chave(self) -> tuple:
+        return (self.componente_id, self.perfil, self.comprimento_mm,
+                self.quantidade)
+
+    def para_dict(self) -> dict:
+        return {"componente_id": self.componente_id, "perfil": self.perfil,
+                "comprimento_mm": str(self.comprimento_mm),
+                "quantidade": self.quantidade}
+
+
+@dataclass(frozen=True)
+class VidroCalculado:
+    folha: str
+    largura_mm: Decimal
+    altura_mm: Decimal
+    espessura_mm: Decimal
+
+    def __post_init__(self):
+        if not str(self.folha or "").strip():
+            raise ReceitaErro("vidro calculado sem folha")
+        for campo in ("largura_mm", "altura_mm", "espessura_mm"):
+            v = getattr(self, campo)
+            validar_decimal_positivo_finito(v, f"vidro_calculado.{campo}")
+            if v is None:
+                raise ReceitaErro(f"vidro calculado sem {campo}")
+
+    def chave(self) -> tuple:
+        return (self.folha, self.largura_mm, self.altura_mm, self.espessura_mm)
+
+    def para_dict(self) -> dict:
+        return {"folha": self.folha, "largura_mm": str(self.largura_mm),
+                "altura_mm": str(self.altura_mm),
+                "espessura_mm": str(self.espessura_mm)}
+
+
+@dataclass(frozen=True)
+class AcessorioCalculado:
+    item: str
+    quantidade: int
+    posicao: str
+
+    def __post_init__(self):
+        for campo in ("item", "posicao"):
+            if not str(getattr(self, campo) or "").strip():
+                raise ReceitaErro(f"acessório calculado sem {campo}")
+        validar_inteiro_positivo_estrito(self.quantidade,
+                                         "acessorio_calculado.quantidade")
+        if self.quantidade is None:
+            raise ReceitaErro("acessório calculado sem quantidade")
+
+    def chave(self) -> tuple:
+        return (self.item, self.quantidade, self.posicao)
+
+    def para_dict(self) -> dict:
+        return {"item": self.item, "quantidade": self.quantidade,
+                "posicao": self.posicao}
+
+
 @dataclass(frozen=True)
 class ResultadoCalculoCaso:
     """A saída que o motor de cálculo produzirá — quando existir.
 
     O contrato existe agora para que a conferência possa apontar para ELE. Sem
     isso, "conferi cortes, vidros e acessórios" é uma afirmação sem objeto:
-    conferiu contra o quê? Nesta sprint nenhuma receita tem resultado, e é por
-    isso que o gate de produção continua fechado."""
+    conferiu contra o quê?
+
+    `origem` separa a saída de um motor real de uma fixture de teste. A E.4D não
+    tem motor: nenhum resultado `MOTOR_CALCULO` existe aqui, e por isso o gate
+    de produção continua fechado em qualquer fixture."""
     id_resultado: str
     caso_id: str
     receita_codigo: str
     gerado_por: str
-    componentes: tuple = ()
-    cortes: tuple = ()
-    vidros: tuple = ()
-    acessorios: tuple = ()
+    origem: OrigemResultadoCalculo
+    componentes: tuple[str, ...] = ()
+    cortes: tuple[CorteCalculado, ...] = ()
+    vidros: tuple[VidroCalculado, ...] = ()
+    acessorios: tuple[AcessorioCalculado, ...] = ()
     versao_motor: str | None = None
 
+    TIPOS = {"cortes": CorteCalculado, "vidros": VidroCalculado,
+             "acessorios": AcessorioCalculado}
+
     def __post_init__(self):
-        for campo in ("componentes", "cortes", "vidros", "acessorios"):
-            object.__setattr__(self, campo,
-                               como_tupla(getattr(self, campo),
-                                          f"resultado.{campo}"))
+        object.__setattr__(self, "componentes",
+                           como_tupla(self.componentes, "resultado.componentes"))
+        for campo, tipo in self.TIPOS.items():
+            itens = como_tupla(getattr(self, campo), f"resultado.{campo}")
+            fora = [type(i).__name__ for i in itens if not isinstance(i, tipo)]
+            if fora:
+                raise ReceitaErro(
+                    f"resultado.{campo}: elementos de tipo inesperado {fora} "
+                    f"(esperado {tipo.__name__}) — uma tupla de strings não é "
+                    f"saída de cálculo")
+            object.__setattr__(self, campo, itens)
         for campo in ("id_resultado", "caso_id", "receita_codigo", "gerado_por"):
             if not str(getattr(self, campo) or "").strip():
                 raise ReceitaErro(f"resultado de cálculo sem {campo}")
+        if not isinstance(self.origem, OrigemResultadoCalculo):
+            raise ReceitaErro(
+                f"resultado com origem inválida: {self.origem!r} "
+                f"(esperado {[o.value for o in OrigemResultadoCalculo]})")
+        if (self.origem is OrigemResultadoCalculo.MOTOR_CALCULO
+                and not str(self.versao_motor or "").strip()):
+            raise ReceitaErro(
+                f"{self.id_resultado}: resultado de MOTOR_CALCULO exige "
+                f"versao_motor — sem ela não há como reproduzir o cálculo")
+
+    @property
+    def de_motor(self) -> bool:
+        return self.origem is OrigemResultadoCalculo.MOTOR_CALCULO
 
     @property
     def tem_conteudo(self) -> bool:
@@ -1414,11 +1552,12 @@ class ResultadoCalculoCaso:
     def para_dict(self) -> dict:
         return {"id_resultado": self.id_resultado, "caso_id": self.caso_id,
                 "receita_codigo": self.receita_codigo,
-                "gerado_por": self.gerado_por,
+                "gerado_por": self.gerado_por, "origem": self.origem.value,
                 "versao_motor": self.versao_motor,
                 "componentes": list(self.componentes),
-                "cortes": list(self.cortes), "vidros": list(self.vidros),
-                "acessorios": list(self.acessorios)}
+                "cortes": [c.para_dict() for c in self.cortes],
+                "vidros": [v.para_dict() for v in self.vidros],
+                "acessorios": [a.para_dict() for a in self.acessorios]}
 
 
 @dataclass(frozen=True)
