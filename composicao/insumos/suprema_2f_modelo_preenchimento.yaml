@@ -1,0 +1,261 @@
+# Ficha de campo — Janela Suprema de correr com DUAS folhas
+#
+# COMO PREENCHER
+#   - Campo que você não souber: DEIXE EM BRANCO. Em branco significa
+#     "não informado" e o sistema trata como pendência.
+#   - Nunca escreva 0, "n/a" ou um chute para preencher espaço: o sistema
+#     leria como decisão tomada.
+#   - Medidas em milímetros, sem unidade no valor (ex.: 1500, 1500.5).
+#   - Datas no formato AAAA-MM-DD, e datas reais: 2026-02-30 é recusada.
+#   - Nome de campo com erro de digitação REPROVA a ficha, com sugestão do nome
+#     certo. Nada é ignorado em silêncio.
+#
+# PERFIL NÃO É COMPONENTE
+#   Perfil é o produto extrudado (SU-003). Componente é uma OCORRÊNCIA funcional
+#   dele na janela. O mesmo perfil pode aparecer em duas laterais, nas duas
+#   folhas, em papéis diferentes e com comprimentos diferentes — por isso cada
+#   perfil tem uma LISTA de `aplicacoes`, e não um papel só.
+#
+# EVIDÊNCIA LOCAL CONFIRMADA TEM HASH
+#   Fonte com `forma_referencia: arquivo` e estado confirmado precisa de
+#   `sha256` (e, se quiser, `tamanho_bytes`). Caminho não prova que o arquivo
+#   existe nem que continua o mesmo. Calcule com:
+#     python -m composicao.cli registrar-evidencia <caminho> --id-fonte FONTE-X
+#
+# EVIDÊNCIA É CITADA POR ID
+#   Cada fonte em `fontes:` tem um `id_fonte` único (FONTE-ALGUMA-COISA). Cada
+#   afirmação cita as suas com `fontes_ids: [FONTE-001]`. Citar por TIPO seria
+#   ambíguo: com duas fotos, ninguém saberia de qual você está falando.
+#
+# CADA AFIRMAÇÃO TEM SEU PRÓPRIO ESTADO E SUA PRÓPRIA EVIDÊNCIA
+#   `estado` diz o quanto aquilo está firme:
+#     CONFIRMADO_CATALOGO, CONFIRMADO_BIBLIOTECA_OFICIAL,
+#     CONFIRMADO_ESPECIALISTA, CONFIRMADO_CASO_REAL,
+#     DERIVADO_DE_REGRA_APROVADA, HIPOTESE, PENDENTE
+#   Uma fonte solta no fim do documento NÃO confirma o resto da ficha.
+#
+# FONTE EXISTENTE NÃO É FONTE APTA
+#   O estado da fonte precisa sustentar o estado da afirmação:
+#     CONFIRMADO_CATALOGO            <- catalogo, tabela_de_fabricacao
+#     CONFIRMADO_BIBLIOTECA_OFICIAL  <- manifesto_promocao, biblioteca_oficial
+#     CONFIRMADO_ESPECIALISTA        <- especialista_de_dominio, com responsavel
+#                                       e data
+#     CONFIRMADO_CASO_REAL           <- medicao_fisica, foto, croqui,
+#                                       lista_de_corte_real, software_externo,
+#                                       tabela_de_fabricacao
+#   Nenhuma fonte citada pode estar PENDENTE ou HIPOTESE. Uma foto não confirma
+#   cota de catálogo, e um catálogo não prova o que foi medido na janela.
+#
+# QUEM PODE ASSINAR A VALIDAÇÃO FINAL DE UM CASO
+#   validacao_caso_real, especialista_de_dominio, lista_de_corte_real ou
+#   tabela_de_fabricacao — confirmadas, com responsavel e data. Foto e croqui
+#   provam que a janela existe; não registram que alguém conferiu a lista de
+#   corte contra a peça. Manifesto e catálogo falam da biblioteca, não desta
+#   janela.
+#
+#   VALIDADO nunca se escreve: é derivado de validação aprovada + fonte apta +
+#   dados íntegros.
+#
+# PREENCHER NÃO É CONFIRMAR
+#   Um campo vira "decisão confirmada" só com valor + `estado` confirmado +
+#   `fontes_ids` que existem — e, quando o estado é CONFIRMADO_ESPECIALISTA, a
+#   fonte precisa ser do tipo `especialista_de_dominio` com `responsavel` e
+#   `data`.
+#
+# CONTEÚDO LIVRE VAI EM dados_adicionais
+#   Qualquer coisa fora do schema entra em `dados_adicionais: {}`. Ela é
+#   preservada integralmente e NUNCA interpretada — não vira cálculo.
+#
+# Copie este arquivo antes de preencher, por exemplo para
+# composicao/insumos/suprema_2f_caso_a.yaml, e valide com:
+#   python -m composicao.cli validar-ficha composicao/insumos/suprema_2f_caso_a.yaml
+
+# Versão do formato desta ficha. Não altere: o validador recusa versão que não
+# conhece, em vez de ler campos com significado diferente do esperado.
+versao_ficha: 1
+
+tipologia:
+  codigo: SUPREMA_CORRER_2F
+
+# Uma janela REAL, medida. Identificador: CASO_A_PEQUENO, CASO_B_MEDIO
+# ou CASO_C_GRANDE. Largura e altura podem compartilhar a mesma evidência.
+caso_real:
+  identificador:
+  # Identificação AUDITÁVEL do exemplar físico: ordem de produção, número do
+  # orçamento, etiqueta da peça ou código interno da serralheria. É isto que
+  # prova que os três casos são três janelas, e não a mesma com números
+  # trocados. Não invente o valor.
+  id_exemplar:
+  largura_total_mm:
+  altura_total_mm:
+  estado:
+  fontes_ids: []
+  dados_adicionais: {}
+
+# Sem isto não dá para saber o que é "esquerda" nem qual folha passa na frente.
+vista:
+  lado_de_referencia:        # de onde se olha: interno ou externo
+  folha_trilho_interno:      # qual folha corre no trilho de dentro
+  folha_trilho_externo:      # qual folha corre no trilho de fora
+  sentidos_de_movimento:     # ex.: folha 1 abre para a direita
+  posicao_do_fecho:          # onde fica o fecho / mão-de-amigo
+  estado:
+  fontes_ids: []
+  dados_adicionais: {}
+
+# Os oito perfis oficiais promovidos no E.4C.
+# `funcao`: MARCO_SUPERIOR, MARCO_INFERIOR, MARCO_LATERAL_ESQUERDO,
+#           MARCO_LATERAL_DIREITO, TRAVESSA_SUPERIOR_FOLHA,
+#           TRAVESSA_INFERIOR_FOLHA, MONTANTE_LATERAL_FOLHA, ENCONTRO_CENTRAL,
+#           MAO_DE_AMIGO, BAGUETE
+# `quantidade`: quantas peças deste perfil entram numa janela de duas folhas
+# `orientacao`: vertical, horizontal, ou como você descreve o corte
+perfis:
+  SU-001:
+    observacoes_gerais:
+    estado:
+    fontes_ids: []
+    dados_adicionais: {}
+    # Uma entrada por OCORRÊNCIA do perfil na janela. O mesmo perfil pode ser
+    # marco esquerdo e direito, ou aparecer nas duas folhas: cada uso é uma
+    # aplicação, com id_componente próprio e único.
+    # Ex.: - id_componente: MARCO-LATERAL-ESQUERDO
+    #        funcao: MARCO_LATERAL_ESQUERDO
+    #        quantidade: 1
+    #        orientacao: vertical
+    #        folha:
+    #        posicao: lateral esquerda do marco
+    #        estado: CONFIRMADO_ESPECIALISTA
+    #        fontes_ids: [FONTE-ARBITRAGEM-PAPEIS]
+    #        dados_adicionais: {}
+    aplicacoes: []
+  SU-002:
+    observacoes_gerais:
+    estado:
+    fontes_ids: []
+    dados_adicionais: {}
+    aplicacoes: []
+  SU-003:
+    observacoes_gerais:
+    estado:
+    fontes_ids: []
+    dados_adicionais: {}
+    aplicacoes: []
+  SU-039:
+    observacoes_gerais:
+    estado:
+    fontes_ids: []
+    dados_adicionais: {}
+    aplicacoes: []
+  SU-040:
+    observacoes_gerais:
+    estado:
+    fontes_ids: []
+    dados_adicionais: {}
+    aplicacoes: []
+  SU-041:
+    observacoes_gerais:
+    estado:
+    fontes_ids: []
+    dados_adicionais: {}
+    aplicacoes: []
+  SU-053:
+    observacoes_gerais:
+    estado:
+    fontes_ids: []
+    dados_adicionais: {}
+    aplicacoes: []
+  SU-102:
+    observacoes_gerais:
+    estado:
+    fontes_ids: []
+    dados_adicionais: {}
+    aplicacoes: []
+
+# Lista de corte REAL da janela acima. Uma entrada por peça cortada.
+# `componente_id` liga a peça à aplicação que a produziu: sem ele, dois cortes
+# do mesmo perfil com comprimentos diferentes não dizem qual é o marco e qual
+# é a travessa. Pode ficar vazio enquanto os papéis não estiverem levantados —
+# o caso fica parcial.
+# Ex.: - componente_id: MARCO-LATERAL-ESQUERDO
+#        perfil: SU-001
+#        comprimento_mm: 1460
+#        quantidade: 1
+#        angulo: "90"
+#        observacao: desconta 40 mm do vão
+#        estado: CONFIRMADO_CASO_REAL
+#        fontes_ids: [FONTE-LISTA-CORTE-A]
+cortes: []
+
+# Chapas de vidro efetivamente usadas.
+# Ex.: - folha: "1"
+#        largura_mm: 690
+#        altura_mm: 1180
+#        espessura_mm: 6
+#        estado: CONFIRMADO_CASO_REAL
+#        fontes_ids: [FONTE-LISTA-CORTE-A]
+vidros: []
+
+# Baguetes cortadas. A baguete Suprema tem DOIS lados de encaixe — registre
+# qual lado encaixa em quê.
+baguetes: []
+
+# Ex.: - item: roldana
+#        quantidade: 4
+#        posicao: base de cada folha
+#        estado: CONFIRMADO_CASO_REAL
+#        fontes_ids: [FONTE-FOTO-BASE]
+acessorios: []
+
+# Folgas medidas, não estimadas.
+# Ex.: - entre: folha e marco lateral
+#        valor_mm: 3
+#        medido_por: paquimetro
+#        estado: CONFIRMADO_CASO_REAL
+#        fontes_ids: [FONTE-MEDICAO-A]
+folgas: []
+
+# Sobreposição no encontro central e onde mais houver.
+sobreposicoes: []
+
+# Croquis e fotos como ARQUIVOS. Croqui é evidência visual, não decisão: ele
+# não carrega estado nem responsável. Para CITAR um croqui numa afirmação,
+# declare-o também em `fontes:` com um id_fonte próprio (exemplo abaixo).
+# Ex.: - tipo: croqui
+#        referencia: curadoria/campo/caso_a/croqui.jpg
+#        descricao: Croqui do serralheiro
+croquis: []
+
+# As fontes citadas por `fontes_ids` em qualquer parte da ficha.
+# `id_fonte` é obrigatório, único, no formato FONTE-[A-Z0-9_-]+.
+# Tipos podem se repetir (duas fotos são duas fontes); IDs não.
+# `referencia` é caminho RELATIVO à raiz do repositório. Caminho absoluto
+# (/home/..., C:\...) e travessia com ".." são recusados: a evidência tem de
+# sobreviver ao clone em outra máquina. Para algo que não é arquivo, declare
+# forma_referencia: identificador_externo  (ou: url).
+#
+# Ex.: - id_fonte: FONTE-CROQUI-A
+#        tipo: croqui
+#        referencia: curadoria/campo/caso_a/croqui.jpg
+#        descricao: Croqui do serralheiro
+#        estado: CONFIRMADO_CASO_REAL
+#        responsavel: Bruno
+#        data: "2026-08-10"
+#        sha256: <64 hex, calculado pelo comando registrar-evidencia>
+#        tamanho_bytes: 184320
+#      - id_fonte: FONTE-ARBITRAGEM-PAPEIS
+#        tipo: especialista_de_dominio
+#        referencia: curadoria/campo/caso_a/confirmacao_perfis.md
+#        descricao: Confirmação dos papéis dos perfis
+#        estado: CONFIRMADO_ESPECIALISTA
+#        responsavel: Bruno
+#        data: "2026-08-10"
+#        sha256: <64 hex>
+fontes: []
+
+# O que ficou em aberto na visita, com suas palavras.
+duvidas: []
+
+# Qualquer informação que não caiba no schema acima. Preservada integralmente,
+# nunca interpretada e nunca usada em cálculo.
+dados_adicionais: {}
