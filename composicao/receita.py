@@ -4,7 +4,8 @@ Esta receita sabe **onde cada perfil fica**, e nada além disso:
 
 - quais oito perfis oficiais estão disponíveis;
 - que ocorrência funcional cada perfil cumpre — quadro, folha interna, folha
-  externa, baguete — arbitrado pelo especialista (E.4E);
+  externa, baguete — conforme ARBITRAGEM do especialista (E.4E), cujas
+  evidências primárias ainda não foram ingeridas no repositório;
 - que os dois montantes centrais se ENCONTRAM, como relação entre duas peças;
 - quais regras dimensionais precisam existir um dia — todas `PENDENTE`,
   todas com `expressao=None`.
@@ -30,6 +31,12 @@ QUANTIDADE_FOLHAS = 2
 # As duas folhas móveis, cada uma no seu trilho. Interno e externo é relação
 # QUALITATIVA: nenhuma distância entre planos é afirmada. "Folha esquerda" e
 # "folha direita" ficariam erradas na primeira janela espelhada.
+# PLANO_INTERNO: plano da folha mais próximo do ambiente INTERNO da edificação.
+# PLANO_EXTERNO: plano da folha mais próximo do EXTERIOR da edificação.
+# É profundidade da esquadria em relação a dentro/fora do edifício — não é
+# esquerda/direita, não é o lado de quem olha a foto, não é sentido de abertura.
+# Por isso a convenção sobrevive ao espelhamento: espelhar troca lados, não
+# troca qual folha está mais perto de dentro.
 PLANO_INTERNO = "PLANO_INTERNO"
 PLANO_EXTERNO = "PLANO_EXTERNO"
 PLANOS_DAS_FOLHAS = (PLANO_INTERNO, PLANO_EXTERNO)
@@ -58,25 +65,44 @@ FONTE_PROMOCAO_E4C = FonteEvidencia(
     tamanho_bytes=11072,
 )
 
-# A topologia foi arbitrada pelo especialista contra janelas físicas reais. O
-# documento é o registro durável dessa arbitragem — o que dá a ela um endereço
-# auditável em vez de virar convenção não escrita dentro do código.
+# REGISTRO DERIVADO DE ARBITRAGEM — não é evidência física primária.
 #
-# PROVA: em que posição funcional cada perfil entra, e que os dois montantes
-# centrais se encontram. NÃO PROVA: medida nenhuma.
+# O documento apontado aqui é o registro escrito de uma decisão de especialista.
+# `especialista_de_dominio` é o tipo mais honesto que o contrato oferece: ele
+# afirma "um especialista decidiu", não "existe foto provando". Não há tipo de
+# arbitragem no vocabulário, e ampliar o schema de fontes só para batizar esta
+# fonte seria trocar precisão de rótulo por dívida de modelo.
+#
+# O sha256 abaixo prova a INTEGRIDADE DO DOCUMENTO e quais decisões ele
+# registra. Não prova que o SU-001 está no quadro superior de uma janela real:
+# um arquivo íntegro pode registrar uma decisão errada.
+#
+# As evidências primárias que originaram a arbitragem — três janelas físicas,
+# o quadro da Grande sem folhas, ficha de campo, fotografias e os benchmarks
+# externos — NÃO estão no repositório e NÃO foram ingeridas. Nenhum path, hash
+# ou id_fonte foi criado para elas: fabricar esses registros faria a receita
+# parecer lastreada em prova física quando está lastreada em decisão.
 FONTE_TOPOLOGIA_E4E = FonteEvidencia(
     id_fonte="FONTE-TOPOLOGIA-E4E",
     tipo="especialista_de_dominio",
     referencia="curadoria/handoffs/e4e/topologia_suprema_2f.md",
-    descricao=("Arbitragem de topologia da Suprema de correr 2 folhas: papel "
-               "e plano de cada ocorrência, e o encontro central como relação "
-               "entre o montante da folha interna e o da folha externa. NÃO "
-               "PROVA: comprimento de corte, folga, vidro ou acessório."),
+    descricao=("REGISTRO DERIVADO DE ARBITRAGEM DE DOMÍNIO, não evidência "
+               "física primária. Registra a decisão do especialista sobre a "
+               "topologia da Suprema de correr 2 folhas: papel e plano de "
+               "cada ocorrência, e o encontro central como relação entre o "
+               "montante da folha interna e o da folha externa. O hash prova "
+               "a integridade DESTE documento e quais decisões ele registra — "
+               "não prova a composição física de nenhuma janela. Evidências "
+               "primárias (três janelas reais, quadro sem folhas, ficha de "
+               "campo, fotografias, benchmarks externos): PENDENTE DE "
+               "INGESTÃO DAS EVIDÊNCIAS PRIMÁRIAS — ausentes do repositório, "
+               "sem path, sem hash e sem id_fonte nesta rodada. NÃO PROVA: "
+               "comprimento de corte, folga, vidro ou acessório."),
     estado=EstadoConhecimento.CONFIRMADO_ESPECIALISTA,
     responsavel="Bruno",
     data="2026-08-09",
-    sha256="85ac6f8862cbeee70b51d661a810e8fe9eea2360c01ffc305a04dc111cec9407",
-    tamanho_bytes=5122,
+    sha256="a2134ed8c1c01c9e4f6b78ecb783cb1804dd64a16556f2273d47b7f7f68fcd45",
+    tamanho_bytes=8607,
 )
 
 # ---------------------------------------------------------------------------
@@ -121,11 +147,17 @@ _ESTRUTURA_DA_FOLHA = (
 # O baguete prende o vidro; não faz parte do quadro estrutural da folha. Fica
 # distinguível pelo papel `BAGUETE`, para que contar peças estruturais não
 # passe a incluir acabamento.
+#
+# A arbitragem estabeleceu UMA coisa: 2 horizontais + 2 verticais por folha.
+# Os sufixos -1 e -2 desambiguam ocorrências e nada mais. Ler HORIZONTAL-1 como
+# "superior" ou VERTICAL-1 como "esquerda" seria inventar identidade que a
+# arbitragem não fixou — e que a ingestão das primárias ainda pode contradizer.
+# Por isso `posicao` fica None: não declarar é mais honesto que declarar errado.
 _BAGUETES_DA_FOLHA = (
-    ("BAGUETE-SUPERIOR", "horizontal", "superior"),
-    ("BAGUETE-INFERIOR", "horizontal", "inferior"),
-    ("BAGUETE-LATERAL-1", "vertical", "lateral"),
-    ("BAGUETE-LATERAL-2", "vertical", "lateral"),
+    ("BAGUETE-HORIZONTAL-1", "horizontal", None),
+    ("BAGUETE-HORIZONTAL-2", "horizontal", None),
+    ("BAGUETE-VERTICAL-1", "vertical", None),
+    ("BAGUETE-VERTICAL-2", "vertical", None),
 )
 
 _SUFIXO_DA_FOLHA = {PLANO_INTERNO: "FOLHA-INTERNA",
@@ -211,7 +243,12 @@ PERGUNTAS_ABERTAS = (
     "Como o vidro é dimensionado a partir da folha (folga de encaixe, calços)?",
     "Que acessórios entram (roldanas, fecho, contra-fecho, escovas, vedações, "
     "fixações), em que quantidade e em que posição?",
-    "Vista de que lado a folha interna é a de dentro, na convenção de projeto?",
+    "As evidências primárias (três janelas reais, quadro sem folhas, ficha de "
+    "campo, fotografias, benchmarks) ainda NÃO foram ingeridas: a topologia "
+    "está lastreada em arbitragem de domínio, não em artefato verificado no "
+    "repositório. Confirmam a topologia quando forem ingeridas?",
+    "Qual baguete de cada par horizontal/vertical é o superior e qual o "
+    "inferior — e isso chega a importar para corte?",
     "Onde fica o fecho e qual o sentido de movimento de cada folha?",
     "O corte de cada peça é reto ou em 45°, e em quais extremidades?",
 )

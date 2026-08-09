@@ -3988,6 +3988,7 @@ def test_oito_baguetes_distinguiveis_do_estrutural(receita):
     for plano in (PLANO_INTERNO, PLANO_EXTERNO):
         da_folha = [c for c in baguetes if c.folha == plano]
         assert len(da_folha) == 4
+        # A regra arbitrada é ESTA, e só ela: 2 horizontais + 2 verticais.
         assert sorted(c.orientacao for c in da_folha) == [
             "horizontal", "horizontal", "vertical", "vertical"]
 
@@ -4073,7 +4074,7 @@ def test_validacao_recusa_referencia_fantasma(receita):
 def test_validacao_recusa_encontro_dentro_da_mesma_folha(receita):
     from dataclasses import replace
     mesma = _relacao((ID_MONTANTE_CENTRAL[PLANO_INTERNO],
-                      "SUPREMA_CORRER_2F:FOLHA-INTERNA:MONTANTE-LATERAL"))
+                      "SUPREMA_CORRER_2F:FOLHA-INTERNA:MONTANTE-LATERAL"))  # noqa
     r2 = replace(receita, relacoes=(mesma,))
     r = validar.validar_cobertura_estrutural_receita(r2)
     assert not r.ok
@@ -4214,6 +4215,61 @@ def test_papeis_antigos_continuam_disponiveis():
         assert PapelComponente(nome).value == nome
 
 
+# ---- proveniência: arbitragem derivada, primárias pendentes ---------------
+
+def test_fonte_da_topologia_nao_se_apresenta_como_evidencia_primaria(receita):
+    """Hash prova integridade de documento, nunca composição física.
+
+    Um arquivo íntegro pode registrar uma decisão errada. A fonte tem de dizer
+    isso em voz alta, senão a receita parece lastreada em prova de campo."""
+    fonte = receita_mod.FONTE_TOPOLOGIA_E4E
+    d = fonte.descricao.upper()
+    assert "ARBITRAGEM" in d
+    assert "NÃO EVIDÊNCIA FÍSICA PRIMÁRIA" in d
+    assert "PENDENTE DE INGESTÃO DAS EVIDÊNCIAS PRIMÁRIAS" in d
+    for termo in ("MEDICAO_FISICA", "MEDIÇÃO FÍSICA", "FOTOGRAFIA CONFIRMA",
+                  "COMPROVA"):
+        assert termo not in d, termo
+    # O tipo continua sendo o mais honesto que o contrato oferece: um
+    # especialista afirmou. Não virou `foto` nem `medicao_fisica`.
+    assert fonte.tipo == "especialista_de_dominio"
+    assert fonte.estado is EstadoConhecimento.CONFIRMADO_ESPECIALISTA
+
+
+def test_documento_de_arbitragem_declara_a_propria_natureza():
+    texto = (RAIZ / receita_mod.FONTE_TOPOLOGIA_E4E.referencia).read_text(
+        encoding="utf-8")
+    assert "REGISTRO DERIVADO DE ARBITRAGEM DE DOMÍNIO" in texto
+    assert "PENDENTE DE INGESTÃO DAS EVIDÊNCIAS PRIMÁRIAS" in texto
+    assert "NÃO é evidência física primária" in texto
+
+
+def test_nenhuma_evidencia_primaria_foi_inventada(receita):
+    """Nem foto, nem ficha, nem janela medida, nem benchmark ganharam fonte.
+
+    Elas não estão no repositório. Uma fonte com path plausível e hash
+    calculado sobre nada seria mentira com aparência de auditoria."""
+    for fonte in receita.fontes:
+        caminho = fonte.referencia.lower()
+        if fonte.forma_referencia == "arquivo":
+            assert (RAIZ / fonte.referencia).is_file(), fonte.id_fonte
+        for proibido in ("foto", "jpg", "jpeg", "png", "ficha_campo",
+                         "janela_pequena", "janela_media", "janela_grande",
+                         "wvetro", "vidrosys"):
+            assert proibido not in caminho, (fonte.id_fonte, proibido)
+    ids = {f.id_fonte for f in receita.fontes}
+    assert ids == {"FONTE-MANIFESTO-E4C", "FONTE-TOPOLOGIA-E4E"}
+    tipos = {f.tipo for f in receita.fontes}
+    assert tipos == {"manifesto_promocao", "especialista_de_dominio"}
+    assert not any(f.tipo in ("foto", "medicao_fisica", "croqui",
+                              "software_externo") for f in receita.fontes)
+
+
+def test_pendencia_de_ingestao_esta_visivel_na_receita(receita):
+    texto = " ".join(receita.perguntas_abertas).lower()
+    assert "evidências primárias" in texto and "ingerid" in texto
+
+
 def test_fonte_da_topologia_aponta_para_arquivo_existente(receita):
     fonte = receita_mod.FONTE_TOPOLOGIA_E4E
     caminho = RAIZ / fonte.referencia
@@ -4222,6 +4278,72 @@ def test_fonte_da_topologia_aponta_para_arquivo_existente(receita):
     dados = caminho.read_bytes()
     assert hashlib.sha256(dados).hexdigest() == fonte.sha256
     assert len(dados) == fonte.tamanho_bytes
+
+
+# ---- baguetes: identificadores neutros ------------------------------------
+
+def test_identificadores_de_baguete_nao_gravam_lateralidade(receita):
+    """2 horizontais + 2 verticais por folha é tudo que a arbitragem fixou.
+
+    Chamar um deles de "esquerdo" ou "superior" seria inventar identidade que
+    a ingestão das evidências primárias ainda pode contradizer."""
+    baguetes = [c for c in receita.componentes if c.papel in PAPEIS_DE_BAGUETE]
+    assert len(baguetes) == 8
+    for c in baguetes:
+        alvo = f"{c.identificador} {c.posicao or ''}".lower()
+        for proibido in ("esquerd", "direit", "superior", "inferior"):
+            assert proibido not in alvo, (c.identificador, proibido)
+        assert c.posicao is None, "posição do baguete não foi arbitrada"
+    for plano, prefixo in ((PLANO_INTERNO, "FOLHA-INTERNA"),
+                           (PLANO_EXTERNO, "FOLHA-EXTERNA")):
+        da_folha = {c.identificador for c in baguetes if c.folha == plano}
+        assert da_folha == {
+            f"SUPREMA_CORRER_2F:{prefixo}:BAGUETE-{s}"
+            for s in ("HORIZONTAL-1", "HORIZONTAL-2",
+                      "VERTICAL-1", "VERTICAL-2")}
+
+
+def test_sufixo_numerico_do_baguete_nao_afirma_ordem(receita):
+    """`-1` e `-2` desambiguam ocorrência; não são posição.
+
+    O par é indistinguível fora do identificador — e é isso que impede alguém
+    de assumir que o -1 é o de cima."""
+    baguetes = [c for c in receita.componentes if c.papel in PAPEIS_DE_BAGUETE]
+    for orientacao in ("horizontal", "vertical"):
+        par = [c for c in baguetes
+               if c.folha == PLANO_INTERNO and c.orientacao == orientacao]
+        assert len(par) == 2
+        assert par[0].posicao == par[1].posicao is None
+        assert par[0].papel is par[1].papel
+        assert par[0].perfil == par[1].perfil
+
+
+# ---- planos: convenção formalizada ----------------------------------------
+
+def test_convencao_de_plano_esta_documentada():
+    texto = (RAIZ / receita_mod.FONTE_TOPOLOGIA_E4E.referencia).read_text(
+        encoding="utf-8")
+    assert "mais próximo do ambiente INTERNO da edificação" in texto
+    assert "mais próximo do EXTERIOR da edificação" in texto
+    assert "espelhada" in texto
+    import inspect
+    fonte_py = inspect.getsource(receita_mod)
+    assert "profundidade da esquadria" in fonte_py
+
+
+def test_plano_e_profundidade_nao_lado(receita):
+    """A convenção sobrevive ao espelhamento porque não fala de lados."""
+    for c in receita.componentes:
+        assert c.folha in (None, PLANO_INTERNO, PLANO_EXTERNO)
+    montantes = {receita.componente_por_id(ID_MONTANTE_CENTRAL[p])
+                 .perfil.codigo_perfil: p
+                 for p in (PLANO_INTERNO, PLANO_EXTERNO)}
+    assert montantes == {"SU-040": PLANO_INTERNO, "SU-041": PLANO_EXTERNO}
+    # Nenhuma distância entre planos foi criada.
+    import inspect
+    fonte_py = inspect.getsource(receita_mod).lower()
+    for proibido in ("offset", "distancia_entre_planos", "afastamento_mm"):
+        assert proibido not in fonte_py, proibido
 
 
 def test_receita_e_deterministica_com_a_topologia():
