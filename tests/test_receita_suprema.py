@@ -249,7 +249,8 @@ def test_carrega_os_oito_geos_oficiais(receita, biblioteca):
     for p in PERFIS:
         assert f"GEO-{p}" in codigos, p
     assert len(receita.perfis_disponiveis) == 8
-    assert receita.componentes == (), "ocorrências funcionais ainda não são conhecidas"
+    # Inventário e ocorrências são contagens diferentes: 8 perfis, 20 peças.
+    assert len(receita.componentes) == 20
     r = validar.validar_referencias_geometricas(receita, biblioteca)
     assert r.ok, r.descrever()
 
@@ -309,17 +310,37 @@ def test_aceita_componente_confirmado():
 
 
 def test_aceita_componente_pendente_em_receita_preliminar(receita, biblioteca):
+    """A topologia confirmada não fecha a porta para o que ainda falta.
+
+    Um componente futuro entra pendente e a visualização preliminar continua
+    aberta — do contrário, registrar conhecimento parcial ficaria proibido."""
+    from dataclasses import replace
     assert receita.preliminar
-    assert all(not c.confirmado for c in receita.componentes)
-    r = validar.validar_prontidao_para_visualizacao(receita, biblioteca)
+    pendente = _componente_confirmado("SU-102",
+                                      estado=EstadoConhecimento.PENDENTE,
+                                      fontes=())
+    assert not pendente.confirmado
+    r2 = replace(receita, componentes=receita.componentes + (pendente,))
+    r = validar.validar_prontidao_para_visualizacao(r2, biblioteca)
     assert r.ok, r.descrever()
 
 
 def test_bloqueia_calculo_sem_ocorrencias_funcionais(receita, biblioteca):
     """Saber quais perfis existem não é saber como a janela se monta."""
-    r = validar.validar_prontidao_para_calculo(receita, biblioteca)
+    from dataclasses import replace
+    so_inventario = replace(receita, componentes=(), relacoes=())
+    r = validar.validar_prontidao_para_calculo(so_inventario, biblioteca)
     assert not r.ok
     assert any("nenhuma ocorrência funcional" in f["regra"] for f in r.falhas)
+
+
+def test_topologia_conhecida_nao_abre_o_gate_de_calculo(receita, biblioteca):
+    """E saber ONDE cada perfil fica ainda não é saber QUANTO ele mede."""
+    r = validar.validar_prontidao_para_calculo(receita, biblioteca)
+    assert not r.ok
+    assert not any("nenhuma ocorrência funcional" in f["regra"]
+                   for f in r.falhas), "a topologia já foi registrada"
+    assert any("fórmula" in f["regra"] for f in r.falhas)
 
 
 def test_bloqueia_producao_com_hipotese(biblioteca, receita):
@@ -335,11 +356,11 @@ def test_bloqueia_producao_com_hipotese(biblioteca, receita):
 
 
 def test_nao_interpreta_none_como_zero(receita):
-    for c in receita.componentes:
-        assert c.quantidade is None
-        assert c.quantidade != 0
-        assert not c.confirmado
-    assert receita.componentes == ()
+    for regra in receita.regras_dimensionais:
+        assert regra.expressao is None
+        assert not regra.calculavel
+    for a in receita.regras_acessorios:
+        assert a.quantidade_expressao is None
     with pytest.raises(ReceitaErro, match="nunca 0"):
         _componente_confirmado(quantidade=0)
     caso = CasoRealFabricacao(identificador="CASO_A_PEQUENO")
@@ -522,7 +543,7 @@ def test_gate_visual_preliminar_aberto_com_pendencias(receita, biblioteca):
     g = rel["gates"]["visualizacao_preliminar"]
     assert g["aberto"] is True
     assert rel["perfis_disponiveis"] == list(PERFIS)
-    assert rel["componentes"]["total"] == 0
+    assert rel["componentes"]["total"] == 20
 
 
 def test_gate_visual_fecha_se_receita_deixar_de_ser_preliminar(receita, biblioteca):
@@ -628,9 +649,10 @@ def test_relatorio_lista_todas_as_pendencias(receita, biblioteca):
     assert rel["componentes"]["pendentes"] == []
     assert len(rel["acessorios"]["pendentes"]) == len(receita.regras_acessorios)
     assert len(rel["regras"]["pendentes"]) == 9
-    assert rel["componentes"]["confirmados"] == []
+    # Topologia confirmada; o dimensional inteiro segue pendente.
+    assert len(rel["componentes"]["confirmados"]) == 20
     assert rel["regras"]["confirmadas"] == []
-    assert len(rel["perguntas_abertas"]) >= 10
+    assert len(rel["perguntas_abertas"]) >= 8
     assert rel["casos_reais"] == {"recebidos": [], "validados": []}
 
 
@@ -730,11 +752,12 @@ def test_nenhuma_formula_de_fabricacao_foi_declarada(receita):
     assert receita.estado == ESTADO_RECEITA_PRELIMINAR
 
 
-def test_nenhum_papel_funcional_foi_atribuido(receita):
-    """Nem papel, nem NÚMERO de ocorrências: quantas peças de cada perfil a
-    janela leva é exatamente o que falta perguntar."""
-    assert receita.componentes == ()
+def test_todo_componente_tem_papel_atribuido(receita):
+    """Depois da E.4E, nenhuma ocorrência fica sem papel declarado."""
     assert len(receita.perfis_disponiveis) == 8
+    for c in receita.componentes:
+        assert c.papel is not PapelComponente.NAO_CONFIRMADO, c.identificador
+        assert c.orientacao in ("vertical", "horizontal"), c.identificador
 
 
 def test_cli_nao_expoe_comando_de_calculo():
@@ -2030,7 +2053,8 @@ def test_modelo_vazio_e_gates_permanecem(receita, biblioteca, ficha_em_branco):
     rel = prontidao.gerar_relatorio_prontidao(receita, biblioteca)
     assert rel["gates"]["calculo"]["aberto"] is False
     assert rel["gates"]["producao"]["aberto"] is False
-    assert rel["componentes"]["confirmados"] == []
+    # Os componentes confirmados vêm da arbitragem de topologia, nunca de uma
+    # ficha em branco — e não abrem gate nenhum.
     assert rel["regras"]["confirmadas"] == []
     assert rel["acessorios"]["confirmados"] == []
 
@@ -2538,13 +2562,12 @@ def test_identificador_de_componente_continua_unico():
                for f in r.falhas)
 
 
-def test_receita_preliminar_nao_inventa_ocorrencias(receita):
-    """Oito perfis no inventário; zero ocorrências. Quantas peças de cada um a
-    janela leva é exatamente o que falta perguntar."""
+def test_um_perfil_rende_varias_ocorrencias(receita):
+    """Oito perfis no inventário, vinte peças na janela: perfil não é peça."""
     assert len(receita.perfis_disponiveis) == 8
-    assert receita.componentes == ()
-    for p in PERFIS:
-        assert receita.componentes_do_perfil(p) == ()
+    assert {p: len(receita.componentes_do_perfil(p)) for p in PERFIS} == {
+        "SU-001": 1, "SU-002": 1, "SU-003": 2, "SU-039": 2,
+        "SU-040": 1, "SU-041": 1, "SU-053": 4, "SU-102": 8}
 
 
 def test_ficha_aceita_varias_aplicacoes_do_mesmo_perfil(ficha_em_branco):
@@ -3495,8 +3518,11 @@ def test_acessorio_adicional_preserva_descricao_e_origem_no_para_dict():
 
 
 def test_receita_preliminar_continua_sem_valor_tecnico(receita):
-    """O invariante da sprint, repetido depois de tudo."""
-    assert receita.componentes == ()
+    """O invariante da sprint, repetido depois de tudo.
+
+    A E.4E registrou TOPOLOGIA. Nenhuma medida entrou junto."""
+    for c in receita.componentes:
+        assert c.quantidade == 1, "quantidade é a peça, não uma medida"
     assert receita.resultados_calculados == ()
     assert receita.conferencias == ()
     assert receita.casos_reais == ()
@@ -3857,3 +3883,349 @@ def test_especialista_com_estado_de_caso_real_nao_assina_conferencia(biblioteca)
                                                 fontes.RAIZ)
     assert not r.ok
     assert any("assina em" in str(f["encontrado"]) for f in r.falhas)
+
+
+# ===========================================================================
+# Sprint E.4E — topologia da Suprema de correr de duas folhas
+#
+# Esta rodada registra ONDE cada perfil fica. Nenhum teste aqui fixa medida,
+# fórmula, folga, sobreposição ou desconto: um número inventado virando
+# regressão protegida é exatamente o que estes testes existem para impedir.
+# ===========================================================================
+
+from composicao.modelos import (PAPEIS_DE_BAGUETE, PAPEIS_DE_QUADRO,  # noqa: E402
+                                PAPEIS_ESTRUTURAIS_DE_FOLHA,
+                                RelacaoEntreComponentes,
+                                TipoRelacaoComponentes)
+from composicao.receita import (ID_MONTANTE_CENTRAL, PLANO_EXTERNO,  # noqa: E402
+                                PLANO_INTERNO)
+
+
+def _relacao(participantes, tipo=TipoRelacaoComponentes.ENCONTRO_CENTRAL):
+    return RelacaoEntreComponentes(
+        tipo=tipo, participantes=participantes,
+        estado=EstadoConhecimento.CONFIRMADO_ESPECIALISTA,
+        fontes=(receita_mod.FONTE_TOPOLOGIA_E4E,))
+
+
+def _papeis_por_perfil(componentes):
+    return sorted((c.perfil.codigo_perfil, c.papel.value) for c in componentes)
+
+
+# ---- quadro ----------------------------------------------------------------
+
+def test_quadro_tem_quatro_pecas_com_os_perfis_arbitrados(receita):
+    quadro = [c for c in receita.componentes if c.papel in PAPEIS_DE_QUADRO]
+    assert len(quadro) == 4
+    assert _papeis_por_perfil(quadro) == [
+        ("SU-001", "MARCO_SUPERIOR"), ("SU-002", "MARCO_INFERIOR"),
+        ("SU-003", "MARCO_LATERAL"), ("SU-003", "MARCO_LATERAL")]
+    assert all(c.folha is None for c in quadro), "quadro não pertence a folha"
+
+
+def test_marcos_laterais_sao_duas_ocorrencias_do_mesmo_papel(receita):
+    """Duas peças distintas, papel idêntico.
+
+    Se o papel gravasse esquerda/direita, espelhar a janela exigiria trocar de
+    tipologia — e a lateralidade é da instância, não da receita."""
+    laterais = receita.componentes_do_perfil("SU-003")
+    assert len(laterais) == 2
+    assert len({c.identificador for c in laterais}) == 2
+    assert {c.papel for c in laterais} == {PapelComponente.MARCO_LATERAL}
+
+
+def test_nenhum_componente_grava_lateralidade(receita):
+    """Nada na receita permite dizer qual lado é o esquerdo."""
+    proibidos = {PapelComponente.MARCO_LATERAL_ESQUERDO,
+                 PapelComponente.MARCO_LATERAL_DIREITO}
+    assert not [c for c in receita.componentes if c.papel in proibidos]
+    texto = " ".join(f"{c.identificador} {c.posicao} {c.folha} "
+                     f"{' '.join(c.observacoes)}"
+                     for c in receita.componentes).lower()
+    for palavra in ("esquerd", "direit"):
+        assert palavra not in texto, palavra
+
+
+# ---- folhas ----------------------------------------------------------------
+
+@pytest.mark.parametrize("plano,montante_central",
+                         [(PLANO_INTERNO, "SU-040"), (PLANO_EXTERNO, "SU-041")])
+def test_cada_folha_tem_a_mesma_estrutura(receita, plano, montante_central):
+    estrutura = [c for c in receita.componentes_da_folha(plano)
+                 if c.papel in PAPEIS_ESTRUTURAIS_DE_FOLHA]
+    assert len(estrutura) == 4
+    assert _papeis_por_perfil(estrutura) == sorted([
+        ("SU-039", "MONTANTE_LATERAL_FOLHA"),
+        (montante_central, "MONTANTE_CENTRAL_FOLHA"),
+        ("SU-053", "TRAVESSA_SUPERIOR_FOLHA"),
+        ("SU-053", "TRAVESSA_INFERIOR_FOLHA")])
+
+
+def test_so_existem_dois_planos(receita):
+    folhas = {c.folha for c in receita.componentes} - {None}
+    assert folhas == {PLANO_INTERNO, PLANO_EXTERNO}
+    assert len(folhas) == receita.quantidade_folhas
+
+
+def test_mao_de_amigo_e_montante_nao_ferragem(receita):
+    """SU-040 e SU-041 são perfis. O papel registrado é o estrutural."""
+    for codigo in ("SU-040", "SU-041"):
+        (comp,) = receita.componentes_do_perfil(codigo)
+        assert comp.papel is PapelComponente.MONTANTE_CENTRAL_FOLHA
+        assert comp.orientacao == "vertical"
+    itens = {a.item for a in receita.regras_acessorios}
+    assert not any("amigo" in i.lower() for i in itens)
+    assert not [c for c in receita.componentes
+                if c.papel is PapelComponente.MAO_DE_AMIGO]
+
+
+# ---- baguetes --------------------------------------------------------------
+
+def test_oito_baguetes_distinguiveis_do_estrutural(receita):
+    baguetes = [c for c in receita.componentes if c.papel in PAPEIS_DE_BAGUETE]
+    assert len(baguetes) == 8
+    assert {c.perfil.codigo_perfil for c in baguetes} == {"SU-102"}
+    for plano in (PLANO_INTERNO, PLANO_EXTERNO):
+        da_folha = [c for c in baguetes if c.folha == plano]
+        assert len(da_folha) == 4
+        assert sorted(c.orientacao for c in da_folha) == [
+            "horizontal", "horizontal", "vertical", "vertical"]
+
+
+def test_contagem_estrutural_nao_inclui_acabamento(receita):
+    estruturais = [c for c in receita.componentes
+                   if c.papel not in PAPEIS_DE_BAGUETE]
+    baguetes = [c for c in receita.componentes if c.papel in PAPEIS_DE_BAGUETE]
+    assert (len(estruturais), len(baguetes)) == (12, 8)
+    assert len(receita.componentes) == 20
+    assert PAPEIS_DE_BAGUETE.isdisjoint(PAPEIS_DE_QUADRO)
+    assert PAPEIS_DE_BAGUETE.isdisjoint(PAPEIS_ESTRUTURAIS_DE_FOLHA)
+
+
+def test_identificadores_das_ocorrencias_sao_unicos(receita):
+    ids = [c.identificador for c in receita.componentes]
+    assert len(set(ids)) == len(ids) == 20
+
+
+# ---- encontro central ------------------------------------------------------
+
+def test_encontro_central_e_relacao_entre_as_duas_folhas(receita):
+    (rel,) = receita.relacoes_do_tipo(TipoRelacaoComponentes.ENCONTRO_CENTRAL)
+    assert rel.participantes == (ID_MONTANTE_CENTRAL[PLANO_INTERNO],
+                                 ID_MONTANTE_CENTRAL[PLANO_EXTERNO])
+    por_id = {c.identificador: c for c in receita.componentes}
+    perfis = [por_id[p].perfil.codigo_perfil for p in rel.participantes]
+    assert perfis == ["SU-040", "SU-041"]
+    assert [por_id[p].folha for p in rel.participantes] == [PLANO_INTERNO,
+                                                            PLANO_EXTERNO]
+
+
+def test_encontro_central_nao_e_uma_terceira_peca(receita):
+    """Nem peça, nem papel de peça, nem texto solto em observações."""
+    assert not [c for c in receita.componentes
+                if c.papel is PapelComponente.ENCONTRO_CENTRAL]
+    assert len(receita.componentes) == 20
+    for c in receita.componentes:
+        assert not any("encontro" in o.lower() for o in c.observacoes)
+
+
+def test_relacao_cita_ocorrencia_e_nao_codigo_de_perfil(receita):
+    """"SU-040 encontra SU-041" seria ambíguo com o perfil repetido."""
+    (rel,) = receita.relacoes
+    ids = {c.identificador for c in receita.componentes}
+    assert set(rel.participantes) <= ids
+    assert not set(rel.participantes) & set(PERFIS)
+
+
+# ---- validação da relação --------------------------------------------------
+
+def test_relacao_recusa_participante_repetido():
+    with pytest.raises(ReceitaErro, match="participante repetido"):
+        _relacao(("MESMO", "MESMO"))
+
+
+@pytest.mark.parametrize("participantes", [(), ("A",), ("A", "B", "C")])
+def test_encontro_central_e_binario(participantes):
+    with pytest.raises(ReceitaErro, match="esperado exatamente 2"):
+        _relacao(participantes)
+
+
+def test_relacao_recusa_participante_vazio():
+    with pytest.raises(ReceitaErro, match="participante vazio"):
+        _relacao(("A", "   "))
+
+
+def test_relacao_recusa_tipo_fora_do_vocabulario():
+    with pytest.raises(ReceitaErro, match="tipo inválido"):
+        _relacao(("A", "B"), tipo="ENCONTRO_CENTRAL")
+
+
+def test_validacao_recusa_referencia_fantasma(receita):
+    from dataclasses import replace
+    fantasma = _relacao((ID_MONTANTE_CENTRAL[PLANO_INTERNO],
+                         "SUPREMA_CORRER_2F:PECA-QUE-NAO-EXISTE"))
+    r2 = replace(receita, relacoes=(fantasma,))
+    r = validar.validar_cobertura_estrutural_receita(r2)
+    assert not r.ok
+    assert any("componente inexistente" in f["regra"] for f in r.falhas)
+
+
+def test_validacao_recusa_encontro_dentro_da_mesma_folha(receita):
+    from dataclasses import replace
+    mesma = _relacao((ID_MONTANTE_CENTRAL[PLANO_INTERNO],
+                      "SUPREMA_CORRER_2F:FOLHA-INTERNA:MONTANTE-LATERAL"))
+    r2 = replace(receita, relacoes=(mesma,))
+    r = validar.validar_cobertura_estrutural_receita(r2)
+    assert not r.ok
+    assert any("mesma folha" in f["regra"] for f in r.falhas)
+
+
+def test_validacao_recusa_relacao_duplicada(receita):
+    from dataclasses import replace
+    r2 = replace(receita, relacoes=receita.relacoes + receita.relacoes)
+    r = validar.validar_cobertura_estrutural_receita(r2)
+    assert not r.ok
+    assert any("duplicada" in f["regra"] for f in r.falhas)
+
+
+def test_validacao_recusa_relacao_com_evidencia_incompativel(receita):
+    from dataclasses import replace
+    sem_lastro = RelacaoEntreComponentes(
+        tipo=TipoRelacaoComponentes.ENCONTRO_CENTRAL,
+        participantes=receita.relacoes[0].participantes,
+        estado=EstadoConhecimento.CONFIRMADO_ESPECIALISTA,
+        fontes=(FONTE_CATALOGO,))
+    r = validar.validar_cobertura_estrutural_receita(
+        replace(receita, relacoes=(sem_lastro,)))
+    assert not r.ok
+    assert any("não sustenta" in f["regra"] for f in r.falhas)
+
+
+def test_relacao_com_participante_fantasma_fecha_a_visualizacao(receita,
+                                                                biblioteca):
+    from dataclasses import replace
+    r2 = replace(receita, relacoes=(_relacao(("NAO-EXISTE-1", "NAO-EXISTE-2")),))
+    assert not validar.validar_prontidao_para_visualizacao(r2, biblioteca).ok
+
+
+# ---- imutabilidade e serialização -----------------------------------------
+
+def test_relacao_e_imutavel(receita):
+    (rel,) = receita.relacoes
+    assert isinstance(rel.participantes, tuple)
+    assert isinstance(rel.fontes, tuple)
+    with pytest.raises(Exception):
+        rel.participantes = ("X", "Y")
+    with pytest.raises(AttributeError):
+        rel.tipo = TipoRelacaoComponentes.ENCONTRO_CENTRAL
+
+
+def test_lista_de_participantes_e_congelada_na_construcao():
+    origem = ["A", "B"]
+    rel = _relacao(origem)
+    origem.append("C")
+    assert rel.participantes == ("A", "B")
+
+
+def test_relacoes_da_receita_sao_congeladas():
+    lista = [_relacao(("A", "B"))]
+    r = ReceitaTipologia(codigo="X", nome="n", sistema="Suprema",
+                         quantidade_folhas=2, relacoes=lista)
+    lista.clear()
+    assert isinstance(r.relacoes, tuple) and len(r.relacoes) == 1
+
+
+def test_receita_recusa_relacao_de_tipo_errado():
+    with pytest.raises(ReceitaErro):
+        ReceitaTipologia(codigo="X", nome="n", sistema="Suprema",
+                         quantidade_folhas=2,
+                         relacoes=({"tipo": "ENCONTRO_CENTRAL"},))
+
+
+def test_relacao_sobrevive_ao_round_trip_yaml(receita):
+    """A relação atravessa YAML e volta idêntica.
+
+    A receita ainda não é persistida em disco — quem é serializado é a ficha de
+    campo. Este teste prova o contrato de serialização da relação em si, para
+    que a persistência futura não descubra tarde que ela não atravessa."""
+    yaml = pytest.importorskip("yaml")
+    (original,) = receita.relacoes
+    texto = yaml.safe_dump(original.para_dict(), allow_unicode=True,
+                           sort_keys=False)
+    d = yaml.safe_load(texto)
+    assert d["tipo"] == "ENCONTRO_CENTRAL"
+    assert d["participantes"] == list(original.participantes)
+
+    fontes_lidas = tuple(
+        FonteEvidencia(id_fonte=f["id_fonte"], tipo=f["tipo"],
+                       referencia=f["referencia"], descricao=f["descricao"],
+                       estado=EstadoConhecimento(f["estado"]),
+                       responsavel=f.get("responsavel"), data=f.get("data"),
+                       forma_referencia=f["forma_referencia"],
+                       sha256=f.get("sha256"),
+                       tamanho_bytes=f.get("tamanho_bytes"))
+        for f in d["fontes"])
+    reconstruida = RelacaoEntreComponentes(
+        tipo=TipoRelacaoComponentes(d["tipo"]),
+        participantes=tuple(d["participantes"]),
+        estado=EstadoConhecimento(d["estado"]),
+        fontes=fontes_lidas, observacao=d["observacao"])
+    assert reconstruida == original
+
+
+def test_topologia_inteira_sobrevive_ao_round_trip_yaml(receita):
+    yaml = pytest.importorskip("yaml")
+    def retrato(r):
+        return [[c.identificador, c.perfil.codigo_perfil, c.papel.value,
+                 c.orientacao, c.folha, c.posicao, c.quantidade]
+                for c in r.componentes]
+    lido = yaml.safe_load(yaml.safe_dump(retrato(receita), allow_unicode=True))
+    assert lido == retrato(receita)
+
+
+# ---- o que a topologia NÃO autoriza ---------------------------------------
+
+def test_registrar_topologia_nao_abre_calculo_nem_producao(receita, biblioteca):
+    rel = prontidao.gerar_relatorio_prontidao(receita, biblioteca)
+    assert rel["gates"]["visualizacao_preliminar"]["aberto"] is True
+    assert rel["gates"]["calculo"]["aberto"] is False
+    assert rel["gates"]["producao"]["aberto"] is False
+
+
+def test_topologia_nao_trouxe_nenhuma_medida(receita):
+    for c in receita.componentes:
+        assert c.quantidade == 1
+        for texto in (c.orientacao, c.posicao, c.folha):
+            assert not any(ch.isdigit() for ch in texto or "")
+    for regra in receita.regras_dimensionais:
+        assert regra.expressao is None and regra.variaveis == ()
+
+
+def test_perguntas_dimensionais_continuam_abertas(receita):
+    texto = " ".join(receita.perguntas_abertas).lower()
+    for tema in ("desconto", "folga", "sobreposição", "vidro", "acessório"):
+        assert tema in texto, tema
+
+
+def test_papeis_antigos_continuam_disponiveis():
+    """Nada foi removido do vocabulário: receitas anteriores seguem válidas."""
+    for nome in ("MARCO_LATERAL_ESQUERDO", "MARCO_LATERAL_DIREITO",
+                 "MAO_DE_AMIGO", "ENCONTRO_CENTRAL"):
+        assert PapelComponente(nome).value == nome
+
+
+def test_fonte_da_topologia_aponta_para_arquivo_existente(receita):
+    fonte = receita_mod.FONTE_TOPOLOGIA_E4E
+    caminho = RAIZ / fonte.referencia
+    assert caminho.is_file(), fonte.referencia
+    import hashlib
+    dados = caminho.read_bytes()
+    assert hashlib.sha256(dados).hexdigest() == fonte.sha256
+    assert len(dados) == fonte.tamanho_bytes
+
+
+def test_receita_e_deterministica_com_a_topologia():
+    a = receita_mod.construir_receita_preliminar()
+    b = receita_mod.construir_receita_preliminar()
+    assert a.componentes == b.componentes
+    assert a.relacoes == b.relacoes
