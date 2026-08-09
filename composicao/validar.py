@@ -27,6 +27,7 @@ from .modelos import (ALVOS_DIMENSIONAIS_BASE, ESCOPOS_DE_APROVACAO,
                       TIPOS_APTOS_PARA_CONFERIR_RECEITA,
                       OrigemResultadoCalculo,
                       estado_incompativel_com_assinatura,
+                      RELACOES_ENTRE_FOLHAS_DIFERENTES,
                       assinatura_documental_caso,
                       fingerprints_primarios_do_caso,
                       indice_fontes_receita, problemas_da_fonte_de_aprovacao)
@@ -226,6 +227,8 @@ def validar_cobertura_estrutural_receita(receita: ReceitaTipologia) -> Resultado
                               "identificadores únicos", ORIGEM_RECEITA))
 
     # --- acessórios: exatamente um requisito por item necessário
+    r = r.somar(validar_relacoes_da_receita(receita))
+
     itens = [a.item for a in receita.regras_acessorios]
     falta_acess = [i for i in ITENS_DE_ACESSORIO_BASE if i not in itens]
     if falta_acess:
@@ -237,6 +240,54 @@ def validar_cobertura_estrutural_receita(receita: ReceitaTipologia) -> Resultado
     if acess_dup:
         r = r.somar(_reprovar(receita.codigo, "acessório duplicado", acess_dup,
                               "um requisito por item", ORIGEM_RECEITA))
+    return r
+
+
+def validar_relacoes_da_receita(receita: ReceitaTipologia) -> ResultadoValidacao:
+    """As relações apontam para ocorrências que existem, e fazem sentido.
+
+    Uma relação que cita um componente inexistente é referência fantasma: ela
+    parece registrar conhecimento e não registra nada. E um "encontro" entre
+    duas peças da mesma folha não é encontro — é a mesma folha."""
+    r = ResultadoValidacao.aprovado()
+    por_id = {c.identificador: c for c in receita.componentes}
+
+    vistas = set()
+    for rel in receita.relacoes:
+        alvo = rel.identificador
+        if alvo in vistas:
+            r = r.somar(_reprovar(receita.codigo, "relação duplicada", alvo,
+                                  "uma relação por par", ORIGEM_RECEITA))
+        vistas.add(alvo)
+
+        ausentes = [p for p in rel.participantes if p not in por_id]
+        if ausentes:
+            r = r.somar(_reprovar(
+                alvo, "relação cita componente inexistente", ausentes,
+                sorted(por_id) or "nenhum componente registrado",
+                ORIGEM_RECEITA))
+            continue
+
+        if rel.tipo in RELACOES_ENTRE_FOLHAS_DIFERENTES:
+            folhas = [por_id[p].folha for p in rel.participantes]
+            if any(f is None for f in folhas):
+                r = r.somar(_reprovar(
+                    alvo, "participante sem folha declarada",
+                    [f"{p}={por_id[p].folha}" for p in rel.participantes],
+                    "cada participante em uma folha", ORIGEM_RECEITA))
+            elif len(set(folhas)) != len(folhas):
+                r = r.somar(_reprovar(
+                    alvo, "participantes na mesma folha", folhas,
+                    "folhas diferentes — duas peças da mesma folha não se "
+                    "encontram", ORIGEM_RECEITA))
+
+        problemas = incompatibilidades_das_fontes_embutidas(rel.estado,
+                                                            rel.fontes)
+        if rel.estado not in ESTADOS_NAO_CALCULAVEIS and problemas:
+            r = r.somar(_reprovar(alvo, "evidência não sustenta a relação",
+                                  list(problemas),
+                                  "fonte com estado e tipo compatíveis",
+                                  ORIGEM_RECEITA))
     return r
 
 
