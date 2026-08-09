@@ -12,6 +12,9 @@ continuem assim — travar aqui um valor que ninguém arbitrou transformaria
 palpite em regressão protegida.
 """
 import hashlib
+import os
+import stat
+import threading
 from decimal import Decimal
 from pathlib import Path
 
@@ -104,10 +107,11 @@ def test_t03_recusa_travessia_com_ponto_ponto():
 
 
 def test_t04_verificacao_recusa_escape_da_raiz(tmp_path):
-    """Caminho que resolve fora do acervo não é conferido: é reprovado.
+    """Caminho que sairia do acervo não é conferido: é reprovado.
 
-    O nome pode ser inocente e o destino não — por isso a contenção é medida
-    depois de resolver, e por componentes de caminho, não por prefixo."""
+    O nome pode ser inocente e o destino não. Desde a Rodada 3 a contenção não
+    é medida depois de resolver — a descida por descritor com `O_NOFOLLOW`
+    simplesmente não segue o desvio."""
     raiz = tmp_path / "acervo"
     (raiz / "02_janela_pequena").mkdir(parents=True)
     fora = tmp_path / "fora"
@@ -118,7 +122,7 @@ def test_t04_verificacao_recusa_escape_da_raiz(tmp_path):
     fonte = _fonte_externa(referencia="02_janela_pequena/atalho/foto.jpeg")
     r = validar.verificar_artefato_no_acervo(fonte, {RAIZ_LOGICA: raiz})
     assert not r.ok
-    assert any("fora do acervo" in f["regra"] for f in r.falhas)
+    assert any("symlink" in f["regra"] for f in r.falhas)
 
 
 def test_t05_verificacao_recusa_symlink_que_escapa(tmp_path):
@@ -137,8 +141,14 @@ def test_t05_verificacao_recusa_symlink_que_escapa(tmp_path):
         "qualquer lugar da máquina para dentro da prova")
 
 
-def test_symlink_interno_ao_acervo_continua_valido(tmp_path):
-    """A recusa é do ESCAPE, não do symlink — não endurecer sem necessidade."""
+def test_symlink_interno_ao_acervo_tambem_e_recusado(tmp_path):
+    """Política da Rodada 3: o acervo externo não aceita symlink em nível nenhum.
+
+    Mais estrita do que a regra dos arquivos do repositório, e de propósito.
+    Aceitar symlink interno exigiria decidir por CAMINHO se o destino está
+    dentro da raiz, e é essa decisão por caminho que abre a janela entre a
+    checagem e a leitura. O acervo real tem zero symlinks: o caso recusado não
+    existe na prática."""
     raiz = tmp_path / "acervo"
     (raiz / "02_janela_pequena").mkdir(parents=True)
     real = raiz / "02_janela_pequena" / "real.jpeg"
@@ -147,7 +157,197 @@ def test_symlink_interno_ao_acervo_continua_valido(tmp_path):
 
     fonte = _fonte_externa(sha256=hashlib.sha256(b"dentro").hexdigest(),
                            tamanho_bytes=6)
+    r = validar.verificar_artefato_no_acervo(fonte, {RAIZ_LOGICA: raiz})
+    assert not r.ok
+    assert any("symlink" in f["regra"] for f in r.falhas)
+
+
+def test_acervo_real_nao_tem_symlink_algum():
+    """A política estrita não custa nada porque o acervo não usa symlink."""
+    raizes = validar.raizes_fisicas_do_ambiente()
+    if RAIZ_LOGICA not in raizes:
+        pytest.skip("acervo externo não montado")
+    raiz = raizes[RAIZ_LOGICA]
+    assert not [p for p in raiz.rglob("*") if p.is_symlink()]
+
+
+# ---------------------------------------------------------------------------
+# T31–T38 · TOCTOU e objetos não regulares (Rodada 3)
+# ---------------------------------------------------------------------------
+
+def test_t31_arquivo_regular_correto_passa(acervo):
+    raiz, fonte = acervo
     assert validar.verificar_artefato_no_acervo(fonte, {RAIZ_LOGICA: raiz}).ok
+
+
+def test_t32_arquivo_final_symlink_para_fora_e_recusado(tmp_path):
+    raiz = tmp_path / "acervo"
+    (raiz / "02_janela_pequena").mkdir(parents=True)
+    externo = tmp_path / "externo.jpeg"
+    externo.write_bytes(b"conteudo de fora")
+    (raiz / "02_janela_pequena" / "foto.jpeg").symlink_to(externo)
+
+    fonte = _fonte_externa(sha256=hashlib.sha256(b"conteudo de fora").hexdigest(),
+                           tamanho_bytes=16)
+    r = validar.verificar_artefato_no_acervo(fonte, {RAIZ_LOGICA: raiz})
+    assert not r.ok
+    assert any("symlink" in f["regra"] for f in r.falhas), (
+        "o hash bater não é permissão para ler de fora da raiz")
+
+
+def test_t33_componente_intermediario_symlink_para_fora_e_recusado(tmp_path):
+    """O último componente ser inocente não basta: o pai também é caminho."""
+    raiz = tmp_path / "acervo"
+    raiz.mkdir()
+    fora = tmp_path / "fora"
+    fora.mkdir()
+    (fora / "foto.jpeg").write_bytes(b"bytes de fora")
+    (raiz / "02_janela_pequena").symlink_to(fora)
+
+    fonte = _fonte_externa(sha256=hashlib.sha256(b"bytes de fora").hexdigest(),
+                           tamanho_bytes=13)
+    r = validar.verificar_artefato_no_acervo(fonte, {RAIZ_LOGICA: raiz})
+    assert not r.ok
+    assert any("symlink" in f["regra"] for f in r.falhas)
+
+
+def test_t34_cadeia_de_symlinks_e_recusada(tmp_path):
+    raiz = tmp_path / "acervo"
+    (raiz / "02_janela_pequena").mkdir(parents=True)
+    alvo = tmp_path / "final.jpeg"
+    alvo.write_bytes(b"fim da cadeia")
+    (tmp_path / "elo2.jpeg").symlink_to(alvo)
+    (tmp_path / "elo1.jpeg").symlink_to(tmp_path / "elo2.jpeg")
+    (raiz / "02_janela_pequena" / "foto.jpeg").symlink_to(tmp_path / "elo1.jpeg")
+
+    fonte = _fonte_externa(sha256=hashlib.sha256(b"fim da cadeia").hexdigest(),
+                           tamanho_bytes=13)
+    r = validar.verificar_artefato_no_acervo(fonte, {RAIZ_LOGICA: raiz})
+    assert not r.ok
+    assert any("symlink" in f["regra"] for f in r.falhas)
+
+
+def test_t35_fifo_nao_e_arquivo_regular_e_nao_pendura(tmp_path):
+    """FIFO sem escritor penduraria um `open` bloqueante. Não pode acontecer."""
+    raiz = tmp_path / "acervo"
+    (raiz / "02_janela_pequena").mkdir(parents=True)
+    os.mkfifo(raiz / "02_janela_pequena" / "foto.jpeg")
+
+    fonte = _fonte_externa()
+    concluido = []
+
+    def verificar():
+        r = validar.verificar_artefato_no_acervo(fonte, {RAIZ_LOGICA: raiz})
+        concluido.append(r)
+
+    t = threading.Thread(target=verificar, daemon=True)
+    t.start()
+    t.join(timeout=10)
+    assert not t.is_alive(), "verificação bloqueou num FIFO sem escritor"
+    r = concluido[0]
+    assert not r.ok
+    assert any("não é arquivo regular" in f["regra"] for f in r.falhas)
+
+
+def test_t36_diretorio_nao_e_artefato_regular(tmp_path):
+    raiz = tmp_path / "acervo"
+    (raiz / "02_janela_pequena" / "foto.jpeg").mkdir(parents=True)
+    fonte = _fonte_externa()
+    r = validar.verificar_artefato_no_acervo(fonte, {RAIZ_LOGICA: raiz})
+    assert not r.ok
+    assert any("não é arquivo regular" in f["regra"] for f in r.falhas)
+
+
+def test_t37_o_objeto_hasheado_e_o_objeto_aberto(tmp_path, monkeypatch):
+    """Trocar o ARQUIVO no caminho depois da abertura não muda o que é lido.
+
+    O `fstat` acontece entre a abertura e a leitura; trocamos o caminho
+    exatamente aí. Se a leitura fosse por caminho, o hash passaria a ser o do
+    intruso e a verificação reprovaria. Como a leitura é pelo descritor já
+    aberto, o hash continua sendo o do artefato legítimo."""
+    raiz = tmp_path / "acervo"
+    (raiz / "02_janela_pequena").mkdir(parents=True)
+    alvo = raiz / "02_janela_pequena" / "foto.jpeg"
+    legitimo = b"bytes legitimos do artefato"
+    alvo.write_bytes(legitimo)
+
+    fstat_real = os.fstat
+    trocas = []
+
+    def fstat_e_troca(fd):
+        situacao = fstat_real(fd)
+        # Só no artefato final: o `fstat` do diretório intermediário acontece
+        # ANTES da abertura do arquivo, e trocar ali não testaria nada.
+        if stat.S_ISREG(situacao.st_mode) and not trocas:
+            trocas.append(True)
+            alvo.unlink()
+            alvo.write_bytes(b"BYTES DO INTRUSO TROCADOS NO MEIO")
+        return situacao
+
+    monkeypatch.setattr(os, "fstat", fstat_e_troca)
+
+    fonte = _fonte_externa(sha256=hashlib.sha256(legitimo).hexdigest(),
+                           tamanho_bytes=len(legitimo))
+    r = validar.verificar_artefato_no_acervo(fonte, {RAIZ_LOGICA: raiz})
+    assert trocas, "a troca não chegou a acontecer — teste não pressionou nada"
+    assert r.ok, (
+        "o hash mudou junto com o caminho: a leitura não está presa ao "
+        "descritor aberto")
+    assert alvo.read_bytes() != legitimo   # o intruso está lá, e foi ignorado
+
+
+def test_t38_troca_por_symlink_entre_inspecao_e_abertura_nao_escapa(tmp_path,
+                                                                    monkeypatch):
+    """Trocar o alvo por symlink para fora, no instante da abertura, não passa.
+
+    Simula a corrida no ponto exato onde ela seria explorável: logo antes do
+    `os.open` do último componente. Como a abertura usa `O_NOFOLLOW`, o que
+    entrou no lugar é recusado em vez de seguido."""
+    raiz = tmp_path / "acervo"
+    (raiz / "02_janela_pequena").mkdir(parents=True)
+    alvo = raiz / "02_janela_pequena" / "foto.jpeg"
+    legitimo = b"bytes legitimos"
+    alvo.write_bytes(legitimo)
+    fora = tmp_path / "segredo.jpeg"
+    fora.write_bytes(legitimo)          # mesmo conteúdo: o hash bateria
+
+    open_real = os.open
+    trocas = []
+
+    def open_e_troca(caminho, *a, **k):
+        if caminho == "foto.jpeg" and not trocas:
+            trocas.append(True)
+            alvo.unlink()
+            alvo.symlink_to(fora)
+        return open_real(caminho, *a, **k)
+
+    monkeypatch.setattr(os, "open", open_e_troca)
+
+    fonte = _fonte_externa(sha256=hashlib.sha256(legitimo).hexdigest(),
+                           tamanho_bytes=len(legitimo))
+    r = validar.verificar_artefato_no_acervo(fonte, {RAIZ_LOGICA: raiz})
+    assert trocas
+    assert not r.ok, "symlink inserido na janela de corrida foi seguido"
+    assert any("symlink" in f["regra"] for f in r.falhas)
+
+
+def test_verificacao_nao_le_artefato_externo_por_caminho(acervo, monkeypatch):
+    """Nenhuma leitura por caminho sobra no fluxo — a garantia é estrutural."""
+    raiz, fonte = acervo
+
+    def proibido(*a, **k):                     # pragma: no cover
+        raise AssertionError("artefato externo lido por caminho, não por fd")
+
+    monkeypatch.setattr(Path, "read_bytes", proibido)
+    assert validar.verificar_artefato_no_acervo(fonte, {RAIZ_LOGICA: raiz}).ok
+
+
+def test_caminho_com_ponto_ponto_recusado_na_descida(tmp_path):
+    """Defesa em profundidade: `..` já é recusado na construção da fonte."""
+    raiz = tmp_path / "acervo"
+    raiz.mkdir()
+    with pytest.raises(validar._AcervoRecusado):
+        validar._abrir_artefato_do_acervo(raiz, "a/../../etc/passwd")
 
 
 # ---------------------------------------------------------------------------
@@ -450,6 +650,143 @@ def test_afirmacao_nao_pode_derivar_de_si_mesma():
     r = validar_manifesto(manifesto_de_dict(dados))
     assert not r.ok
     assert any("deriva de si" in f["regra"] for f in r.falhas)
+
+
+# ---------------------------------------------------------------------------
+# C01–C05 · grafo de derivação (Rodada 3)
+# ---------------------------------------------------------------------------
+
+def _afirmacao_crua(identificador, deriva=(), estado="PENDENTE"):
+    return {"identificador": identificador, "texto": f"texto de {identificador}",
+            "estado": estado, "derivada_de": list(deriva)}
+
+
+def _manifesto_cru(afirmacoes, conflitos=()):
+    return manifesto_de_dict({"versao_manifesto": 1, "conjunto": "X",
+                              "raiz_logica": "X",
+                              "afirmacoes": list(afirmacoes),
+                              "conflitos": list(conflitos)})
+
+
+def _ciclos_reprovados(manifesto):
+    return [f["encontrado"] for f in validar_manifesto(manifesto).falhas
+            if f["regra"] == "derivação circular"]
+
+
+def test_c01_ciclo_de_dois_nos_e_rejeitado():
+    """A01 <- A02 <- A01: cada uma se apoia na outra e nenhuma tem origem."""
+    man = _manifesto_cru([_afirmacao_crua("A01", ["A02"]),
+                          _afirmacao_crua("A02", ["A01"])])
+    assert _ciclos_reprovados(man) == ["A01 -> A02 -> A01"]
+
+
+def test_c02_ciclo_de_tres_nos_e_rejeitado():
+    man = _manifesto_cru([_afirmacao_crua("A01", ["A02"]),
+                          _afirmacao_crua("A02", ["A03"]),
+                          _afirmacao_crua("A03", ["A01"])])
+    assert _ciclos_reprovados(man) == ["A01 -> A02 -> A03 -> A01"]
+
+
+def test_c02b_ciclo_escondido_dentro_de_grafo_maior_e_rejeitado():
+    """O ciclo não está na raiz do grafo nem no começo da lista."""
+    man = _manifesto_cru([
+        _afirmacao_crua("A01"),
+        _afirmacao_crua("A02", ["A01"]),
+        _afirmacao_crua("A03", ["A02", "A04"]),
+        _afirmacao_crua("A04", ["A05"]),
+        _afirmacao_crua("A05", ["A06"]),
+        _afirmacao_crua("A06", ["A04"]),      # ciclo A04 -> A05 -> A06 -> A04
+        _afirmacao_crua("A07", ["A01", "A02"]),
+    ])
+    assert _ciclos_reprovados(man) == ["A04 -> A05 -> A06 -> A04"]
+
+
+def test_c03_dag_valido_continua_aceito():
+    """Losango de derivação, com nó citado por dois caminhos: é válido."""
+    man = _manifesto_cru([
+        _afirmacao_crua("A01"),
+        _afirmacao_crua("A02", ["A01"]),
+        _afirmacao_crua("A03", ["A01"]),
+        _afirmacao_crua("A04", ["A02", "A03"]),
+        _afirmacao_crua("A05", ["A04", "A01"]),
+    ])
+    assert not _ciclos_reprovados(man)
+    assert validar_manifesto(man).ok
+
+
+def test_c04_ordem_no_yaml_nao_altera_o_resultado():
+    """Mesmo grafo, três ordens de escrita, mesmo veredito e mesma mensagem."""
+    afirmacoes = [_afirmacao_crua("A01", ["A02"]),
+                  _afirmacao_crua("A02", ["A03"]),
+                  _afirmacao_crua("A03", ["A01"])]
+    vereditos = {tuple(_ciclos_reprovados(_manifesto_cru(ordem)))
+                 for ordem in (afirmacoes,
+                               list(reversed(afirmacoes)),
+                               [afirmacoes[1], afirmacoes[2], afirmacoes[0]])}
+    assert vereditos == {("A01 -> A02 -> A03 -> A01",)}
+
+
+def test_c05_derivacao_de_afirmacao_inexistente_e_rejeitada():
+    man = _manifesto_cru([_afirmacao_crua("A01", ["A99-FANTASMA"])])
+    r = validar_manifesto(man)
+    assert not r.ok
+    assert any("deriva de afirmação inexistente" in f["regra"]
+               for f in r.falhas)
+
+
+def test_c05b_autorreferencia_continua_rejeitada():
+    """A regra antiga não foi substituída pela nova — as duas valem."""
+    r = validar_manifesto(_manifesto_cru([_afirmacao_crua("A01", ["A01"])]))
+    assert not r.ok
+    assert any("deriva de si" in f["regra"] for f in r.falhas)
+
+
+def test_cadeia_longa_de_derivacao_nao_estoura_a_pilha():
+    """Grafo profundo é dado, não defeito: não pode virar RecursionError."""
+    cadeia = [_afirmacao_crua("A0", [])]
+    cadeia += [_afirmacao_crua(f"A{i}", [f"A{i - 1}"]) for i in range(1, 400)]
+    assert validar_manifesto(_manifesto_cru(cadeia)).ok
+
+
+# ---------------------------------------------------------------------------
+# K01–K03 · identidade dos conflitos (Rodada 3)
+# ---------------------------------------------------------------------------
+
+def _conflito_cru(identificador):
+    return {"identificador": identificador, "descricao": "divergência",
+            "valores": ["a", "b"], "estado": "PENDENTE"}
+
+
+def test_k01_dois_conflitos_com_mesmo_id_sao_rejeitados():
+    r = validar_manifesto(_manifesto_cru(
+        [], [_conflito_cru("K1"), _conflito_cru("K1")]))
+    assert not r.ok
+    assert any(f["regra"] == "conflito repetido" for f in r.falhas)
+
+
+def test_k02_conflitos_com_ids_diferentes_sao_aceitos():
+    assert validar_manifesto(_manifesto_cru(
+        [], [_conflito_cru("K1"), _conflito_cru("K2")])).ok
+
+
+def test_k03_afirmacao_e_conflito_dividem_o_mesmo_namespace():
+    """POLÍTICA ADOTADA: namespace global do manifesto.
+
+    Afirmação e conflito são citados do mesmo jeito em relatório e em
+    arbitragem — "pendência A07" ao lado de "pendência K2". Se os dois
+    pudessem se chamar A07, a citação passaria a depender de quem lê. A
+    restrição é deliberada e está testada para não virar acidente."""
+    r = validar_manifesto(_manifesto_cru([_afirmacao_crua("K9")],
+                                         [_conflito_cru("K9")]))
+    assert not r.ok
+    assert any(f["regra"] == "identificador usado por afirmação e por conflito"
+               for f in r.falhas)
+
+
+def test_k03b_manifesto_real_respeita_o_namespace_global(manifesto):
+    ids_afirmacao = {a.identificador for a in manifesto.afirmacoes}
+    ids_conflito = {c.identificador for c in manifesto.conflitos}
+    assert not (ids_afirmacao & ids_conflito)
 
 
 def test_citacao_para_fonte_inexistente_reprova():

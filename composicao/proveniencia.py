@@ -547,14 +547,101 @@ def validar_manifesto(manifesto: ManifestoProveniencia) -> ResultadoValidacao:
                               "afirmação repetida", repetidos,
                               "um identificador por afirmação"))
 
+    # Conflito também precisa de identidade única: dois `K2-VIDRO` no mesmo
+    # manifesto fariam "o conflito K2" designar duas coisas, e um relatório
+    # citando K2 não diria qual delas ficou pendente.
+    ids_conflito = [c.identificador for c in manifesto.conflitos]
+    repetidos_conflito = sorted({i for i in ids_conflito
+                                 if ids_conflito.count(i) > 1})
+    if repetidos_conflito:
+        r = r.somar(_reprovar(manifesto.conjunto or "-",
+                              "conflito repetido", repetidos_conflito,
+                              "um identificador por conflito"))
+
+    # NAMESPACE GLOBAL, decidido explicitamente: afirmações e conflitos
+    # dividem o mesmo espaço de identificadores do manifesto. Os dois são
+    # citados do mesmo jeito em relatório e em arbitragem — "pendência A07" e
+    # "pendência K2" aparecem lado a lado —, e deixar um `A07` afirmação
+    # conviver com um `A07` conflito faria a citação depender de quem lê.
+    colisoes = sorted(set(identificadores) & set(ids_conflito))
+    if colisoes:
+        r = r.somar(_reprovar(
+            manifesto.conjunto or "-",
+            "identificador usado por afirmação e por conflito", colisoes,
+            "identificadores distintos — afirmação e conflito dividem o "
+            "mesmo namespace do manifesto"))
+
     for a in manifesto.afirmacoes:
         r = r.somar(_validar_afirmacao(a, indice, set(identificadores)))
+    r = r.somar(_validar_grafo_de_derivacao(manifesto.afirmacoes))
     for c in manifesto.conflitos:
         for cit in c.citacoes:
             if cit.id_fonte not in indice:
                 r = r.somar(_reprovar(c.identificador,
                                       "conflito cita fonte inexistente",
                                       cit.id_fonte, "id_fonte do manifesto"))
+    return r
+
+
+def _validar_grafo_de_derivacao(afirmacoes) -> ResultadoValidacao:
+    """Nenhuma cadeia de derivação pode fechar em círculo.
+
+    Recusar só a autorreferência (`A01` deriva de `A01`) deixa passar o mesmo
+    defeito escondido em dois saltos: com `A01 <- A02 <- A01`, cada afirmação
+    parece sustentada pela outra e o par inteiro não tem origem nenhuma. É
+    proveniência que se prova sozinha — exatamente o que o registro existe para
+    impedir.
+
+    A checagem é do GRAFO inteiro, por busca em profundidade sobre os
+    identificadores em ordem alfabética: o resultado não depende da ordem em
+    que as afirmações aparecem no YAML."""
+    arestas = {a.identificador: tuple(a.derivada_de) for a in afirmacoes}
+    ABERTO, FECHADO = 1, 2
+    marca: dict = {}
+    ciclos: list = []
+    vistos: set = set()
+
+    for raiz in sorted(arestas):
+        if marca.get(raiz):
+            continue
+        # DFS iterativa: uma cadeia de derivação longa não deve estourar a
+        # pilha do interpretador e transformar dado inválido em traceback.
+        pilha = [(raiz, iter(arestas[raiz]))]
+        caminho = [raiz]
+        marca[raiz] = ABERTO
+        while pilha:
+            no, pendentes = pilha[-1]
+            avancou = False
+            for destino in pendentes:
+                if destino not in arestas:
+                    continue          # fantasma: já reprovado em _validar_afirmacao
+                if marca.get(destino) == ABERTO:
+                    ciclo = caminho[caminho.index(destino):] + [destino]
+                    assinatura = frozenset(ciclo)
+                    if assinatura not in vistos:
+                        vistos.add(assinatura)
+                        ciclos.append(" -> ".join(ciclo))
+                    continue
+                if marca.get(destino) == FECHADO:
+                    continue
+                marca[destino] = ABERTO
+                caminho.append(destino)
+                pilha.append((destino, iter(arestas[destino])))
+                avancou = True
+                break
+            if not avancou:
+                marca[no] = FECHADO
+                pilha.pop()
+                caminho.pop()
+
+    if not ciclos:
+        return ResultadoValidacao.aprovado()
+    r = ResultadoValidacao.aprovado()
+    for ciclo in sorted(ciclos):
+        r = r.somar(_reprovar(
+            ciclo.split(" -> ")[0], "derivação circular", ciclo,
+            "cadeia de derivação que termina em afirmação de origem "
+            "independente"))
     return r
 
 
