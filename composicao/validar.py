@@ -19,6 +19,7 @@ from .modelos import (ALVOS_DIMENSIONAIS_BASE, ESCOPOS_DE_APROVACAO,
                       ESTADO_CASO_VALIDADO, ESTADOS_CONFIRMADOS,
                       ESTADOS_NAO_CALCULAVEIS, IDENTIFICADORES_DE_CASO,
                       ITENS_DE_ACESSORIO_BASE, TIPOS_APTOS_PARA_VALIDAR_CASO,
+                      FORMA_ACERVO_EXTERNO,
                       CasoRealFabricacao, EstadoConhecimento, ReceitaErro,
                       ReceitaTipologia, ResultadoAprovacao, ResultadoValidacao,
                       aprovacoes_por_escopo,
@@ -875,7 +876,12 @@ def validar_artefato_de_evidencia(fonte, raiz_repositorio) -> ResultadoValidacao
     sido substituído depois. `sha256` é o que transforma a referência em prova."""
     from pathlib import Path as _P
     if fonte.forma_referencia != "arquivo":
-        return ResultadoValidacao.aprovado()      # URL/identificador externo
+        # URL, identificador externo e acervo externo. O artefato de acervo
+        # externo NÃO é conferido aqui de propósito: ele vive fora do clone, e
+        # exigi-lo aqui faria a validação estrutural do repositório depender de
+        # o acervo estar montado. Quem quiser a prova física chama
+        # `verificar_artefato_no_acervo`, que falha alto se a raiz faltar.
+        return ResultadoValidacao.aprovado()
     if fonte.estado in ESTADOS_NAO_CALCULAVEIS:
         return ResultadoValidacao.aprovado()      # pendente não precisa provar
 
@@ -912,6 +918,117 @@ def validar_artefato_de_evidencia(fonte, raiz_repositorio) -> ResultadoValidacao
     if fonte.tamanho_bytes is not None and len(dados) != fonte.tamanho_bytes:
         r = r.somar(_reprovar(fonte.id_fonte, "tamanho do artefato divergente",
                               len(dados), fonte.tamanho_bytes, ORIGEM_ARTEFATO))
+    return r
+
+
+# ---------------------------------------------------------------------------
+# Acervo externo — verificação física explícita
+# ---------------------------------------------------------------------------
+
+PREFIXO_RAIZ_NO_AMBIENTE = "ESQUADRIACORE_ACERVO_"
+
+ORIGEM_ACERVO = "acervo externo de evidências primárias"
+
+
+def raizes_fisicas_do_ambiente(ambiente=None) -> dict:
+    """`raiz_logica` -> caminho físico, lido do ambiente.
+
+    `ESQUADRIACORE_ACERVO_SUPREMA_CORRER_2F=/caminho/do/acervo`. O endereço
+    físico é de quem roda, não do repositório: cada máquina monta o acervo onde
+    quiser e nada disso é commitado. Sem variável, o dicionário vem vazio — e
+    aí a verificação física reprova por raiz ausente, que é o comportamento
+    correto, em vez de passar dizendo que conferiu."""
+    import os
+    from pathlib import Path as _P
+    ambiente = os.environ if ambiente is None else ambiente
+    raizes = {}
+    for chave, valor in ambiente.items():
+        if not chave.startswith(PREFIXO_RAIZ_NO_AMBIENTE) or not valor:
+            continue
+        raizes[chave[len(PREFIXO_RAIZ_NO_AMBIENTE):]] = _P(valor)
+    return raizes
+
+
+def _componente_e_symlink_para_fora(alvo, raiz) -> str | None:
+    """Nome do primeiro componente que é symlink apontando para fora da raiz.
+
+    Um symlink dentro do acervo é legítimo; um que aponta para fora traria
+    bytes de qualquer lugar da máquina para dentro da prova. `resolve()`
+    sozinho esconderia isso: ele devolve o destino sem dizer que houve desvio."""
+    from pathlib import Path as _P
+    atual = _P(raiz)
+    for parte in _P(alvo).relative_to(_P(raiz)).parts:
+        atual = atual / parte
+        if atual.is_symlink():
+            try:
+                destino = atual.resolve()
+            except OSError:
+                return str(parte)
+            if not _dentro_da_raiz(destino, _P(raiz).resolve()):
+                return str(parte)
+    return None
+
+
+def verificar_artefato_no_acervo(fonte, raizes_fisicas) -> ResultadoValidacao:
+    """Confere o artefato externo contra os bytes reais. Exige a raiz física.
+
+    Separada de `validar_artefato_de_evidencia` de propósito. Aquela responde
+    "o registro está bem formado?" e roda em qualquer clone; esta responde "o
+    arquivo ainda é aquele?" e só tem resposta com o acervo montado. Raiz
+    ausente aqui é REPROVAÇÃO: uma função que devolve "válido" porque não achou
+    o que conferir é pior do que não existir."""
+    import hashlib
+    from pathlib import Path as _P
+    if fonte.forma_referencia != FORMA_ACERVO_EXTERNO:
+        return ResultadoValidacao.aprovado()      # não é artefato de acervo
+
+    raiz = (raizes_fisicas or {}).get(fonte.raiz_logica)
+    if raiz is None:
+        return _reprovar(
+            fonte.id_fonte, "raiz física do acervo não fornecida",
+            fonte.raiz_logica,
+            f"caminho para a raiz lógica {fonte.raiz_logica!r} "
+            f"(parâmetro ou {PREFIXO_RAIZ_NO_AMBIENTE}{fonte.raiz_logica})",
+            ORIGEM_ACERVO)
+    raiz = _P(raiz)
+    if not raiz.is_dir():
+        return _reprovar(fonte.id_fonte, "raiz física do acervo inexistente",
+                         str(raiz), "diretório existente", ORIGEM_ACERVO)
+    raiz = raiz.resolve()
+
+    alvo = raiz / fonte.referencia
+    desvio = _componente_e_symlink_para_fora(alvo, raiz)
+    if desvio:
+        return _reprovar(fonte.id_fonte, "symlink aponta para fora do acervo",
+                         desvio, f"artefato dentro de {raiz}", ORIGEM_ACERVO)
+    try:
+        resolvido = alvo.resolve()
+    except OSError:
+        resolvido = alvo
+    if not _dentro_da_raiz(resolvido, raiz):
+        return _reprovar(fonte.id_fonte, "artefato resolve fora do acervo",
+                         fonte.referencia, f"dentro de {raiz}", ORIGEM_ACERVO)
+    if not resolvido.exists():
+        return _reprovar(fonte.id_fonte, "artefato ausente no acervo",
+                         fonte.referencia, "arquivo presente no acervo",
+                         ORIGEM_ACERVO)
+    if not resolvido.is_file():
+        return _reprovar(fonte.id_fonte, "artefato não é arquivo regular",
+                         fonte.referencia, "arquivo regular", ORIGEM_ACERVO)
+    if not fonte.sha256:
+        return _reprovar(fonte.id_fonte, "artefato externo sem sha256", None,
+                         "sha256 registrado — sem ele não há o que conferir",
+                         ORIGEM_ACERVO)
+
+    dados = resolvido.read_bytes()
+    atual = hashlib.sha256(dados).hexdigest()
+    r = ResultadoValidacao.aprovado()
+    if atual != fonte.sha256:
+        r = r.somar(_reprovar(fonte.id_fonte, "artefato alterado após o registro",
+                              atual[:16], fonte.sha256[:16], ORIGEM_ACERVO))
+    if fonte.tamanho_bytes is not None and len(dados) != fonte.tamanho_bytes:
+        r = r.somar(_reprovar(fonte.id_fonte, "tamanho do artefato divergente",
+                              len(dados), fonte.tamanho_bytes, ORIGEM_ACERVO))
     return r
 
 
