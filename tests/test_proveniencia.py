@@ -1145,9 +1145,10 @@ def test_manifesto_real_valida(manifesto):
         validar_manifesto(manifesto).descrever()
 
 
-def test_manifesto_tem_as_dezesseis_afirmacoes(manifesto):
+def test_manifesto_tem_as_vinte_afirmacoes(manifesto):
+    """A01–A16 são a topologia (E.4F); A17–A20, a referência dimensional (E.4G)."""
     assert [a.identificador for a in manifesto.afirmacoes] == \
-        [f"A{i:02d}" for i in range(1, 17)]
+        [f"A{i:02d}" for i in range(1, 21)]
 
 
 def test_toda_afirmacao_confirmada_tem_sustentacao(manifesto):
@@ -1167,16 +1168,117 @@ def test_todo_artefato_externo_tem_hash_e_tamanho(manifesto):
         assert f.raiz_logica == RAIZ_LOGICA
 
 
-def test_manifesto_nao_registra_formula_dimensional():
-    """A E.4F ingere evidência. Fórmula continua proibida."""
-    texto = MANIFESTO.read_text(encoding="utf-8")
-    ressalvas = ("candidat", "nenhuma", "não", "proibid")
-    for proibida in ("L-32", "H-5", "H-55", "(L-132)/2"):
-        for linha in texto.splitlines():
-            if proibida not in linha:
-                continue
-            assert any(r in linha.lower() for r in ressalvas), (
-                f"fórmula {proibida} citada sem ressalva: {linha}")
+# ---------------------------------------------------------------------------
+# E.4G · referência dimensional — arbitragem, não medição
+# ---------------------------------------------------------------------------
+
+ARBITRAGEM_E4G = RAIZ / "curadoria/handoffs/e4g/referencia_dimensional_suprema_2f.md"
+
+
+def test_arbitragem_dimensional_e4g_esta_integra(manifesto):
+    """O hash citado tem de bater com o arquivo — senão a citação é fóssil."""
+    fonte = manifesto.indice_de_fontes()["FONTE-REFERENCIA-DIMENSIONAL-E4G"]
+    dados = (RAIZ / fonte.referencia).read_bytes()
+    assert hashlib.sha256(dados).hexdigest() == fonte.sha256
+    assert len(dados) == fonte.tamanho_bytes
+
+
+def test_arbitragem_dimensional_nao_e_evidencia_fisica_primaria(manifesto):
+    """Registra que um especialista decidiu, não que alguém mediu."""
+    fonte = manifesto.indice_de_fontes()["FONTE-REFERENCIA-DIMENSIONAL-E4G"]
+    assert fonte.tipo == "especialista_de_dominio"
+    assert fonte.tipo not in TIPOS_DE_EVIDENCIA_PRIMARIA
+    assert not fonte.identifica_exemplar
+    assert fonte.estado is EstadoConhecimento.CONFIRMADO_ESPECIALISTA
+    assert fonte.autoria_completa            # quem, quando e onde
+
+
+def test_a17_registra_l_e_h_como_vao(manifesto):
+    a17 = manifesto.afirmacao("A17")
+    assert a17.estado is EstadoConhecimento.CONFIRMADO_ESPECIALISTA
+    texto = a17.texto.upper()
+    assert "LARGURA DO VÃO" in texto and "ALTURA DO VÃO" in texto
+    sustentam = [c.id_fonte for c in a17.citacoes if c.sustenta]
+    assert sustentam == ["FONTE-REFERENCIA-DIMENSIONAL-E4G"], (
+        "quem sustenta A17 é a arbitragem; a ficha só corrobora, porque ela "
+        "não declara o significado de L e H")
+
+
+def test_a17_registra_que_a_aritmetica_nao_decidiria_sozinha(manifesto):
+    """A coincidência algébrica não pode ser lida como se fosse a prova."""
+    obs = manifesto.afirmacao("A17").observacao.lower()
+    assert "coincidência algébrica não é definição de variável" in obs
+
+
+def test_a19_preserva_a_fracao_sem_escolher_politica(manifesto):
+    """957,5 calculado × 957 medido — registrado, não resolvido."""
+    a19 = manifesto.afirmacao("A19")
+    assert "957,5" in a19.texto and "957" in a19.texto
+    obs = a19.observacao.lower()
+    assert "pendente" in obs
+    assert "floor e trunc devolvem o mesmo resultado" in obs, (
+        "para comprimentos positivos as duas operações são indistinguíveis; "
+        "o registro não pode sugerir que uma medição futura as separa")
+
+
+def test_expressoes_continuam_candidatas_sem_validacao_multicaso(manifesto):
+    """Um caso com corte real não é validação multicaso."""
+    obs = manifesto.afirmacao("A18").observacao.lower()
+    assert "um caso" in obs
+    assert "candidatas" in obs
+    assert "não têm saída de corte real" in obs
+
+
+def test_arbitragem_dimensional_nao_contem_formula_executavel():
+    """O registro é documento. Não pode virar código por descuido."""
+    texto = ARBITRAGEM_E4G.read_text(encoding="utf-8")
+    for proibido in ("def ", "lambda", "eval(", "import ", "return "):
+        assert proibido not in texto, f"código executável no registro: {proibido!r}"
+
+
+FORMULAS_CANDIDATAS = ("L-32", "H-5", "H-55", "(L-132)/2")
+RESSALVAS = ("candidat", "nenhuma", "não", "proibid", "pendente", "empír")
+
+
+def test_manifesto_nao_promove_formula_a_regra(manifesto):
+    """Citar a expressão é permitido; registrá-la sem ressalva não é.
+
+    A E.4G precisou nomear as expressões para dizer o que elas reproduzem. O
+    que continua proibido é a expressão aparecer como se fosse regra — por isso
+    a checagem é por REGISTRO (texto + observação), e não por linha solta: a
+    ressalva de uma afirmação mora na observação dela."""
+    registros = [(a.identificador, f"{a.texto} {a.observacao or ''}")
+                 for a in manifesto.afirmacoes]
+    registros += [(f"nota[{i}]", n) for i, n in enumerate(manifesto.notas)]
+    registros += [(c.identificador, f"{c.descricao} {' '.join(c.valores)}")
+                  for c in manifesto.conflitos]
+    for ident, conteudo in registros:
+        if not any(f in conteudo for f in FORMULAS_CANDIDATAS):
+            continue
+        assert any(r in conteudo.lower() for r in RESSALVAS), (
+            f"{ident}: expressão dimensional citada sem ressalva")
+
+
+def test_manifesto_nao_tem_campo_de_formula_executavel():
+    """A garantia estrutural: o schema do manifesto não carrega expressão.
+
+    Enquanto não existir campo, nenhum consumidor pode confundir o registro com
+    entrada de motor de cálculo."""
+    import yaml
+    dados = yaml.safe_load(MANIFESTO.read_text(encoding="utf-8"))
+    proibidos = {"formula", "formula_medida", "expressao", "formula_largura",
+                 "formula_altura", "regra_dimensional"}
+
+    def varrer(no, caminho="raiz"):
+        if isinstance(no, dict):
+            for k, v in no.items():
+                assert k not in proibidos, f"campo de fórmula em {caminho}: {k}"
+                varrer(v, f"{caminho}.{k}")
+        elif isinstance(no, list):
+            for i, v in enumerate(no):
+                varrer(v, f"{caminho}[{i}]")
+
+    varrer(dados)
 
 
 def test_acervo_real_confere_quando_montado(manifesto):
