@@ -127,7 +127,7 @@ lista de origem depois não afeta a relação); `relacoes` congelada pelo
 `COLECOES` da receita com checagem de tipo elemento a elemento; atribuição
 depois da construção levanta erro. Padrão idêntico ao das outras coleções.
 
-### 13. Evidência — nada inventado
+### 13. Evidência — nada inventado (CORRIGIDO, ver adendo)
 
 `FONTE-TOPOLOGIA-E4E`, tipo `especialista_de_dominio`, estado
 `CONFIRMADO_ESPECIALISTA`, responsável Bruno, data 2026-08-09, apontando para
@@ -214,3 +214,133 @@ e7bdb1e  feat(composicao): papel lateral neutro e relação tipada entre compone
    rótulo, não de estrutura.
 3. **Convenção de "interno"** — a receita diz interno/externo sem dizer visto
    de que lado. Deixei como pergunta aberta em vez de fixar uma convenção.
+
+
+---
+
+# ADENDO — rodada de correção de proveniência (2026-08-09)
+
+Auditoria aprovou a estrutura e mandou corrigir a semântica da fonte + três
+arbitragens. HEAD anterior `8b6396e` → novo HEAD `771e25c`.
+
+## Arquivos alterados
+
+```text
+composicao/receita.py
+curadoria/handoffs/e4e/topologia_suprema_2f.md
+tests/test_receita_suprema.py
+```
+
+`modelos.py` e `validar.py` **não foram tocados** — o contrato de fontes não
+foi ampliado.
+
+## Como FONTE-TOPOLOGIA-E4E passou a ser classificada
+
+`TIPOS_DE_FONTE` não tem tipo de arbitragem, e a ordem foi não ampliar o schema
+só por isso. Mantido `especialista_de_dominio` / `CONFIRMADO_ESPECIALISTA` — o
+tipo mais honesto disponível, porque afirma **"um especialista decidiu"**, não
+"existe foto provando". Não virou `foto`, `medicao_fisica`, `croqui` nem
+`software_externo`. A correção foi de **texto e estado semântico**, não de tipo.
+
+## Distinção registrada, em texto
+
+Arbitragem derivada, na `descricao` da fonte:
+
+> "REGISTRO DERIVADO DE ARBITRAGEM DE DOMÍNIO, não evidência física primária.
+> […] O hash prova a integridade DESTE documento e quais decisões ele registra
+> — não prova a composição física de nenhuma janela."
+
+Primárias pendentes, na mesma `descricao`:
+
+> "Evidências primárias (três janelas reais, quadro sem folhas, ficha de campo,
+> fotografias, benchmarks externos): PENDENTE DE INGESTÃO DAS EVIDÊNCIAS
+> PRIMÁRIAS — ausentes do repositório, sem path, sem hash e sem id_fonte nesta
+> rodada."
+
+O documento abre com uma seção 0 dizendo o que o hash prova e o que não prova,
+e a pendência também entra em `perguntas_abertas`, aparecendo no relatório de
+prontidão.
+
+## Hash do handoff
+
+```text
+a2134ed8c1c01c9e4f6b78ecb783cb1804dd64a16556f2273d47b7f7f68fcd45   8607 bytes
+```
+
+Teste recalcula e falha se o documento mudar sem a fonte mudar junto —
+verificado adicionando um byte ao arquivo.
+
+## Baguetes — nomes finais
+
+```text
+SUPREMA_CORRER_2F:FOLHA-INTERNA:BAGUETE-HORIZONTAL-1    posicao = None
+SUPREMA_CORRER_2F:FOLHA-INTERNA:BAGUETE-HORIZONTAL-2    posicao = None
+SUPREMA_CORRER_2F:FOLHA-INTERNA:BAGUETE-VERTICAL-1      posicao = None
+SUPREMA_CORRER_2F:FOLHA-INTERNA:BAGUETE-VERTICAL-2      posicao = None
+SUPREMA_CORRER_2F:FOLHA-EXTERNA:BAGUETE-HORIZONTAL-1    posicao = None
+SUPREMA_CORRER_2F:FOLHA-EXTERNA:BAGUETE-HORIZONTAL-2    posicao = None
+SUPREMA_CORRER_2F:FOLHA-EXTERNA:BAGUETE-VERTICAL-1      posicao = None
+SUPREMA_CORRER_2F:FOLHA-EXTERNA:BAGUETE-VERTICAL-2      posicao = None
+```
+
+`superior`/`inferior`/`lateral` saíram. `-1` e `-2` desambiguam ocorrência e
+nada mais.
+
+## Plano interno / externo — definição documentada
+
+```text
+PLANO_INTERNO   plano da folha mais próximo do ambiente INTERNO da edificação
+PLANO_EXTERNO   plano da folha mais próximo do EXTERIOR da edificação
+```
+
+Profundidade da esquadria em relação a dentro/fora do edifício. Não é
+esquerda/direita, não é o lado de quem olha a foto, não é sentido de abertura —
+e por isso sobrevive ao espelhamento. Sem offset, sem distância entre planos.
+
+## Testes
+
+Oito novos, nenhum removido:
+
+```text
+test_fonte_da_topologia_nao_se_apresenta_como_evidencia_primaria
+test_documento_de_arbitragem_declara_a_propria_natureza
+test_nenhuma_evidencia_primaria_foi_inventada
+test_pendencia_de_ingestao_esta_visivel_na_receita
+test_identificadores_de_baguete_nao_gravam_lateralidade
+test_sufixo_numerico_do_baguete_nao_afirma_ordem
+test_convencao_de_plano_esta_documentada
+test_plano_e_profundidade_nao_lado
+```
+
+## Resultado
+
+```text
+tests/test_receita_suprema.py   443 passed   (era 435)
+suíte completa                  940 passed   EXIT=0   (era 932)
+git diff --check                limpo
+```
+
+Nenhum git rodou em paralelo com pytest.
+
+## Gates finais
+
+```text
+visualização preliminar   ABERTO
+cálculo                   BLOQUEADO   17 bloqueios
+producao                  BLOQUEADO
+```
+
+Os 17: 9 regras sem fórmula, 6 acessórios sem quantidade/posição, 1 receita
+ainda preliminar, 1 gate sem raiz do repositório. Nenhum deles é "falta
+topologia" — e nenhum deles some por causa dela.
+
+## Novos gaps
+
+1. **Posição do baguete dentro da folha** ficou explicitamente não declarada.
+   Entra como pergunta aberta: qual do par é o de cima, e se isso chega a
+   importar para corte.
+2. **Ingestão das primárias** é a próxima rodada. Quando os artefatos entrarem,
+   cada afirmação de topologia precisa passar a citar a fonte primária
+   correspondente — hoje todas citam a arbitragem.
+3. **Persistência da receita** segue registrada como possibilidade futura, não
+   como defeito: nada foi implementado, conforme arbitrado.
