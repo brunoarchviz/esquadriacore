@@ -77,15 +77,48 @@ class PapelComponente(str, Enum):
     decisão de domínio e ainda não foi tomada."""
     MARCO_SUPERIOR = "MARCO_SUPERIOR"
     MARCO_INFERIOR = "MARCO_INFERIOR"
+    # Papel lateral NEUTRO. Gravar esquerda/direita como identidade da receita
+    # impediria espelhar a janela sem trocar a tipologia — a lateralidade é
+    # configuração de uma instância, não da receita técnica.
+    MARCO_LATERAL = "MARCO_LATERAL"
+    # Preservados por compatibilidade: receitas anteriores podem usá-los.
     MARCO_LATERAL_ESQUERDO = "MARCO_LATERAL_ESQUERDO"
     MARCO_LATERAL_DIREITO = "MARCO_LATERAL_DIREITO"
     TRAVESSA_SUPERIOR_FOLHA = "TRAVESSA_SUPERIOR_FOLHA"
     TRAVESSA_INFERIOR_FOLHA = "TRAVESSA_INFERIOR_FOLHA"
     MONTANTE_LATERAL_FOLHA = "MONTANTE_LATERAL_FOLHA"
+    # Posição estrutural do montante que fica no centro da folha. É o papel do
+    # perfil "mão de amigo" — que é montante, não ferragem.
+    MONTANTE_CENTRAL_FOLHA = "MONTANTE_CENTRAL_FOLHA"
+    # Preservado por compatibilidade. NÃO usar para o encontro central da
+    # Suprema 2F: lá o encontro é uma RELAÇÃO entre duas peças de folhas
+    # diferentes, não o papel de uma peça (ver RelacaoEntreComponentes).
     ENCONTRO_CENTRAL = "ENCONTRO_CENTRAL"
     MAO_DE_AMIGO = "MAO_DE_AMIGO"
     BAGUETE = "BAGUETE"
     NAO_CONFIRMADO = "NAO_CONFIRMADO"
+
+
+# Papéis que descrevem o quadro fixo, não a folha móvel. Serve para separar,
+# na contagem, o que é estrutura de esquadria do que é acabamento do vidro.
+PAPEIS_DE_QUADRO = frozenset({
+    PapelComponente.MARCO_SUPERIOR, PapelComponente.MARCO_INFERIOR,
+    PapelComponente.MARCO_LATERAL, PapelComponente.MARCO_LATERAL_ESQUERDO,
+    PapelComponente.MARCO_LATERAL_DIREITO,
+})
+
+# Papéis que formam o quadro estrutural de uma folha móvel.
+PAPEIS_ESTRUTURAIS_DE_FOLHA = frozenset({
+    PapelComponente.TRAVESSA_SUPERIOR_FOLHA,
+    PapelComponente.TRAVESSA_INFERIOR_FOLHA,
+    PapelComponente.MONTANTE_LATERAL_FOLHA,
+    PapelComponente.MONTANTE_CENTRAL_FOLHA,
+})
+
+# O baguete prende o vidro; ele não forma o quadro da folha. Mantê-lo
+# distinguível é o que permite contar 12 ocorrências estruturais e 8 de
+# baguete sem misturar as duas coisas.
+PAPEIS_DE_BAGUETE = frozenset({PapelComponente.BAGUETE})
 
 
 # `manifesto_promocao` e `biblioteca_oficial` descrevem o que o E.4C produziu.
@@ -1683,6 +1716,80 @@ def fontes_primarias_do_caso(caso: CasoRealFabricacao) -> frozenset:
 
 
 # ---------------------------------------------------------------------------
+# Relação entre componentes
+# ---------------------------------------------------------------------------
+
+class TipoRelacaoComponentes(str, Enum):
+    """Relações POSSÍVEIS entre duas ocorrências funcionais.
+
+    `ENCONTRO_CENTRAL` é o caso da correr de duas folhas: os dois montantes
+    centrais se encontram, cada um na sua folha e no seu plano. Não existe uma
+    terceira peça chamada "encontro" — existe uma relação entre duas peças."""
+    ENCONTRO_CENTRAL = "ENCONTRO_CENTRAL"
+
+
+# Relações binárias: exatamente dois participantes, nem mais nem menos.
+ARIDADE_DA_RELACAO = {
+    TipoRelacaoComponentes.ENCONTRO_CENTRAL: 2,
+}
+
+# Relações cujos participantes têm de estar em folhas diferentes. Dois
+# montantes da MESMA folha não se encontram — eles são a mesma folha.
+RELACOES_ENTRE_FOLHAS_DIFERENTES = frozenset({
+    TipoRelacaoComponentes.ENCONTRO_CENTRAL,
+})
+
+
+@dataclass(frozen=True)
+class RelacaoEntreComponentes:
+    """Liga ocorrências funcionais por IDENTIFICADOR, não por código de perfil.
+
+    Citar "SU-040 encontra SU-041" seria ambíguo assim que um perfil aparecer
+    em mais de uma ocorrência: qual das ocorrências encontra qual? A relação
+    aponta para os identificadores dos componentes."""
+    tipo: TipoRelacaoComponentes
+    participantes: tuple[str, ...]
+    estado: EstadoConhecimento = EstadoConhecimento.PENDENTE
+    fontes: tuple[FonteEvidencia, ...] = ()
+    observacao: str | None = None
+
+    def __post_init__(self):
+        object.__setattr__(self, "participantes",
+                           como_tupla(self.participantes,
+                                      "relacao.participantes"))
+        object.__setattr__(self, "fontes",
+                           como_tupla(self.fontes, "relacao.fontes"))
+        if not isinstance(self.tipo, TipoRelacaoComponentes):
+            raise ReceitaErro(
+                f"relação com tipo inválido: {self.tipo!r} "
+                f"(esperado {[t.value for t in TipoRelacaoComponentes]})")
+        vazios = [p for p in self.participantes if not str(p or "").strip()]
+        if vazios:
+            raise ReceitaErro(f"{self.tipo.value}: participante vazio")
+        if len(set(self.participantes)) != len(self.participantes):
+            raise ReceitaErro(
+                f"{self.tipo.value}: participante repetido "
+                f"{list(self.participantes)} — uma peça não se relaciona "
+                f"consigo mesma")
+        esperada = ARIDADE_DA_RELACAO.get(self.tipo)
+        if esperada is not None and len(self.participantes) != esperada:
+            raise ReceitaErro(
+                f"{self.tipo.value}: {len(self.participantes)} participantes "
+                f"(esperado exatamente {esperada})")
+
+    @property
+    def identificador(self) -> str:
+        return f"{self.tipo.value}:{'|'.join(self.participantes)}"
+
+    def para_dict(self) -> dict:
+        return {"tipo": self.tipo.value,
+                "participantes": list(self.participantes),
+                "estado": self.estado.value,
+                "observacao": self.observacao,
+                "fontes": [f.para_dict() for f in self.fontes]}
+
+
+# ---------------------------------------------------------------------------
 # Receita da tipologia
 # ---------------------------------------------------------------------------
 
@@ -1699,6 +1806,7 @@ class ReceitaTipologia:
     quantidade_folhas: int
     perfis_disponiveis: tuple[ReferenciaPerfilOficial, ...] = ()
     componentes: tuple[ComponenteReceita, ...] = ()
+    relacoes: tuple[RelacaoEntreComponentes, ...] = ()
     regras_corte: tuple[RegraDimensional, ...] = ()
     regras_vidro: tuple[RegraDimensional, ...] = ()
     regras_acessorios: tuple[RegraAcessorio, ...] = ()
@@ -1713,6 +1821,7 @@ class ReceitaTipologia:
     COLECOES = {
         "perfis_disponiveis": ReferenciaPerfilOficial,
         "componentes": ComponenteReceita,
+        "relacoes": RelacaoEntreComponentes,
         "regras_corte": RegraDimensional,
         "regras_vidro": RegraDimensional,
         "regras_acessorios": RegraAcessorio,
@@ -1758,6 +1867,12 @@ class ReceitaTipologia:
         """Todas as ocorrências daquele perfil — podem ser zero, uma ou várias."""
         return tuple(c for c in self.componentes
                      if c.perfil.codigo_perfil == codigo_perfil)
+
+    def relacoes_do_tipo(self, tipo: TipoRelacaoComponentes) -> tuple:
+        return tuple(r for r in self.relacoes if r.tipo is tipo)
+
+    def componentes_da_folha(self, folha: str) -> tuple[ComponenteReceita, ...]:
+        return tuple(c for c in self.componentes if c.folha == folha)
 
     def componente_por_id(self, identificador: str) -> ComponenteReceita | None:
         for c in self.componentes:
