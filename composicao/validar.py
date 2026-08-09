@@ -15,10 +15,15 @@ sistema. Sem eles, a única saída seria inventar um número.
 """
 from __future__ import annotations
 
+import errno
+import os
+import stat
+
 from .modelos import (ALVOS_DIMENSIONAIS_BASE, ESCOPOS_DE_APROVACAO,
                       ESTADO_CASO_VALIDADO, ESTADOS_CONFIRMADOS,
                       ESTADOS_NAO_CALCULAVEIS, IDENTIFICADORES_DE_CASO,
                       ITENS_DE_ACESSORIO_BASE, TIPOS_APTOS_PARA_VALIDAR_CASO,
+                      FORMA_ACERVO_EXTERNO,
                       CasoRealFabricacao, EstadoConhecimento, ReceitaErro,
                       ReceitaTipologia, ResultadoAprovacao, ResultadoValidacao,
                       aprovacoes_por_escopo,
@@ -875,7 +880,12 @@ def validar_artefato_de_evidencia(fonte, raiz_repositorio) -> ResultadoValidacao
     sido substituído depois. `sha256` é o que transforma a referência em prova."""
     from pathlib import Path as _P
     if fonte.forma_referencia != "arquivo":
-        return ResultadoValidacao.aprovado()      # URL/identificador externo
+        # URL, identificador externo e acervo externo. O artefato de acervo
+        # externo NÃO é conferido aqui de propósito: ele vive fora do clone, e
+        # exigi-lo aqui faria a validação estrutural do repositório depender de
+        # o acervo estar montado. Quem quiser a prova física chama
+        # `verificar_artefato_no_acervo`, que falha alto se a raiz faltar.
+        return ResultadoValidacao.aprovado()
     if fonte.estado in ESTADOS_NAO_CALCULAVEIS:
         return ResultadoValidacao.aprovado()      # pendente não precisa provar
 
@@ -912,6 +922,189 @@ def validar_artefato_de_evidencia(fonte, raiz_repositorio) -> ResultadoValidacao
     if fonte.tamanho_bytes is not None and len(dados) != fonte.tamanho_bytes:
         r = r.somar(_reprovar(fonte.id_fonte, "tamanho do artefato divergente",
                               len(dados), fonte.tamanho_bytes, ORIGEM_ARTEFATO))
+    return r
+
+
+# ---------------------------------------------------------------------------
+# Acervo externo — verificação física explícita
+# ---------------------------------------------------------------------------
+
+PREFIXO_RAIZ_NO_AMBIENTE = "ESQUADRIACORE_ACERVO_"
+
+ORIGEM_ACERVO = "acervo externo de evidências primárias"
+
+
+def raizes_fisicas_do_ambiente(ambiente=None) -> dict:
+    """`raiz_logica` -> caminho físico, lido do ambiente.
+
+    `ESQUADRIACORE_ACERVO_SUPREMA_CORRER_2F=/caminho/do/acervo`. O endereço
+    físico é de quem roda, não do repositório: cada máquina monta o acervo onde
+    quiser e nada disso é commitado. Sem variável, o dicionário vem vazio — e
+    aí a verificação física reprova por raiz ausente, que é o comportamento
+    correto, em vez de passar dizendo que conferiu."""
+    from pathlib import Path as _P
+    ambiente = os.environ if ambiente is None else ambiente
+    raizes = {}
+    for chave, valor in ambiente.items():
+        if not chave.startswith(PREFIXO_RAIZ_NO_AMBIENTE) or not valor:
+            continue
+        raizes[chave[len(PREFIXO_RAIZ_NO_AMBIENTE):]] = _P(valor)
+    return raizes
+
+
+# POLÍTICA DE SYMLINK DO ACERVO EXTERNO — decidida na Rodada 3, deliberada.
+#
+# Nenhum componente do caminho de um artefato externo pode ser symlink, nem
+# apontando para dentro do próprio acervo. É mais estrito do que a regra dos
+# arquivos DO REPOSITÓRIO, que continua exatamente como estava.
+#
+# O motivo é que a alternativa não dá para fazer com segurança: para aceitar
+# symlink interno seria preciso decidir se o destino está dentro da raiz, e
+# essa decisão só pode ser tomada por caminho — que é justamente o que abre a
+# janela de troca entre a checagem e a leitura. Descer por descritor com
+# O_NOFOLLOW elimina a janela inteira, e o preço é recusar um caso que o
+# acervo real não usa: a raiz tem ZERO symlinks.
+#
+# Se algum acervo futuro precisar de symlink interno, isto vira decisão de
+# contrato — não conserto silencioso aqui.
+_FLAGS_SEM_SEGUIR = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK
+
+
+class _AcervoRecusado(Exception):
+    """Falha na descida por descritor, já com a mensagem de reprovação."""
+
+    def __init__(self, regra, encontrado, esperado):
+        super().__init__(regra)
+        self.regra, self.encontrado, self.esperado = regra, encontrado, esperado
+
+
+def _abrir_artefato_do_acervo(raiz, referencia: str) -> int:
+    """Desce componente a componente a partir da raiz e devolve um descritor.
+
+    Cada componente é aberto com `O_NOFOLLOW`, relativo ao descritor do
+    diretório anterior — nunca por caminho completo. Duas consequências:
+
+    1. symlink nenhum é seguido, em nenhum nível, então não existe caminho para
+       fora da raiz mesmo que alguém troque um diretório-pai no meio da
+       descida;
+    2. o descritor devolvido aponta para o objeto que foi de fato aberto. O
+       hash é calculado desse descritor, e não do caminho — trocar o arquivo
+       depois da abertura não muda o que já está sendo lido.
+
+    `O_NONBLOCK` está aqui para que um FIFO no meio do acervo não pendure a
+    verificação esperando um escritor que nunca vem; ele é recusado logo em
+    seguida, no `fstat`."""
+    partes = [p for p in referencia.split("/") if p]
+    if not partes or any(p in (".", "..") for p in partes):
+        raise _AcervoRecusado("caminho relativo inválido", referencia,
+                              "componentes simples, sem '.' nem '..'")
+    try:
+        descritores = [os.open(raiz, os.O_RDONLY | os.O_DIRECTORY)]
+    except OSError as e:
+        raise _AcervoRecusado("raiz física do acervo inexistente", str(raiz),
+                              f"diretório legível ({e.strerror})") from e
+    try:
+        for i, parte in enumerate(partes):
+            ultimo = i == len(partes) - 1
+            # Sem `O_DIRECTORY` nos componentes do meio de propósito: com ele,
+            # um symlink-para-diretório falha como ENOTDIR e o relatório diria
+            # "não é diretório" quando o problema real é outro. Abrir sem a
+            # flag deixa o symlink falhar como ELOOP — que é o que houve — e o
+            # tipo é conferido logo abaixo, por `fstat`, no descritor já aberto.
+            try:
+                fd = os.open(parte, _FLAGS_SEM_SEGUIR, dir_fd=descritores[-1])
+            except OSError as e:
+                raise _AcervoRecusado(*_motivo_da_recusa(e, parte,
+                                                         ultimo)) from e
+            descritores.append(fd)
+            if not ultimo and not stat.S_ISDIR(os.fstat(fd).st_mode):
+                raise _AcervoRecusado(
+                    f"componente {parte!r} do caminho não é diretório",
+                    stat.filemode(os.fstat(fd).st_mode), "diretório")
+        return descritores.pop()          # o chamador fecha este
+    finally:
+        for fd in descritores:
+            os.close(fd)
+
+
+def _motivo_da_recusa(erro: OSError, parte: str, ultimo: bool):
+    """Traduz o errno da abertura para uma reprovação legível."""
+    onde = "artefato" if ultimo else f"componente {parte!r} do caminho"
+    if erro.errno == errno.ELOOP:
+        return ("componente do caminho é symlink", parte,
+                "arquivo ou diretório real — o acervo externo não aceita "
+                "symlink em nenhum nível")
+    if erro.errno == errno.ENOENT:
+        return ("artefato ausente no acervo", parte,
+                "arquivo presente no acervo")
+    if erro.errno == errno.ENOTDIR:
+        return (f"{onde} não é diretório", parte, "diretório")
+    if erro.errno == errno.EACCES:
+        return (f"{onde} sem permissão de leitura", parte, "leitura permitida")
+    return (f"{onde} não pôde ser aberto", erro.strerror, "arquivo regular")
+
+
+def verificar_artefato_no_acervo(fonte, raizes_fisicas) -> ResultadoValidacao:
+    """Confere o artefato externo contra os bytes reais. Exige a raiz física.
+
+    Separada de `validar_artefato_de_evidencia` de propósito. Aquela responde
+    "o registro está bem formado?" e roda em qualquer clone; esta responde "o
+    arquivo ainda é aquele?" e só tem resposta com o acervo montado. Raiz
+    ausente aqui é REPROVAÇÃO: uma função que devolve "válido" porque não achou
+    o que conferir é pior do que não existir.
+
+    Tudo depois da abertura usa o DESCRITOR: `fstat` para o tipo e o tamanho,
+    leitura pelo descritor para o hash. Conferir por caminho e depois ler por
+    caminho deixaria uma janela entre as duas coisas, e nessa janela o objeto
+    conferido e o objeto lido podem não ser o mesmo."""
+    import hashlib
+    if fonte.forma_referencia != FORMA_ACERVO_EXTERNO:
+        return ResultadoValidacao.aprovado()      # não é artefato de acervo
+
+    raiz = (raizes_fisicas or {}).get(fonte.raiz_logica)
+    if raiz is None:
+        return _reprovar(
+            fonte.id_fonte, "raiz física do acervo não fornecida",
+            fonte.raiz_logica,
+            f"caminho para a raiz lógica {fonte.raiz_logica!r} "
+            f"(parâmetro ou {PREFIXO_RAIZ_NO_AMBIENTE}{fonte.raiz_logica})",
+            ORIGEM_ACERVO)
+    if not fonte.sha256:
+        return _reprovar(fonte.id_fonte, "artefato externo sem sha256", None,
+                         "sha256 registrado — sem ele não há o que conferir",
+                         ORIGEM_ACERVO)
+
+    try:
+        fd = _abrir_artefato_do_acervo(raiz, fonte.referencia)
+    except _AcervoRecusado as e:
+        return _reprovar(fonte.id_fonte, e.regra, e.encontrado, e.esperado,
+                         ORIGEM_ACERVO)
+
+    try:
+        situacao = os.fstat(fd)
+        if not stat.S_ISREG(situacao.st_mode):
+            return _reprovar(fonte.id_fonte, "artefato não é arquivo regular",
+                             stat.filemode(situacao.st_mode), "arquivo regular",
+                             ORIGEM_ACERVO)
+        digestor = hashlib.sha256()
+        lidos = 0
+        while True:
+            bloco = os.read(fd, 1 << 20)
+            if not bloco:
+                break
+            digestor.update(bloco)
+            lidos += len(bloco)
+    finally:
+        os.close(fd)
+
+    r = ResultadoValidacao.aprovado()
+    atual = digestor.hexdigest()
+    if atual != fonte.sha256:
+        r = r.somar(_reprovar(fonte.id_fonte, "artefato alterado após o registro",
+                              atual[:16], fonte.sha256[:16], ORIGEM_ACERVO))
+    if fonte.tamanho_bytes is not None and lidos != fonte.tamanho_bytes:
+        r = r.somar(_reprovar(fonte.id_fonte, "tamanho do artefato divergente",
+                              lidos, fonte.tamanho_bytes, ORIGEM_ACERVO))
     return r
 
 

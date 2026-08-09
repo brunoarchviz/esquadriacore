@@ -11,7 +11,8 @@ import json
 import sys
 from pathlib import Path
 
-from . import fontes, prontidao, receita as receita_mod, validar
+from . import (fontes, prontidao, proveniencia, receita as receita_mod,
+               validar)
 from .modelos import ReceitaErro
 
 TIPOLOGIAS = {receita_mod.CODIGO_TIPOLOGIA: receita_mod.construir_receita_preliminar}
@@ -173,6 +174,50 @@ def cmd_registrar_evidencia(args) -> int:
     return 0
 
 
+def cmd_inventariar_acervo(args) -> int:
+    """Emite os metadados dos artefatos de um acervo EXTERNO, em YAML.
+
+    Só metadados: rótulo do acervo, caminho relativo, sha256 e tamanho. Nenhum
+    byte do acervo é copiado, e o caminho físico não aparece na saída — é ele
+    que não pode entrar no Git."""
+    itens = proveniencia.inventariar_acervo(args.raiz_fisica, args.raiz_logica)
+    print(f"# gerado por `composicao.cli inventariar-acervo` — "
+          f"{len(itens)} artefatos, "
+          f"{sum(i['tamanho_bytes'] for i in itens)} bytes")
+    print("artefatos:")
+    for i in itens:
+        print(f"  - id_fonte: {i['id_fonte']}")
+        print(f"    grupo: {i['grupo']}")
+        print(f"    caminho_relativo: {json.dumps(i['caminho_relativo'], ensure_ascii=False)}")
+        print(f"    sha256: {i['sha256']}")
+        print(f"    tamanho_bytes: {i['tamanho_bytes']}")
+        print(f"    formato: {i['formato']}")
+    return 0
+
+
+def cmd_validar_manifesto(args) -> int:
+    """Coerência interna do manifesto. NÃO precisa do acervo montado."""
+    man = proveniencia.carregar_manifesto(args.caminho)
+    r = proveniencia.validar_manifesto(man)
+    print(f"{man.conjunto}: {len(man.artefatos_externos)} artefatos externos, "
+          f"{man.total_de_bytes} bytes, {len(man.afirmacoes)} afirmações, "
+          f"{len(man.conflitos)} conflitos")
+    print(r.descrever())
+    return 0 if r.ok else 1
+
+
+def cmd_verificar_acervo(args) -> int:
+    """Confere os bytes reais. Sem raiz física, REPROVA — não pula."""
+    man = proveniencia.carregar_manifesto(args.caminho)
+    raizes = (validar.raizes_fisicas_do_ambiente() if not args.raiz_fisica
+              else {man.raiz_logica: Path(args.raiz_fisica)})
+    r = proveniencia.verificar_acervo_do_manifesto(man, raizes)
+    print(f"{man.conjunto}: {len(man.artefatos_externos)} artefatos conferidos "
+          f"contra {raizes.get(man.raiz_logica, '<raiz não fornecida>')}")
+    print(r.descrever())
+    return 0 if r.ok else 1
+
+
 def cmd_prontidao(args) -> int:
     rec = _receita(args.tipologia)
     bib = fontes.carregar_biblioteca_oficial()
@@ -234,6 +279,23 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("caminho")
     p.add_argument("--id-fonte", dest="id_fonte", default=None)
     p.set_defaults(func=cmd_registrar_evidencia)
+
+    p = sub.add_parser("inventariar-acervo",
+                       help="metadados (sha256/tamanho) de um acervo externo")
+    p.add_argument("raiz_fisica")
+    p.add_argument("--raiz-logica", dest="raiz_logica", required=True)
+    p.set_defaults(func=cmd_inventariar_acervo)
+
+    p = sub.add_parser("validar-manifesto",
+                       help="coerência do manifesto (dispensa o acervo)")
+    p.add_argument("caminho")
+    p.set_defaults(func=cmd_validar_manifesto)
+
+    p = sub.add_parser("verificar-acervo",
+                       help="confere os bytes reais do acervo externo")
+    p.add_argument("caminho")
+    p.add_argument("--raiz-fisica", dest="raiz_fisica", default=None)
+    p.set_defaults(func=cmd_verificar_acervo)
 
     p = sub.add_parser("prontidao", help="relatório de gates e pendências")
     p.add_argument("--tipologia", default=receita_mod.CODIGO_TIPOLOGIA,

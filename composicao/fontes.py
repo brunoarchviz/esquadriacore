@@ -28,6 +28,9 @@ from pathlib import Path
 from .modelos import (ESTADO_CASO_AGUARDANDO, ESTADO_CASO_PARCIAL,
                       ESTADOS_CONFIRMADOS,
                       ESTADO_CASO_RECEBIDO, FORMAS_DE_REFERENCIA,
+                      ABRANGENCIA_EXEMPLAR, ABRANGENCIAS_DE_FONTE,
+                      FORMA_ACERVO_EXTERNO,
+                      FORMAS_DE_CAMINHO, FORMATO_RAIZ_LOGICA, _RE_RAIZ_LOGICA,
                       FORMATO_DATA, FORMATO_ID_FONTE, IDENTIFICADORES_DE_CASO,
                       TIPOS_DE_FONTE, AcessorioReal, Afirmacao, BagueteReal,
                       CasoRealFabricacao, CorteReal, CroquiCasoReal,
@@ -92,7 +95,7 @@ CAMPOS_SOBREPOSICAO = ("entre", "valor_mm", "observacao") + CAMPOS_AFIRMACAO
 CAMPOS_CROQUI = ("tipo", "referencia", "descricao")
 CAMPOS_FONTE = ("id_fonte", "tipo", "referencia", "descricao", "estado",
                 "responsavel", "data", "forma_referencia", "sha256",
-                "tamanho_bytes")
+                "tamanho_bytes", "raiz_logica", "abrangencia")
 
 SECOES_LISTA = ("cortes", "vidros", "baguetes", "acessorios", "folgas",
                 "sobreposicoes", "croquis", "fontes", "duvidas")
@@ -408,7 +411,7 @@ def _validar_referencia(item: dict, alvo: str, origem,
     if referencia is None:
         r = r.somar(_reprovar(f"{alvo}.referencia", "referência vazia", None,
                               "caminho relativo, identificador ou URL", origem))
-    elif forma == "arquivo":
+    elif forma in FORMAS_DE_CAMINHO:
         from .modelos import _referencia_de_arquivo_insegura
         motivo = _referencia_de_arquivo_insegura(referencia)
         if motivo:
@@ -416,6 +419,21 @@ def _validar_referencia(item: dict, alvo: str, origem,
                                   f"referência insegura: {motivo}", referencia,
                                   "caminho relativo à raiz do repositório",
                                   origem))
+    if forma == FORMA_ACERVO_EXTERNO:
+        raiz = _texto(item.get("raiz_logica"))
+        if not raiz:
+            r = r.somar(_reprovar(f"{alvo}.raiz_logica",
+                                  "artefato de acervo externo sem raiz lógica",
+                                  None, FORMATO_RAIZ_LOGICA, origem))
+        elif not _RE_RAIZ_LOGICA.fullmatch(raiz):
+            r = r.somar(_reprovar(f"{alvo}.raiz_logica",
+                                  "raiz lógica fora do formato", raiz,
+                                  FORMATO_RAIZ_LOGICA, origem))
+    abrangencia = _texto(item.get("abrangencia"))
+    if abrangencia is not None and abrangencia not in ABRANGENCIAS_DE_FONTE:
+        r = r.somar(_reprovar(f"{alvo}.abrangencia", "abrangência desconhecida",
+                              abrangencia, sorted(ABRANGENCIAS_DE_FONTE),
+                              origem))
     data = _texto(item.get("data"))
     if data is not None:
         motivo = data_invalida(data)
@@ -447,7 +465,10 @@ def fontes_tipadas_da_ficha(dados: dict) -> dict:
                 responsavel=_texto(f.get("responsavel")),
                 data=_texto(f.get("data")),
                 forma_referencia=(_texto(f.get("forma_referencia"))
-                                  or "arquivo"))
+                                  or "arquivo"),
+                raiz_logica=_texto(f.get("raiz_logica")),
+                abrangencia=(_texto(f.get("abrangencia"))
+                             or ABRANGENCIA_EXEMPLAR))
         except (ReceitaErro, ValueError):
             continue
     return tipadas

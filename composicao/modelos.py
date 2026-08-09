@@ -130,6 +130,17 @@ TIPOS_DE_FONTE = frozenset({
     "lista_de_corte_real", "software_externo", "foto", "croqui",
     "tabela_de_fabricacao", "manifesto_promocao", "biblioteca_oficial",
     "validacao_caso_real", "conferencia_caso_receita",
+    "registro_de_campo", "benchmark_externo", "referencia_sistema_anterior",
+})
+
+# Fontes que NUNCA sustentam confirmação física, por natureza e não por
+# configuração. O Wvetro roda outro projeto e o VidroSys é sistema anterior do
+# próprio Bruno: os dois podem corroborar estrutura e quantidade, e nenhum dos
+# dois viu a janela fotografada. Deixá-los declarar `CONFIRMADO_*` faria um
+# benchmark abrir gate de produção — por isso a recusa é na construção da
+# fonte, não numa checagem que alguém pode esquecer de chamar.
+TIPOS_SEM_AUTORIDADE_FISICA = frozenset({
+    "benchmark_externo", "referencia_sistema_anterior",
 })
 
 # Como a `referencia` da fonte deve ser lida. A regra de caminho relativo vale
@@ -137,8 +148,37 @@ TIPOS_DE_FONTE = frozenset({
 FORMA_ARQUIVO = "arquivo"
 FORMA_IDENTIFICADOR_EXTERNO = "identificador_externo"
 FORMA_URL = "url"
+# Artefato que vive FORA da raiz do repositório, endereçado por raiz LÓGICA +
+# caminho relativo. O acervo bruto (21 MB de fotos, ficha e relatórios) não
+# entra no Git — mas a evidência precisa ser citável mesmo assim. Guardar
+# `/home/<usuario>/...` amarraria o repositório a uma máquina; guardar
+# `SUPREMA_CORRER_2F` + `02_janela_pequena/foto.jpeg` + sha256 identifica o
+# artefato sem dizer onde ele está montado hoje.
+FORMA_ACERVO_EXTERNO = "acervo_externo"
 FORMAS_DE_REFERENCIA = frozenset({FORMA_ARQUIVO, FORMA_IDENTIFICADOR_EXTERNO,
-                                  FORMA_URL})
+                                  FORMA_URL, FORMA_ACERVO_EXTERNO})
+
+# Formas cuja `referencia` é caminho: valem as mesmas proteções contra absoluto,
+# `~` e `..`. URL e identificador externo não são caminhos e ficam de fora.
+FORMAS_DE_CAMINHO = frozenset({FORMA_ARQUIVO, FORMA_ACERVO_EXTERNO})
+
+# Nome da raiz lógica — rótulo do acervo, nunca um caminho. `SUPREMA_CORRER_2F`
+# é rótulo; `/home/<usuario>/Documentos/...` seria endereço de máquina.
+FORMATO_RAIZ_LOGICA = "[A-Z0-9][A-Z0-9_]*"
+_RE_RAIZ_LOGICA = re.compile(r"[A-Z0-9][A-Z0-9_]*")
+
+# Até ONDE uma evidência vale. É diferente da NATUREZA dela.
+#
+# Uma ficha de levantamento preenchida em campo é registro PRIMÁRIO: quem a
+# escreveu estava na frente da janela. Mas uma ficha única que cobre as três
+# janelas é artefato COMPARTILHADO — ela não distingue um exemplar do outro.
+# Rebaixar a ficha a "não primária" para o fingerprint de independência passar
+# seria mentir sobre a origem do dado; o que muda entre os dois casos não é a
+# natureza da fonte, é a abrangência dela.
+ABRANGENCIA_EXEMPLAR = "EXEMPLAR"
+ABRANGENCIA_COMPARTILHADA = "COMPARTILHADA"
+ABRANGENCIAS_DE_FONTE = frozenset({ABRANGENCIA_EXEMPLAR,
+                                   ABRANGENCIA_COMPARTILHADA})
 
 FORMATO_DATA = "AAAA-MM-DD"
 _RE_DATA = re.compile(r"\d{4}-\d{2}-\d{2}")
@@ -184,10 +224,13 @@ TIPOS_QUE_SUSTENTAM = {
         "manifesto_promocao", "biblioteca_oficial"}),
     EstadoConhecimento.CONFIRMADO_ESPECIALISTA: frozenset({
         "especialista_de_dominio"}),
+    # `registro_de_campo` entra aqui porque a ficha de levantamento é onde a
+    # peça recebe NOME: nenhuma foto do acervo mostra código SU legível, e sem
+    # a ficha "isto é o SU-040" não teria origem nenhuma.
     EstadoConhecimento.CONFIRMADO_CASO_REAL: frozenset({
         "medicao_fisica", "foto", "croqui", "lista_de_corte_real",
         "software_externo", "tabela_de_fabricacao", "validacao_caso_real",
-        "conferencia_caso_receita"}),
+        "conferencia_caso_receita", "registro_de_campo"}),
     EstadoConhecimento.DERIVADO_DE_REGRA_APROVADA: frozenset({
         "especialista_de_dominio", "tabela_de_fabricacao", "software_externo"}),
 }
@@ -395,7 +438,10 @@ def _referencia_de_arquivo_insegura(referencia: str) -> str | None:
 
     Recusa absoluto (Unix e Windows) e qualquer travessia por `..`. Um caminho
     absoluto amarra a evidência à máquina de quem registrou; um `..` aponta
-    para fora do repositório, onde a evidência não sobrevive ao clone."""
+    para fora do repositório, onde a evidência não sobrevive ao clone.
+
+    Vale igual para `acervo_externo`: lá o caminho é relativo à raiz LÓGICA, e
+    um `..` sairia do acervo declarado do mesmo jeito."""
     r = referencia.replace("\\", "/")
     if r.startswith("/"):
         return "caminho absoluto (Unix)"
@@ -425,6 +471,8 @@ class FonteEvidencia:
     forma_referencia: str = FORMA_ARQUIVO
     sha256: str | None = None
     tamanho_bytes: int | None = None
+    raiz_logica: str | None = None
+    abrangencia: str = ABRANGENCIA_EXEMPLAR
 
     def __post_init__(self):
         if not _RE_ID_FONTE.fullmatch(self.id_fonte or ""):
@@ -441,9 +489,23 @@ class FonteEvidencia:
                 f"{self.id_fonte}: forma_referencia desconhecida: "
                 f"{self.forma_referencia!r} "
                 f"(conhecidas: {sorted(FORMAS_DE_REFERENCIA)})")
+        if self.abrangencia not in ABRANGENCIAS_DE_FONTE:
+            raise ReceitaErro(
+                f"{self.id_fonte}: abrangência desconhecida: "
+                f"{self.abrangencia!r} "
+                f"(conhecidas: {sorted(ABRANGENCIAS_DE_FONTE)})")
+        if (self.tipo in TIPOS_SEM_AUTORIDADE_FISICA
+                and self.estado in ESTADOS_CONFIRMADOS):
+            raise ReceitaErro(
+                f"{self.id_fonte}: {self.tipo} não confirma nada — declarado "
+                f"{self.estado.value}. Benchmark externo e sistema anterior "
+                f"corroboram; nenhum dos dois viu a janela real, e deixá-los "
+                f"confirmar abriria gate com evidência que não existe. Use "
+                f"{EstadoConhecimento.PENDENTE.value} e cite a fonte com papel "
+                f"corroborativo.")
         if not self.referencia:
             raise ReceitaErro(f"{self.id_fonte}: referência vazia")
-        if self.forma_referencia == FORMA_ARQUIVO:
+        if self.forma_referencia in FORMAS_DE_CAMINHO:
             motivo = _referencia_de_arquivo_insegura(self.referencia)
             if motivo:
                 raise ReceitaErro(
@@ -451,6 +513,22 @@ class FonteEvidencia:
                     f"caminho relativo à raiz do repo, ou declare "
                     f"forma_referencia={FORMA_IDENTIFICADOR_EXTERNO!r} / "
                     f"{FORMA_URL!r}")
+        if self.forma_referencia == FORMA_ACERVO_EXTERNO:
+            if not self.raiz_logica:
+                raise ReceitaErro(
+                    f"{self.id_fonte}: {FORMA_ACERVO_EXTERNO} exige "
+                    f"raiz_logica — sem ela o caminho relativo não tem a que "
+                    f"se referir, e a evidência viraria um nome solto.")
+            if not _RE_RAIZ_LOGICA.fullmatch(self.raiz_logica):
+                raise ReceitaErro(
+                    f"{self.id_fonte}: raiz_logica inválida: "
+                    f"{self.raiz_logica!r} — esperado {FORMATO_RAIZ_LOGICA}. "
+                    f"É um RÓTULO de acervo, não um caminho de máquina.")
+        elif self.raiz_logica is not None:
+            raise ReceitaErro(
+                f"{self.id_fonte}: raiz_logica só faz sentido com "
+                f"forma_referencia={FORMA_ACERVO_EXTERNO!r}, não com "
+                f"{self.forma_referencia!r}")
         if self.data is not None:
             motivo = data_invalida(self.data)
             if motivo:
@@ -478,7 +556,18 @@ class FonteEvidencia:
                 "descricao": self.descricao, "estado": self.estado.value,
                 "responsavel": self.responsavel, "data": self.data,
                 "forma_referencia": self.forma_referencia,
-                "sha256": self.sha256, "tamanho_bytes": self.tamanho_bytes}
+                "sha256": self.sha256, "tamanho_bytes": self.tamanho_bytes,
+                "raiz_logica": self.raiz_logica,
+                "abrangencia": self.abrangencia}
+
+    @property
+    def identifica_exemplar(self) -> bool:
+        """Serve para provar que ESTA janela é diferente daquela?
+
+        Natureza primária não basta: a ficha única das três janelas é primária
+        e não distingue exemplar nenhum."""
+        return (self.tipo in TIPOS_DE_EVIDENCIA_PRIMARIA
+                and self.abrangencia == ABRANGENCIA_EXEMPLAR)
 
 
 def indexar_fontes(fontes) -> dict:
@@ -1680,9 +1769,13 @@ def assinatura_documental_caso(caso: CasoRealFabricacao) -> str:
     return hashlib.sha256("\n".join(partes).encode("utf-8")).hexdigest()
 
 
+# NATUREZA da evidência: quem produziu o registro estava diante da coisa.
+# `registro_de_campo` pertence a este conjunto — a ficha foi preenchida na
+# frente da janela. Se ela identifica UM exemplar ou vale para vários é outra
+# pergunta, respondida por `abrangencia`, não por este conjunto.
 TIPOS_DE_EVIDENCIA_PRIMARIA = frozenset({
     "medicao_fisica", "foto", "croqui", "lista_de_corte_real",
-    "validacao_caso_real", "conferencia_caso_receita",
+    "validacao_caso_real", "conferencia_caso_receita", "registro_de_campo",
 })
 
 
@@ -1705,9 +1798,12 @@ def fingerprints_primarios_do_caso(caso: CasoRealFabricacao) -> frozenset:
     """Evidência que IDENTIFICA esta janela física.
 
     Catálogo, manifesto e biblioteca podem ser compartilhados entre casos —
-    falam do produto, não do exemplar."""
+    falam do produto, não do exemplar. Fonte primária declarada
+    `COMPARTILHADA` sai daqui pelo mesmo motivo, e continua primária: uma ficha
+    de campo que cobre as três janelas prova que alguém mediu as três, não que
+    esta é diferente daquela."""
     return frozenset(fingerprint_fonte_primaria(f) for f in caso.fontes
-                     if f.tipo in TIPOS_DE_EVIDENCIA_PRIMARIA)
+                     if f.identifica_exemplar)
 
 
 def fontes_primarias_do_caso(caso: CasoRealFabricacao) -> frozenset:

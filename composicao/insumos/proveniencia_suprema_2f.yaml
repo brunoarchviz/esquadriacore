@@ -1,0 +1,1167 @@
+# Manifesto de proveniência — SUPREMA_CORRER_2F
+#
+# O QUE ESTE ARQUIVO É
+# Registro de METADADOS das evidências primárias: rótulo do acervo, caminho
+# relativo, sha256 e tamanho, mais as afirmações que essas evidências
+# sustentam e com que papel. Nenhum byte do acervo bruto está aqui.
+#
+# O QUE ESTE ARQUIVO NÃO É
+# Não é receita técnica: não tem componente, papel de peça, regra dimensional,
+# fórmula nem resultado. Não abre gate de cálculo nem de produção.
+#
+# ONDE ESTÁ O ACERVO
+# Fora do repositório, de propósito (21 MB). O caminho físico é de quem roda:
+#   export ESQUADRIACORE_ACERVO_SUPREMA_CORRER_2F=/caminho/do/acervo
+#   python -m composicao.cli verificar-acervo composicao/insumos/proveniencia_suprema_2f.yaml
+# Nenhum caminho absoluto de máquina entra neste arquivo.
+#
+# LIMITE DE PROVA QUE NÃO PODE SER ESCONDIDO
+# Nenhuma das 78 fotos mostra código SU legível. Uma foto prova que existe uma
+# peça naquela posição; quem NOMEIA a peça é a ficha de campo; a arbitragem
+# consolida. Por isso quase nenhuma foto aparece como DIRETA para afirmação de
+# código de perfil — aparece como CORROBORATIVA.
+#
+# COMO REGERAR O BLOCO `artefatos`
+#   python -m composicao.cli inventariar-acervo <raiz-fisica> \
+#       --raiz-logica SUPREMA_CORRER_2F
+
+versao_manifesto: 1
+conjunto: SUPREMA_CORRER_2F
+raiz_logica: SUPREMA_CORRER_2F
+descricao: >-
+  Evidências primárias da janela Suprema de correr de duas folhas: três janelas
+  reais fotografadas, ficha de levantamento de campo, benchmark externo Wvetro
+  de um projeto DIFERENTE (1500x1200) e material do sistema anterior VidroSys.
+  112 artefatos, 22.401.782 bytes, 112 sha256 distintos.
+
+# ---------------------------------------------------------------------------
+# Grupos — a semântica mora aqui, não no scanner de arquivos
+# ---------------------------------------------------------------------------
+grupos:
+  - grupo: 01_ficha_campo
+    tipo: registro_de_campo
+    estado: CONFIRMADO_CASO_REAL
+    abrangencia: COMPARTILHADA
+    responsavel: Bruno
+    data: '2026-08-09'
+    descricao: >-
+      REGISTRO PRIMÁRIO DE CAMPO. Ficha preenchida durante o levantamento, na
+      frente das janelas — é evidência primária pela origem, não fotografia.
+      Declarada COMPARTILHADA porque uma única ficha cobre os três exemplares:
+      ela prova que alguém mediu as três, não distingue uma da outra. Essa
+      distinção é de ABRANGÊNCIA; a natureza primária permanece. É a única
+      fonte que NOMEIA os perfis (SU-0xx), porque nenhuma foto mostra código
+      legível. A seção 10 (Evidências e anexos) está em branco no bruto: o
+      vínculo foto -> afirmação não existia e é criado aqui, como curadoria.
+
+  - grupo: 02_janela_pequena
+    tipo: foto
+    estado: CONFIRMADO_CASO_REAL
+    abrangencia: EXEMPLAR
+    caso: CASO_A_PEQUENO
+    responsavel: Bruno
+    data: '2026-08-09'
+    descricao: >-
+      EVIDÊNCIA FÍSICA PRIMÁRIA. Janela Pequena (quadro 2015x740), fotografada
+      por dentro. Prova o que é visível: existência de peça, posição, montagem
+      e relação espacial. Não prova código de perfil.
+
+  - grupo: 03_janela_media
+    tipo: foto
+    estado: CONFIRMADO_CASO_REAL
+    abrangencia: EXEMPLAR
+    caso: CASO_B_MEDIO
+    responsavel: Bruno
+    data: '2026-08-09'
+    descricao: >-
+      EVIDÊNCIA FÍSICA PRIMÁRIA. Janela Média (quadro 1972x1134), fotografada
+      por dentro. Não prova código de perfil.
+
+  - grupo: 04_janela_grande
+    tipo: foto
+    estado: CONFIRMADO_CASO_REAL
+    abrangencia: EXEMPLAR
+    caso: CASO_C_GRANDE
+    responsavel: Bruno
+    data: '2026-08-09'
+    descricao: >-
+      EVIDÊNCIA FÍSICA PRIMÁRIA. Janela Grande (quadro 2203x1160), fotografada
+      por dentro, incluindo o quadro com as folhas removidas. Não prova código
+      de perfil.
+
+  - grupo: 05_Wvetro_1500x1200
+    tipo: benchmark_externo
+    estado: PENDENTE
+    abrangencia: COMPARTILHADA
+    responsavel: Bruno
+    data: '2026-08-09'
+    descricao: >-
+      BENCHMARK EXTERNO / ORÁCULO. Relatórios do Wvetro para um projeto
+      1500x1200 que NÃO É nenhuma das três janelas fotografadas. Pode
+      corroborar estrutura e quantidade; nunca é autoridade física e nunca
+      vira regra. Estado PENDENTE porque benchmark não confirma: o contrato
+      recusa CONFIRMADO_* para este tipo na própria construção da fonte. O
+      Wvetro escreve TMS001 para o marco superior — literal preservado, sem
+      equivalência com SU-001 (ver notas).
+
+  - grupo: 06_vidrosys
+    tipo: referencia_sistema_anterior
+    estado: PENDENTE
+    abrangencia: COMPARTILHADA
+    responsavel: Bruno
+    data: '2026-08-09'
+    descricao: >-
+      REFERÊNCIA DERIVADA / SISTEMA ANTERIOR do próprio Bruno. Registrado para
+      rastreabilidade de origem conceitual. Não integrar, não reutilizar
+      código, não tratar como autoridade física. Estado PENDENTE pelo mesmo
+      motivo do benchmark.
+
+# ---------------------------------------------------------------------------
+# Fontes que vivem DENTRO do repositório
+# ---------------------------------------------------------------------------
+fontes_no_repositorio:
+  - id_fonte: FONTE-TOPOLOGIA-E4E
+    tipo: especialista_de_dominio
+    forma_referencia: arquivo
+    referencia: curadoria/handoffs/e4e/topologia_suprema_2f.md
+    estado: CONFIRMADO_ESPECIALISTA
+    responsavel: Bruno
+    data: '2026-08-09'
+    sha256: a2134ed8c1c01c9e4f6b78ecb783cb1804dd64a16556f2273d47b7f7f68fcd45
+    tamanho_bytes: 8607
+    abrangencia: COMPARTILHADA
+    descricao: >-
+      ARBITRAGEM DERIVADA DE DOMÍNIO, não evidência física primária. O hash
+      prova a integridade DESTE documento e quais decisões ele registra — não
+      prova a composição física de nenhuma janela. Por não estar em
+      TIPOS_DE_EVIDENCIA_PRIMARIA, não entra em nenhum fingerprint físico.
+
+# ---------------------------------------------------------------------------
+# Afirmações A01–A16
+#
+# papel DIRETA        a fonte mostra/registra a própria afirmação
+# papel CORROBORATIVA compatível com a afirmação, não a prova sozinha
+# papel DERIVADA      arbitragem ou agregação sobre outras afirmações
+# papel CONFLITANTE   a fonte contradiz a afirmação
+# ---------------------------------------------------------------------------
+afirmacoes:
+  - identificador: A01
+    texto: A tipologia possui duas folhas móveis.
+    estado: CONFIRMADO_CASO_REAL
+    observacao: >-
+      Mobilidade é diretamente visível: as fotos mostram a mesma janela com uma
+      folha aberta e com as duas fechadas.
+    citacoes:
+      - id_fonte: FONTE-02-JANELA-PEQUENA-VISTA-FRONTAL-FOLHA-DA-DIREITA-ABERTA-JPEG
+        papel: DIRETA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-VISTA-FRONTAL-FOLHA-DA-ESQUEDA-ABERTA-JPEG
+        papel: DIRETA
+        observacao: >-
+          Nome do arquivo bruto contém "esqueda" (sic). Preservado como está —
+          o acervo não é corrigido.
+      - id_fonte: FONTE-02-JANELA-PEQUENA-VISTA-FRONTAL-AMBAS-AS-FOLHAS-FECHADAS-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-03-JANELA-MEDIA-VISTA-FRONTAL-FOLHA-DA-DIREITA-ABERTA-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-03-JANELA-MEDIA-VISTA-FRONTAL-FOLHA-DA-ESQUERDA-ABERTA-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-04-JANELA-GRANDE-VISTA-FRONTAL-FOLHA-DA-DIREITA-ABERTA-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-04-JANELA-GRANDE-VISTA-FRONTAL-FOLHA-DA-ESQUERDA-ABERTA-JPEG
+        papel: CORROBORATIVA
+
+  - identificador: A02
+    texto: O quadro utiliza dois planos de deslocamento.
+    estado: CONFIRMADO_CASO_REAL
+    observacao: >-
+      A prova forte é o detalhe do trilho superior da Janela Pequena, onde os
+      dois planos aparecem separados. As dez fotos do quadro sem folhas da
+      Janela Grande NÃO são a melhor prova disto: nove das dez estão fortemente
+      contra-luz e os perfis aparecem em silhueta. Ficam como corroboração
+      justamente por isso.
+    citacoes:
+      - id_fonte: FONTE-02-JANELA-PEQUENA-LADO-ESQUERDO-DO-TRILHO-SUPERIOR-JPEG
+        papel: DIRETA
+        observacao: Artefato visual mais forte identificado na auditoria E.4F Rodada 1.
+      - id_fonte: FONTE-02-JANELA-PEQUENA-LADO-DIREITO-DO-TRILHO-SUPERIOR-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-LADO-ESQUERDO-DO-TRILHO-INFERIOR-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-LADO-DIREITO-DO-TRILHO-INFERIOR-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-GUIA-DESLIZANTE-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-04-JANELA-GRANDE-QUADRO-SEM-FOLHAS-WHATSAPP-IMAGE-2026-08-08-AT-19-20-29-JPEG
+        papel: CORROBORATIVA
+        observacao: Quadro sem folhas — fortemente contra-luz, perfil em silhueta.
+      - id_fonte: FONTE-04-JANELA-GRANDE-QUADRO-SEM-FOLHAS-WHATSAPP-IMAGE-2026-08-08-AT-19-20-31-JPEG
+        papel: CORROBORATIVA
+        observacao: Quadro sem folhas — fortemente contra-luz, perfil em silhueta.
+
+  - identificador: A03
+    texto: O SU-001 ocorre como marco/trilho superior do quadro.
+    estado: CONFIRMADO_CASO_REAL
+    observacao: >-
+      Nenhuma foto mostra o código gravado no perfil. Quem nomeia a peça é a
+      ficha de campo; as fotos mostram que existe um perfil de trilho naquela
+      posição. A cadeia é composta, não uma fonte só.
+    citacoes:
+      - id_fonte: FONTE-01-FICHA-CAMPO-01-FICHA-CAMPO-DOCX
+        papel: DIRETA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-LADO-ESQUERDO-DO-TRILHO-SUPERIOR-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-LADO-DIREITO-DO-TRILHO-SUPERIOR-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-TOPOLOGIA-E4E
+        papel: DERIVADA
+
+  - identificador: A04
+    texto: O SU-002 ocorre como marco/trilho inferior do quadro.
+    estado: CONFIRMADO_CASO_REAL
+    observacao: Mesma cadeia composta da A03 — foto não mostra código.
+    citacoes:
+      - id_fonte: FONTE-01-FICHA-CAMPO-01-FICHA-CAMPO-DOCX
+        papel: DIRETA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-LADO-ESQUERDO-DO-TRILHO-INFERIOR-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-LADO-DIREITO-DO-TRILHO-INFERIOR-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-TOPOLOGIA-E4E
+        papel: DERIVADA
+
+  - identificador: A05
+    texto: O SU-003 ocorre como marco lateral, em duas ocorrências.
+    estado: CONFIRMADO_CASO_REAL
+    observacao: >-
+      As duas ocorrências têm o mesmo papel e identificadores distintos; a
+      E.4E recusou gravar esquerda/direita como identidade da receita.
+    citacoes:
+      - id_fonte: FONTE-01-FICHA-CAMPO-01-FICHA-CAMPO-DOCX
+        papel: DIRETA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-VISTA-LATERAL-DA-JANELA-FECHADA-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-CONTRAFECHO-LATERAL-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-TOPOLOGIA-E4E
+        papel: DERIVADA
+
+  - identificador: A06
+    texto: O SU-039 ocorre como montante lateral das folhas, em duas ocorrências.
+    estado: CONFIRMADO_CASO_REAL
+    citacoes:
+      - id_fonte: FONTE-01-FICHA-CAMPO-01-FICHA-CAMPO-DOCX
+        papel: DIRETA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-VISTA-FRONTAL-FOLHA-DA-DIREITA-ABERTA-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-LARGURA-INTERNA-DAS-FOLHAS-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-TOPOLOGIA-E4E
+        papel: DERIVADA
+
+  - identificador: A07
+    texto: O SU-040 ocorre como montante central da folha do PLANO_INTERNO.
+    estado: PENDENTE
+    observacao: >-
+      PENDENTE POR ARBITRAGEM ABERTA, não por falta de evidência. A ficha
+      associa o SU-040 ao "trilho interno"; a E.4E definiu PLANO_INTERNO como o
+      plano da folha mais próximo do ambiente interno da edificação. É plausível
+      que os dois conceitos coincidam, e ninguém declarou que coincidem. Assumir
+      a identidade aqui seria arbitragem de domínio feita pelo implementador.
+      Que o SU-040 é o montante central de UMA das folhas não está em dúvida
+      (ver A13); o que está pendente é a qual plano essa folha pertence.
+    citacoes:
+      - id_fonte: FONTE-01-FICHA-CAMPO-01-FICHA-CAMPO-DOCX
+        papel: DIRETA
+        observacao: A ficha diz "trilho interno", não "PLANO_INTERNO".
+      - id_fonte: FONTE-02-JANELA-PEQUENA-MAOS-AMIGAS-JANELA-UM-POUCO-ABERTA-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-TOPOLOGIA-E4E
+        papel: DERIVADA
+
+  - identificador: A08
+    texto: O SU-041 ocorre como montante central da folha do PLANO_EXTERNO.
+    estado: PENDENTE
+    observacao: >-
+      Mesma pendência da A07, do outro lado: "trilho externo" da ficha versus
+      PLANO_EXTERNO da E.4E.
+    citacoes:
+      - id_fonte: FONTE-01-FICHA-CAMPO-01-FICHA-CAMPO-DOCX
+        papel: DIRETA
+        observacao: A ficha diz "trilho externo", não "PLANO_EXTERNO".
+      - id_fonte: FONTE-02-JANELA-PEQUENA-MAOS-AMIGAS-JANELA-UM-POUCO-ABERTA-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-TOPOLOGIA-E4E
+        papel: DERIVADA
+
+  - identificador: A09
+    texto: >-
+      O SU-053 ocorre nas travessas superior e inferior das folhas, em quatro
+      ocorrências.
+    estado: CONFIRMADO_CASO_REAL
+    citacoes:
+      - id_fonte: FONTE-01-FICHA-CAMPO-01-FICHA-CAMPO-DOCX
+        papel: DIRETA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-ALTURA-INTERNA-DAS-FOLHAS-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-ALTURA-DAS-FOLHAS-ENTRE-OS-TRILHOS-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-TOPOLOGIA-E4E
+        papel: DERIVADA
+
+  - identificador: A10
+    texto: O SU-102 está presente como baguete.
+    estado: CONFIRMADO_CASO_REAL
+    citacoes:
+      - id_fonte: FONTE-01-FICHA-CAMPO-01-FICHA-CAMPO-DOCX
+        papel: DIRETA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-MEDIDA-DOS-BAGUETES-DA-LARGURA-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-MEDIDA-DOS-BAGUETES-DA-ALTURA-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-TOPOLOGIA-E4E
+        papel: DERIVADA
+
+  - identificador: A11
+    texto: Cada folha possui dois baguetes horizontais e dois baguetes verticais.
+    estado: CONFIRMADO_CASO_REAL
+    observacao: >-
+      A arbitragem fixou a CONTAGEM por orientação e nada mais. Não está
+      estabelecido qual baguete é o de cima nem qual é o da esquerda; os
+      sufixos -1 e -2 da receita desambiguam ocorrência e não têm semântica de
+      posição.
+    citacoes:
+      - id_fonte: FONTE-01-FICHA-CAMPO-01-FICHA-CAMPO-DOCX
+        papel: DIRETA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-MEDIDA-DOS-BAGUETES-DA-LARGURA-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-MEDIDA-DOS-BAGUETES-DA-ALTURA-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-TOPOLOGIA-E4E
+        papel: DERIVADA
+
+  - identificador: A12
+    texto: O total de ocorrências de SU-102 na composição é oito.
+    estado: CONFIRMADO_CASO_REAL
+    derivada_de: [A10, A11]
+    observacao: >-
+      Duas folhas x (2 horizontais + 2 verticais). A ficha declara o total de
+      oito diretamente, e a contagem também decorre de A10 e A11 — por isso as
+      duas coisas estão registradas.
+    citacoes:
+      - id_fonte: FONTE-01-FICHA-CAMPO-01-FICHA-CAMPO-DOCX
+        papel: DIRETA
+      - id_fonte: FONTE-TOPOLOGIA-E4E
+        papel: DERIVADA
+
+  - identificador: A13
+    texto: O SU-040 e o SU-041 pertencem a folhas diferentes.
+    estado: CONFIRMADO_CASO_REAL
+    observacao: >-
+      Independe da arbitragem de plano interno/externo (A07/A08): que são
+      folhas DIFERENTES é observável e está na ficha; qual delas é a interna é
+      que continua pendente.
+    citacoes:
+      - id_fonte: FONTE-01-FICHA-CAMPO-01-FICHA-CAMPO-DOCX
+        papel: DIRETA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-MAOS-AMIGAS-JANELA-UM-POUCO-ABERTA-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-ENCONTRO-SUPERIOR-DOS-PERFIS-DAS-FOLHAS-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-TOPOLOGIA-E4E
+        papel: DERIVADA
+
+  - identificador: A14
+    texto: O SU-040 e o SU-041 formam o ENCONTRO_CENTRAL.
+    estado: CONFIRMADO_ESPECIALISTA
+    observacao: >-
+      A linha do SU-041 na ficha bruta diz "Encontra o SU-041" — erro de
+      digitação conhecido e confirmado. O arquivo bruto NÃO foi corrigido; a
+      correção de domínio (SU-040 encontra SU-041) está registrada na
+      arbitragem da E.4E, e é por isso que a sustentação aqui é a arbitragem e
+      não a ficha.
+    citacoes:
+      - id_fonte: FONTE-TOPOLOGIA-E4E
+        papel: DERIVADA
+      - id_fonte: FONTE-01-FICHA-CAMPO-01-FICHA-CAMPO-DOCX
+        papel: CORROBORATIVA
+        observacao: Contém o erro de digitação "SU-041 encontra o SU-041".
+      - id_fonte: FONTE-02-JANELA-PEQUENA-ENCONTRO-SUPERIOR-DOS-PERFIS-DAS-FOLHAS-JPEG
+        papel: CORROBORATIVA
+      - id_fonte: FONTE-02-JANELA-PEQUENA-ENCONTRO-INFERIOR-DOS-PERFIS-DAS-FOLHAS-JPEG
+        papel: CORROBORATIVA
+
+  - identificador: A15
+    texto: >-
+      O ENCONTRO_CENTRAL é uma relação entre duas ocorrências, não uma terceira
+      peça.
+    estado: CONFIRMADO_ESPECIALISTA
+    observacao: >-
+      Afirmação sobre o MODELO, não sobre a janela: nenhuma foto pode provar
+      que algo não existe. Sustentada pela arbitragem, como convém.
+    citacoes:
+      - id_fonte: FONTE-TOPOLOGIA-E4E
+        papel: DERIVADA
+
+  - identificador: A16
+    texto: >-
+      A composição conhecida possui 12 ocorrências estruturais, 8 baguetes e
+      20 ocorrências físicas no total.
+    estado: CONFIRMADO_ESPECIALISTA
+    derivada_de: [A03, A04, A05, A06, A07, A08, A09, A12]
+    observacao: >-
+      AFIRMAÇÃO DERIVADA POR AGREGAÇÃO. Não existe foto mostrando vinte peças;
+      o número vem de somar as ocorrências sustentadas uma a uma. Duas das
+      parcelas (A07 e A08) estão PENDENTES quanto ao plano — a CONTAGEM não
+      depende disso, mas a atribuição de plano de cada montante central sim.
+    citacoes:
+      - id_fonte: FONTE-TOPOLOGIA-E4E
+        papel: DERIVADA
+
+# ---------------------------------------------------------------------------
+# Conflitos — preservados, não resolvidos
+# ---------------------------------------------------------------------------
+conflitos:
+  - identificador: K2-VIDRO-FOLHA-2
+    descricao: >-
+      A ficha declara duas medidas incompatíveis para o vidro da folha 2: a
+      seção 6 diz 994 mm e a seção 9 diz 934 mm, duas vezes. Provavelmente
+      digitação — e "provavelmente" não é arbitragem. O arquivo bruto NÃO foi
+      corrigido e nenhum dos dois valores foi escolhido. A decisão é de rodada
+      dimensional posterior e não vira fórmula nesta sprint.
+    valores:
+      - '994 mm (ficha, seção 6 — vidro da folha 2)'
+      - '934 mm (ficha, seção 9 — duas ocorrências)'
+    estado: PENDENTE
+    citacoes:
+      - id_fonte: FONTE-01-FICHA-CAMPO-01-FICHA-CAMPO-DOCX
+        papel: CONFLITANTE
+        observacao: A mesma fonte sustenta os dois valores divergentes.
+
+  - identificador: K3-MAPEAMENTO-FOTO-AFIRMACAO
+    descricao: >-
+      A seção 10 da ficha ("Evidências e anexos") está inteiramente em branco:
+      o vínculo foto -> afirmação não existia como registro primário. Os
+      vínculos deste manifesto são REGISTRO DERIVADO DE CURADORIA, criados
+      agora e rastreáveis pelo commit — não são leitura da ficha. Quem
+      estabelece vínculo em caso de dúvida física real continua sendo o
+      especialista de domínio.
+    valores:
+      - 'ficha, seção 10: em branco'
+      - 'manifesto E.4F: vínculos criados por curadoria'
+    estado: PENDENTE
+    citacoes:
+      - id_fonte: FONTE-01-FICHA-CAMPO-01-FICHA-CAMPO-DOCX
+        papel: CONFLITANTE
+        observacao: Ausência de mapeamento no registro primário.
+
+# ---------------------------------------------------------------------------
+# Notas
+# ---------------------------------------------------------------------------
+notas:
+  - >-
+    TMS001 versus SU-001: o Wvetro escreve TMS001 para o marco superior e nunca
+    SU001. A única equivalência SU/TMS homologada no projeto é SU-102 x TMS-102.
+    TMS001 é preservado literalmente e NENHUMA associação TMS001 -> SU-001 foi
+    criada, nem alias, nem equivalência implícita. Pendente de arbitragem
+    futura; não é objeto desta rodada.
+  - >-
+    O projeto Wvetro é 1500x1200 e não corresponde a nenhuma das três janelas
+    fotografadas (2015x740, 1972x1134, 2203x1160). Ele pode corroborar
+    estrutura e quantidade em um caso externo distinto; não prova nada sobre as
+    janelas deste acervo.
+  - >-
+    Reemissões do Wvetro: existem SEIS pares "X.pdf" / "X (1).pdf" com bytes
+    diferentes, não cinco como registrado no handoff da Rodada 1 — o sexto par
+    é Orcamento_Acessorios_Fonecedor.pdf.pdf / Orcamento_Acessorios_Fonecedor.pdf (1).pdf,
+    de extensão dupla. Todos os doze arquivos estão registrados como artefatos
+    DISTINTOS, com sha256 próprio. Nenhum foi escolhido como "o correto".
+  - >-
+    O padrão "X (1)" também ocorre em 15 pares de FOTOS (03_janela_media,
+    04_janela_grande e quadro_sem_folhas). Ali a diferença de tamanho chega a
+    +61%, incompatível com reemissão do mesmo arquivo: são provavelmente fotos
+    distintas com colisão de nome do WhatsApp. Todas registradas como artefatos
+    distintos. Política definitiva pendente de arbitragem (ARB-7).
+  - >-
+    Nenhuma das 78 fotos tem EXIF — o WhatsApp removeu. O único fingerprint
+    disponível é o sha256, e é por isso que ele é obrigatório em todo artefato
+    externo deste manifesto.
+  - >-
+    Nenhuma fórmula dimensional foi registrada aqui. L-32, H-5, H-55 e
+    (L-132)/2 continuam candidatas da ficha, não regra do projeto.
+
+# ---------------------------------------------------------------------------
+# Artefatos — bloco GERADO. Ver cabeçalho para o comando que o regenera.
+# ---------------------------------------------------------------------------
+artefatos:
+  - id_fonte: FONTE-01-FICHA-CAMPO-01-FICHA-CAMPO-DOCX
+    grupo: 01_ficha_campo
+    caminho_relativo: "01_ficha_campo/01_ficha_campo.docx"
+    sha256: 409b532bb9067a9a0ce53352ee359575c608d1f9fb658a2cb35238a42c1c00ab
+    tamanho_bytes: 36648
+    formato: docx
+  - id_fonte: FONTE-02-JANELA-PEQUENA-FECHO-CONCHA-E-LINGUETA-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/Fecho concha e lingueta.jpeg"
+    sha256: 0694abc7e29ba35f02ec8120a2a266050b05c700f34db2a938e6a82af32f1664
+    tamanho_bytes: 106496
+    formato: jpeg
+  - id_fonte: FONTE-02-JANELA-PEQUENA-ALTURA-DAS-FOLHAS-ENTRE-OS-TRILHOS-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/altura das folhas entre os trilhos.jpeg"
+    sha256: 88462c60ba673ae560ca5870b45a69cd156d47652d65558663fc5d7e2a37a9e3
+    tamanho_bytes: 119958
+    formato: jpeg
+  - id_fonte: FONTE-02-JANELA-PEQUENA-ALTURA-INTERNA-DAS-FOLHAS-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/altura interna das folhas.jpeg"
+    sha256: 6e97405420ebf245bc05cc63cfaaae86170fe2a431d6aba160e4975fad2b9348
+    tamanho_bytes: 165284
+    formato: jpeg
+  - id_fonte: FONTE-02-JANELA-PEQUENA-ALTURA-TOTAL-DO-VAO-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/altura total do vão.jpeg"
+    sha256: 97606b662213ac69343b169c6794c4fc3e5e57680789a4503be730caf6bade8c
+    tamanho_bytes: 240999
+    formato: jpeg
+  - id_fonte: FONTE-02-JANELA-PEQUENA-CONTRAFECHO-LATERAL-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/contrafecho lateral.jpeg"
+    sha256: c7d23eb7ab790c7ae8c7ca72d04a7f6718f3e8c5067b468f6bcd0bf1208e44ab
+    tamanho_bytes: 184180
+    formato: jpeg
+  - id_fonte: FONTE-02-JANELA-PEQUENA-ENCONTRO-INFERIOR-DOS-PERFIS-DAS-FOLHAS-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/encontro inferior dos perfis das folhas.jpeg"
+    sha256: 9c9e5270e5a580489f9d5a93016908e05cdbf4778fa56379ee81623af90dc4a0
+    tamanho_bytes: 116345
+    formato: jpeg
+  - id_fonte: FONTE-02-JANELA-PEQUENA-ENCONTRO-SUPERIOR-DOS-PERFIS-DAS-FOLHAS-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/encontro superior dos perfis das folhas.jpeg"
+    sha256: fc34452ac9f3bc28156e9d26aab473ebc93b20f9eeab15470d00f9e4c90ce800
+    tamanho_bytes: 97879
+    formato: jpeg
+  - id_fonte: FONTE-02-JANELA-PEQUENA-GUIA-DESLIZANTE-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/guia deslizante.jpeg"
+    sha256: 51077da5eb22b5548581d9a9a40bfd276483d46773d758779822f1d059af07ba
+    tamanho_bytes: 138072
+    formato: jpeg
+  - id_fonte: FONTE-02-JANELA-PEQUENA-LADO-DIREITO-DO-TRILHO-INFERIOR-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/lado direito do trilho inferior.jpeg"
+    sha256: 439f0a9024960a88141b6c80748ce2699ca1f413a84ef2d1f3593c10c1111e08
+    tamanho_bytes: 197400
+    formato: jpeg
+  - id_fonte: FONTE-02-JANELA-PEQUENA-LADO-DIREITO-DO-TRILHO-SUPERIOR-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/lado direito do trilho superior.jpeg"
+    sha256: 8ca4bc1ab77198b563fa8f12d167e35d5cb98b9f75c706cc37f65c82aeff03fa
+    tamanho_bytes: 132691
+    formato: jpeg
+  - id_fonte: FONTE-02-JANELA-PEQUENA-LADO-ESQUERDO-DO-TRILHO-INFERIOR-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/lado esquerdo do trilho inferior.jpeg"
+    sha256: b44ad8ae3a0bfbb98997f2143a8c6dd8af749daace03dab2692754b2b63c8d67
+    tamanho_bytes: 209102
+    formato: jpeg
+  - id_fonte: FONTE-02-JANELA-PEQUENA-LADO-ESQUERDO-DO-TRILHO-SUPERIOR-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/lado esquerdo do trilho superior.jpeg"
+    sha256: efd460145ebcb0e017e2325306da495b577ef42bd4d2d6a0b929f990dacc8fb0
+    tamanho_bytes: 132346
+    formato: jpeg
+  - id_fonte: FONTE-02-JANELA-PEQUENA-LARGURA-INTERNA-DAS-FOLHAS-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/largura interna das folhas.jpeg"
+    sha256: 9d7f254c154b380c69c301bd2180d4cfcc28df90cf91eec1eb895d3bdc780379
+    tamanho_bytes: 165985
+    formato: jpeg
+  - id_fonte: FONTE-02-JANELA-PEQUENA-MEDIDA-DOS-BAGUETES-DA-ALTURA-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/medida dos baguetes da altura.jpeg"
+    sha256: d53b41da903eb489075899597d9e2f81c83c5a5657fbe90302d51dbbc9784252
+    tamanho_bytes: 166279
+    formato: jpeg
+  - id_fonte: FONTE-02-JANELA-PEQUENA-MEDIDA-DOS-BAGUETES-DA-LARGURA-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/medida dos baguetes da largura.jpeg"
+    sha256: 025642921d2af32f73324c15b16a2c612766794eac8da447727c763d197883ac
+    tamanho_bytes: 158326
+    formato: jpeg
+  - id_fonte: FONTE-02-JANELA-PEQUENA-MEDIDA-TOTAL-DO-VAO-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/medida total do vão.jpeg"
+    sha256: 666cd268667976a270df88d4b3f6ee337124d4ce9a8ba07e8a1c055533ea009e
+    tamanho_bytes: 232591
+    formato: jpeg
+  - id_fonte: FONTE-02-JANELA-PEQUENA-MAOS-AMIGAS-JANELA-UM-POUCO-ABERTA-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/mãos amigas janela  um pouco aberta.jpeg"
+    sha256: 0f8cc2d95243680ceefa01ee730629ca37209d99abc6f1b17b9d38a9ffc90a29
+    tamanho_bytes: 192068
+    formato: jpeg
+  - id_fonte: FONTE-02-JANELA-PEQUENA-VISTA-FRONTAL-AMBAS-AS-FOLHAS-FECHADAS-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/vista frontal ambas as folhas fechadas.jpeg"
+    sha256: 34372e88852d7581fe8229e3b4b95f8320b0fb91723dfbb616e2491c5843ad23
+    tamanho_bytes: 131754
+    formato: jpeg
+  - id_fonte: FONTE-02-JANELA-PEQUENA-VISTA-FRONTAL-FOLHA-DA-DIREITA-ABERTA-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/vista frontal folha da direita aberta.jpeg"
+    sha256: 03fea73e85c5f1aa62eb89e80fc2c92cd099e9ba5355a42a2f74f2ed8511cc1b
+    tamanho_bytes: 133543
+    formato: jpeg
+  - id_fonte: FONTE-02-JANELA-PEQUENA-VISTA-FRONTAL-FOLHA-DA-ESQUEDA-ABERTA-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/vista frontal folha da esqueda aberta.jpeg"
+    sha256: aec813adff242c411505d2a0874d97469745e82e0d06fc6eb694e45e20f477cc
+    tamanho_bytes: 121740
+    formato: jpeg
+  - id_fonte: FONTE-02-JANELA-PEQUENA-VISTA-LATERAL-DA-JANELA-FECHADA-JPEG
+    grupo: 02_janela_pequena
+    caminho_relativo: "02_janela_pequena/vista lateral da janela fechada.jpeg"
+    sha256: f961238a7968c9265c4ca4d784fef5f115f8a7ee64f05d8323252e44b337c193
+    tamanho_bytes: 240147
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-WHATSAPP-IMAGE-2026-08-02-AT-13-25-23-2-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/WhatsApp Image 2026-08-02 at 13.25.23 (2).jpeg"
+    sha256: c54506ebf6502d52fb9c84a3e7ecd7637f5afeb10634f10a605d958112ea1b7e
+    tamanho_bytes: 165102
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-WHATSAPP-IMAGE-2026-08-02-AT-13-25-24-1-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/WhatsApp Image 2026-08-02 at 13.25.24 (1).jpeg"
+    sha256: 1b13747b19bc10e54420b3d9ff5f06a98c0b9efd9be5bb734e91de6a49032022
+    tamanho_bytes: 138563
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-WHATSAPP-IMAGE-2026-08-02-AT-13-25-24-2-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/WhatsApp Image 2026-08-02 at 13.25.24 (2).jpeg"
+    sha256: 76349835a4e510406c01fe9b3503d3d9bd280996fec48fd037ea8379fa64dfe4
+    tamanho_bytes: 144403
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-WHATSAPP-IMAGE-2026-08-02-AT-13-25-24-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/WhatsApp Image 2026-08-02 at 13.25.24.jpeg"
+    sha256: 54479b6c2dcdf95123595cb450ecb37eb8462eb3adc5c22d2692f8db7acdd1c8
+    tamanho_bytes: 157464
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-WHATSAPP-IMAGE-2026-08-02-AT-13-25-25-1-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/WhatsApp Image 2026-08-02 at 13.25.25 (1).jpeg"
+    sha256: a84357d699afd908953f9c798e81a08de4c4a832c9b2319206d88c32739fd3aa
+    tamanho_bytes: 245561
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-WHATSAPP-IMAGE-2026-08-02-AT-13-25-25-2-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/WhatsApp Image 2026-08-02 at 13.25.25 (2).jpeg"
+    sha256: 46d3de96a633d8bbe10e07573c1624c932e3ad7ed98c2c8bbf9fe4bb70db27d0
+    tamanho_bytes: 172985
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-WHATSAPP-IMAGE-2026-08-02-AT-13-25-25-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/WhatsApp Image 2026-08-02 at 13.25.25.jpeg"
+    sha256: 2e73642754220e3e5e90743dad6b59dc417e3375d2e90b670889d64b93292501
+    tamanho_bytes: 150053
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-WHATSAPP-IMAGE-2026-08-02-AT-13-25-26-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/WhatsApp Image 2026-08-02 at 13.25.26.jpeg"
+    sha256: 12efae9658cfdb8023de01a1bb2c2ead9089d2e59e676c63f9f86f95fd217ae6
+    tamanho_bytes: 166493
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-WHATSAPP-IMAGE-2026-08-02-AT-13-25-27-2-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/WhatsApp Image 2026-08-02 at 13.25.27 (2).jpeg"
+    sha256: 7330419f104d9487262c2d12039017e899fbe1710590a57d74efac707a359e46
+    tamanho_bytes: 150717
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-WHATSAPP-IMAGE-2026-08-02-AT-13-25-28-1-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/WhatsApp Image 2026-08-02 at 13.25.28 (1).jpeg"
+    sha256: 5bef826068d3fe16e96e94c13ff95436a8353b9579dd8bf0d6405cf6f2ff3749
+    tamanho_bytes: 143420
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-WHATSAPP-IMAGE-2026-08-02-AT-13-25-28-2-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/WhatsApp Image 2026-08-02 at 13.25.28 (2).jpeg"
+    sha256: 0b3f29c4f35437aa5d333a2857791f29c4fab33fcba5727142b699b9ec2e7e06
+    tamanho_bytes: 208273
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-WHATSAPP-IMAGE-2026-08-02-AT-13-25-28-3-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/WhatsApp Image 2026-08-02 at 13.25.28 (3).jpeg"
+    sha256: ff2a63fafd07b350dc264ecd56f07d73df91027b55289dc5da4f216d3a32ed83
+    tamanho_bytes: 134103
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-WHATSAPP-IMAGE-2026-08-02-AT-13-25-28-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/WhatsApp Image 2026-08-02 at 13.25.28.jpeg"
+    sha256: 80d35259d3fad118c9bdb501f48b535418275f3bc679dd106c11561cb90f0921
+    tamanho_bytes: 155679
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-WHATSAPP-IMAGE-2026-08-02-AT-13-25-29-1-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/WhatsApp Image 2026-08-02 at 13.25.29 (1).jpeg"
+    sha256: 3eda9378b8af4e1db58ef3a15c9ff44f4b4b47292284586f056eee0d51173e06
+    tamanho_bytes: 163210
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-WHATSAPP-IMAGE-2026-08-02-AT-13-25-29-2-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/WhatsApp Image 2026-08-02 at 13.25.29 (2).jpeg"
+    sha256: 97ba68bc51c246098c0d13f9d326bdde12ef256fbdebf3bdb5edbf653a766097
+    tamanho_bytes: 78189
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-WHATSAPP-IMAGE-2026-08-02-AT-13-25-29-3-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/WhatsApp Image 2026-08-02 at 13.25.29 (3).jpeg"
+    sha256: d68a462edd51e89f17d6c49fb5ea84099b1da31ccaadae7cad13fcf57921b0df
+    tamanho_bytes: 122236
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-WHATSAPP-IMAGE-2026-08-02-AT-13-25-29-4-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/WhatsApp Image 2026-08-02 at 13.25.29 (4).jpeg"
+    sha256: 8a944de981b9922f8bab15bb2639616823794d5f43720f199bb35b358fdfcade
+    tamanho_bytes: 113518
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-WHATSAPP-IMAGE-2026-08-02-AT-13-25-29-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/WhatsApp Image 2026-08-02 at 13.25.29.jpeg"
+    sha256: 779ffaa3b6615e345e7e8cd3eaba623686d837507b7b3c9b0980adc5d6c47ccb
+    tamanho_bytes: 220997
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-WHATSAPP-IMAGE-2026-08-02-AT-13-25-30-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/WhatsApp Image 2026-08-02 at 13.25.30.jpeg"
+    sha256: fd350a78166bb658d2233347d3d09064b5da4daf6de15eec42bfc0eb2e95bb81
+    tamanho_bytes: 163241
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-VISTA-FRONTAL-AMBAS-AS-FOLHAS-FECHADAS-2-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/vista frontal ambas as folhas fechadas 2.jpeg"
+    sha256: 91223beb4d5d6b215c76caa1f999cda8baebe949f414630fa3290c6c9e084104
+    tamanho_bytes: 144472
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-VISTA-FRONTAL-AMBAS-AS-FOLHAS-FECHADAS-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/vista frontal ambas as folhas fechadas.jpeg"
+    sha256: 20335f48b7930f79c03688debcf826cb462589e8a10e978f6075805480b88a48
+    tamanho_bytes: 138080
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-VISTA-FRONTAL-FOLHA-DA-DIREITA-ABERTA-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/vista frontal folha da direita aberta.jpeg"
+    sha256: c33c1e75abd9f46e6776a22e791fd9f31cf19a9d802ce9afc336b13ee02d6064
+    tamanho_bytes: 131976
+    formato: jpeg
+  - id_fonte: FONTE-03-JANELA-MEDIA-VISTA-FRONTAL-FOLHA-DA-ESQUERDA-ABERTA-JPEG
+    grupo: 03_janela_media
+    caminho_relativo: "03_janela_media/vista frontal folha da esquerda aberta.jpeg"
+    sha256: b639d5b703ec5be3c17dbe9d098568b961646dbfcb94444892f30c38237b4dae
+    tamanho_bytes: 139735
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-15-3-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.15 (3).jpeg"
+    sha256: a6cf3b81e3e7fc4bfc25e5cd9410fcd976c17e5d1e9b20c2dd253e025cbbccaf
+    tamanho_bytes: 140856
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-16-1-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.16 (1).jpeg"
+    sha256: 6e15563dfdccc475b2df6a9d069b4aac9655f03b193240dc6e01810b1dc21abf
+    tamanho_bytes: 111801
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-16-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.16.jpeg"
+    sha256: 28688279446ee8e67bb74408051b6241f53757da0fe94f9bc2f49b7d2e9d9f5a
+    tamanho_bytes: 180246
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-17-1-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.17 (1).jpeg"
+    sha256: d9598d02018cd17ea8aa43eba836a6ccf265e63af6c6de1314aeaa14eb8cb752
+    tamanho_bytes: 162144
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-17-2-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.17 (2).jpeg"
+    sha256: 6b23772e282079c4b4c5a4bb4a96e1659afce20ed15b5a2e8d8e718774c72edd
+    tamanho_bytes: 196550
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-17-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.17.jpeg"
+    sha256: 452e48763f4c3d5a59a499d5943d1a8cd7570dc339b71f542ee279912e4d305b
+    tamanho_bytes: 149263
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-18-1-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.18 (1).jpeg"
+    sha256: da2948923ec3c9659fe21188583e9b489daab57f10f33cb40499412844d644d2
+    tamanho_bytes: 175155
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-18-2-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.18 (2).jpeg"
+    sha256: 618b4b2f4c26c1a83768f40ce12147dad3946dfd2434c42aecb62d7d272b10f7
+    tamanho_bytes: 206163
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-18-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.18.jpeg"
+    sha256: c15d1041bc030271310d1c9fb8ff6ca6ca3ae22f192a8593a61ca0770be231cd
+    tamanho_bytes: 190582
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-19-1-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.19 (1).jpeg"
+    sha256: d6dfa2db1c780dee53bdae9a2311d1d6c9149f2efbb5c74178cabd10ff53f84f
+    tamanho_bytes: 154590
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-19-2-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.19 (2).jpeg"
+    sha256: 938c1aa697e6250f229e76031bca19c864e1b33819b078072ea414b9e6532b86
+    tamanho_bytes: 154742
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-19-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.19.jpeg"
+    sha256: 774b6669fdf98ac91f4c6c487db67652977609df395a0a301ea62f0801d80bb1
+    tamanho_bytes: 147750
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-20-1-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.20 (1).jpeg"
+    sha256: 3d0d7cd235ce137254aa4321be5b709f98bca67e6dec3832d014b63340c138db
+    tamanho_bytes: 169510
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-20-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.20.jpeg"
+    sha256: 424787b85ebfec3175b6fe60c5bd93e0b49107732ca7a366a12484eacbf0fdcf
+    tamanho_bytes: 131792
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-21-1-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.21 (1).jpeg"
+    sha256: a10244bb334b99f0851d9cc1c429fd4920cbf5d6f40aa407c4755fd1675c0bbd
+    tamanho_bytes: 167745
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-21-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.21.jpeg"
+    sha256: 2743ad55009e59488a29753ca338171323ab058b8195c141e07efeaf5b786f2f
+    tamanho_bytes: 132644
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-22-1-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.22 (1).jpeg"
+    sha256: 558a294f73058755b0acc2ce12035c44f47690565cf7aabf539923c21ec36545
+    tamanho_bytes: 183896
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-22-2-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.22 (2).jpeg"
+    sha256: 9a6b951d07ba5f459cceb2f33024269db908f3ec2aaf31a0fce5791d81a836d3
+    tamanho_bytes: 147676
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-22-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.22.jpeg"
+    sha256: 69a44672cc12e303e25f48aef9e926370d37ec0194d674e2b0100fdb53c98b0a
+    tamanho_bytes: 122221
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-23-1-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.23 (1).jpeg"
+    sha256: a62f7728d37eec4ae5f816b2a350f2c71ee63b8a0f7d708af3cf1282bee8de91
+    tamanho_bytes: 203669
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-WHATSAPP-IMAGE-2026-08-02-AT-13-25-23-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/WhatsApp Image 2026-08-02 at 13.25.23.jpeg"
+    sha256: 17d95777c1d49007c0ade2e69bf2a0aa12b64be1e11d1e548678aa7ca3e50476
+    tamanho_bytes: 133930
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-QUADRO-SEM-FOLHAS-WHATSAPP-IMAGE-2026-08-08-AT-19-20-29-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/quadro_sem_folhas/WhatsApp Image 2026-08-08 at 19.20.29.jpeg"
+    sha256: 071c27e6eafd1f678617f216c3e067e4b23808574e94ae8d323c546442ec9670
+    tamanho_bytes: 141960
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-QUADRO-SEM-FOLHAS-WHATSAPP-IMAGE-2026-08-08-AT-19-20-30-1-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/quadro_sem_folhas/WhatsApp Image 2026-08-08 at 19.20.30 (1).jpeg"
+    sha256: 6adf58b0143a87c54f96c8753d8ea2096042e70999fde59218d8f71acf529796
+    tamanho_bytes: 146950
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-QUADRO-SEM-FOLHAS-WHATSAPP-IMAGE-2026-08-08-AT-19-20-30-2-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/quadro_sem_folhas/WhatsApp Image 2026-08-08 at 19.20.30 (2).jpeg"
+    sha256: 5c8d464744a43d5d2cbf49c9db8d42de7e26c452dbd554851ea6ea751852811f
+    tamanho_bytes: 169759
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-QUADRO-SEM-FOLHAS-WHATSAPP-IMAGE-2026-08-08-AT-19-20-30-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/quadro_sem_folhas/WhatsApp Image 2026-08-08 at 19.20.30.jpeg"
+    sha256: efc0d8adcde18bdc03028aa4177879bb5e8acc0271f9a40b919a6af09d01a8a9
+    tamanho_bytes: 164321
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-QUADRO-SEM-FOLHAS-WHATSAPP-IMAGE-2026-08-08-AT-19-20-31-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/quadro_sem_folhas/WhatsApp Image 2026-08-08 at 19.20.31.jpeg"
+    sha256: 8afcee3b4a55168d7385841b7b14eddea2ecfc96e38c5613181dfbd06c0a1f17
+    tamanho_bytes: 122718
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-QUADRO-SEM-FOLHAS-WHATSAPP-IMAGE-2026-08-08-AT-19-20-32-1-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/quadro_sem_folhas/WhatsApp Image 2026-08-08 at 19.20.32 (1).jpeg"
+    sha256: 3163943668f03ea21336669b3881afb8a7fd51f4e810e4f02140308a1b693112
+    tamanho_bytes: 142687
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-QUADRO-SEM-FOLHAS-WHATSAPP-IMAGE-2026-08-08-AT-19-20-32-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/quadro_sem_folhas/WhatsApp Image 2026-08-08 at 19.20.32.jpeg"
+    sha256: ca28cb2a123d32a6fe6747a5cfe327eb7000cf985e348a6de5c10bf3a9eac886
+    tamanho_bytes: 138219
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-QUADRO-SEM-FOLHAS-WHATSAPP-IMAGE-2026-08-08-AT-19-20-33-1-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/quadro_sem_folhas/WhatsApp Image 2026-08-08 at 19.20.33 (1).jpeg"
+    sha256: 8bb7f231f7f33515c81e4d6f2349799caa945006ffd5e5d4cd906d3ebf85f5be
+    tamanho_bytes: 117933
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-QUADRO-SEM-FOLHAS-WHATSAPP-IMAGE-2026-08-08-AT-19-20-33-2-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/quadro_sem_folhas/WhatsApp Image 2026-08-08 at 19.20.33 (2).jpeg"
+    sha256: b2339e0c2a30cabf684246ac92ad2130ea4a750d5247bb70af56d15927ab73f4
+    tamanho_bytes: 116384
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-QUADRO-SEM-FOLHAS-WHATSAPP-IMAGE-2026-08-08-AT-19-20-33-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/quadro_sem_folhas/WhatsApp Image 2026-08-08 at 19.20.33.jpeg"
+    sha256: cdbbf1f1bcb2ee306d61f132234c099a25ff313ca429c833d9dd9c0acb7c8d1b
+    tamanho_bytes: 114173
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-VISTA-FRONTAL-AMBAS-AS-FOLHAS-FECHADAS-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/vista frontal ambas as folhas  fechadas.jpeg"
+    sha256: 6254e51eaad89f2d78f2f453076bc4bd917f6fb5845130be3a5f20fb7c4857ce
+    tamanho_bytes: 208378
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-VISTA-FRONTAL-FOLHA-DA-DIREITA-ABERTA-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/vista frontal folha da direita aberta.jpeg"
+    sha256: d9d4e8633d61185499bbc4a7f20d317ec35afaa22ef3a0b44481cce2247b224a
+    tamanho_bytes: 193631
+    formato: jpeg
+  - id_fonte: FONTE-04-JANELA-GRANDE-VISTA-FRONTAL-FOLHA-DA-ESQUERDA-ABERTA-JPEG
+    grupo: 04_janela_grande
+    caminho_relativo: "04_janela_grande/vista frontal folha da esquerda aberta.jpeg"
+    sha256: d7eb766ddca4daf18bff63395647ff097aaa5d41045819714a7f3c764076cb7f
+    tamanho_bytes: 196515
+    formato: jpeg
+  - id_fonte: FONTE-05-WVETRO-1500X1200-CL001262015846-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/CL001262015846.pdf"
+    sha256: 3a7306245ad59009bfbcb9610e4c7366404ada1db2ab65df2a5bf7f3d93d6c9f
+    tamanho_bytes: 883896
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-CORE-RELSOBRAPERFIL-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Core.RelSobraPerfil.pdf"
+    sha256: 5e6012e5f842798cd6ee3b68c433e1ab6d10eafe491db6ea2c5a2d3ff818ca7a
+    tamanho_bytes: 143551
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-CORE-RELCUSTOORCAMENTO-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Core.relCustoorcamento.pdf"
+    sha256: 0158db47044d1e1a14a77807712d9469d3b695392c5e2360b2e0eb2dd01328d7
+    tamanho_bytes: 29495
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-MATERIAIS-CORE-RELBARRASUTILIZADASCOMVALOR-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Materiais/Core.RelBarrasUtilizadasComValor.pdf"
+    sha256: 4bc3852465c0b28d8605fc2b5befce086e9025dd543f9fdeae7930bc137e069a
+    tamanho_bytes: 144474
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-MATERIAIS-CORE-RELBARRASUTILIZADASCOTACAO-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Materiais/Core.RelBarrasUtilizadasCotacao.pdf"
+    sha256: d17dab11e7abcde2f936883f5dbf362caf5769d981e3f80764be4c8e45e93710
+    tamanho_bytes: 142293
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-MATERIAIS-CORE-RELORCAMENTOACESSORIOSEMBALAGEM-1-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Materiais/Core.RelOrcamentoAcessoriosEmbalagem (1).pdf"
+    sha256: 9109df66ae04d1b00a979ec4e36d943ee2c9359d9e61ead75c295b74d5981c8f
+    tamanho_bytes: 350356
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-MATERIAIS-CORE-RELORCAMENTOACESSORIOSEMBALAGEM-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Materiais/Core.RelOrcamentoAcessoriosEmbalagem.pdf"
+    sha256: b12e3154e8eb3443acf0c9c4b95cf685798b868ba6ca64f2381796783f3a1dea
+    tamanho_bytes: 350512
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-MATERIAIS-CORE-RELORCAMENTOACESSORIOSFONECEDORRETRATO-1-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Materiais/Core.RelOrcamentoAcessoriosFonecedorRetrato (1).pdf"
+    sha256: 6b08f4c849474b4736efa4c1cdc9815f4427fb25733e9d82a5f49a98b3ea4668
+    tamanho_bytes: 349854
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-MATERIAIS-CORE-RELORCAMENTOACESSORIOSFONECEDORRETRATO-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Materiais/Core.RelOrcamentoAcessoriosFonecedorRetrato.pdf"
+    sha256: b6d244d17623fbb80970165ab39474f04128c135b0289d5cab2c6de514e057d3
+    tamanho_bytes: 349540
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-MATERIAIS-CORE-RELORCAMENTOACESSORIOSPORTIPOAPLICACAO-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Materiais/Core.RelOrcamentoAcessoriosPorTipoAplicacao.pdf"
+    sha256: 41aafcadc1acdbf4458d8a7afcf2847f47cb9ff81e48c3ae93024a21e6bc6a0e
+    tamanho_bytes: 350492
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-MATERIAIS-CORE-RELVIDROORCAMENTO-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Materiais/Core.RelVidroOrcamento.pdf"
+    sha256: eb7278126304f6cd255a6358b1959f54c28e0fedd252d609b2a54b88766e2d8c
+    tamanho_bytes: 25275
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-MATERIAIS-ORCAMENTO-ACESSORIOS-FONECEDOR-PDF-1-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Materiais/Orcamento_Acessorios_Fonecedor.pdf (1).pdf"
+    sha256: d75fd21b8805d42e649f01c2e1db54d3ff4fde2019326b1ccfa9256a0a0da0b3
+    tamanho_bytes: 351397
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-MATERIAIS-ORCAMENTO-ACESSORIOS-FONECEDOR-PDF-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Materiais/Orcamento_Acessorios_Fonecedor.pdf.pdf"
+    sha256: 234bc527908a38416b66272700b9a75aa0d099fa4cc1fed94697371855da7a95
+    tamanho_bytes: 351658
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-MATERIAIS-WVETRO-RELBARRASUTILIZADASNOVO-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Materiais/WVetro.RelBarrasUtilizadasNovo.pdf"
+    sha256: 0834440d44d35d29647f4f020b7cd81d2a93c5717e830474c6d12c2eddcf7775
+    tamanho_bytes: 144829
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-PRODUCAO-CORE-RELCONTRAMARCO-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Produção/Core.RelContramarco.pdf"
+    sha256: c4b5f003345e9ab28c0194d9141d636417ce263bf43cea9e1e01b0042a870604
+    tamanho_bytes: 108491
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-PRODUCAO-CORE-RELESQUEMACORTEPVC-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Produção/Core.RelEsquemaCortePVC.pdf"
+    sha256: d0f3c74bb7ee00d65d81c5e174f1bea7314057b1beb80012f79cc27cd2b538db
+    tamanho_bytes: 144618
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-PRODUCAO-CORE-RELESQUEMACORTESINTETICO-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Produção/Core.RelEsquemaCorteSintetico.pdf"
+    sha256: f73a2ad7069dfac870f91f3588225c3ab7a0a94cfb4e7bdd4717d77e57a2dc50
+    tamanho_bytes: 146462
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-PRODUCAO-CORE-RELITENSOBRA-1-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Produção/Core.RelItensObra (1).pdf"
+    sha256: 7a91602e968b829a9a9939f99fe051273a437cea061cb8f005cde958297deadc
+    tamanho_bytes: 82324
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-PRODUCAO-CORE-RELITENSOBRA-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Produção/Core.RelItensObra.pdf"
+    sha256: 9296e95c52665fde766dc1f31d8e94db968e7342e97fe6ad373492d2ed5b644b
+    tamanho_bytes: 82351
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-PRODUCAO-CORE-RELORCAMENTOPERFILCORTE-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Produção/Core.RelOrcamentoPerfilCorte.pdf"
+    sha256: 8abb45a9a1137915eae2976650e48fbf94e4f31387fc0510ecc204d918482082
+    tamanho_bytes: 142916
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-PRODUCAO-CORE-RELORCAMENTOPERFILCORTECOMPOSICAO-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Produção/Core.RelOrcamentoPerfilCorteComPosicao.pdf"
+    sha256: ad0af06faab011b7936bf664469d3f8936bd67113b3542b866a21d538c7802a4
+    tamanho_bytes: 143552
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-PRODUCAO-CORE-RELORDEMSERVICO-1-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Produção/Core.RelOrdemServico (1).pdf"
+    sha256: 0624ebce920934570ac8f9f96deef4cf567a15ead01e9cf6c664f2476d65aba6
+    tamanho_bytes: 91950
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-PRODUCAO-CORE-RELORDEMSERVICO-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Produção/Core.RelOrdemServico.pdf"
+    sha256: d2eefe356446c001b7d31ef50f9ff6835aa64a41b15be489747b96b98367d287
+    tamanho_bytes: 91961
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-PRODUCAO-CORE-RELORDEMSERVICOPORPAGINA-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Produção/Core.RelOrdemServicoPorPagina.pdf"
+    sha256: f159d8fa89b6b79eb7963a3e785252d466db1c46a7bb7d5dccac61acc86c25c2
+    tamanho_bytes: 91452
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-PRODUCAO-CORE-RELORIENTATIVOCORTESIMPLIFICADO-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Produção/Core.RelOrientativoCorteSimplificado.pdf"
+    sha256: a94d997a5cfe75252bd8dcf7a8b64c17408a909a20a7f6cf26406355b868c34c
+    tamanho_bytes: 201453
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-PRODUCAO-CORE-RELORIENTATIVOPRODUCAO-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Produção/Core.RelOrientativoProducao.pdf"
+    sha256: 8e1caa874e1285564f82c565d595526edd4f9b99f2bcb28919410a1cee7d3593
+    tamanho_bytes: 81971
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-PRODUCAO-CORE-RELORIENTATIVODECORTE-1-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Produção/Core.RelOrientativodeCorte (1).pdf"
+    sha256: 7ce42c0edb0f6d6e77ad0311e704bbe418cdd89144a8074abe325b638a4128a2
+    tamanho_bytes: 527232
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-PRODUCAO-CORE-RELORIENTATIVODECORTE-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Produção/Core.RelOrientativodeCorte.pdf"
+    sha256: 1d6f9a3a3bea9d0ddf056f86bd9fe02bd6b31e7a54d7a2c226a9abf1e9362d5f
+    tamanho_bytes: 528670
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-PRODUCAO-CROQUIOBRA-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Produção/CroquiObra.pdf"
+    sha256: a01099d152324e8246d3e9c9a5b50d57b72505f5067ed75baef8c2e2a92b4779
+    tamanho_bytes: 3240992
+    formato: pdf
+  - id_fonte: FONTE-05-WVETRO-1500X1200-PRODUCAO-WVETRO-PDF
+    grupo: 05_Wvetro_1500x1200
+    caminho_relativo: "05_Wvetro_1500x1200/Produção/WVETRO.pdf"
+    sha256: 78cee1734488d5f348b22ef52b0f041061837a82fd3f31cda6f440b4338e1a79
+    tamanho_bytes: 348767
+    formato: pdf
+  - id_fonte: FONTE-06-VIDROSYS-ESPEC-FORMULAS-VIDROSYS-MD
+    grupo: 06_vidrosys
+    caminho_relativo: "06_vidrosys/ESPEC_FORMULAS_VIDROSYS.md"
+    sha256: 8954adc55499402b3721f2cf3fa3e85d5849450eef9c7f5c7dabb3024a20012d
+    tamanho_bytes: 14735
+    formato: md
+  - id_fonte: FONTE-06-VIDROSYS-ESPEC-MODELS-VIDROSYS-MD
+    grupo: 06_vidrosys
+    caminho_relativo: "06_vidrosys/ESPEC_MODELS_VIDROSYS.md"
+    sha256: 5cef1d4c36660bbcd70ba8a1eb4affdd7bd44ea6cd3a7e2884e93a423f7c83f8
+    tamanho_bytes: 25243
+    formato: md
+  - id_fonte: FONTE-06-VIDROSYS-CALCULATOR-PY
+    grupo: 06_vidrosys
+    caminho_relativo: "06_vidrosys/calculator.py"
+    sha256: 10361afd1e8f96e5aa7c48463c24cfb32f72d842f25746c9fe6694a09022226a
+    tamanho_bytes: 34164
+    formato: py
