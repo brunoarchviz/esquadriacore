@@ -568,3 +568,49 @@ acessório, posição definitiva de perfil ou desenho oficial da janela.
 
 Não porque faltou tempo — porque inventar qualquer um deles produziria um
 número com aparência de resposta.
+
+---
+
+## 11. Dívidas registradas para a sprint do motor de cálculo
+
+Duas lacunas foram identificadas durante a auditoria da E.4D e **não** foram
+resolvidas nela — resolvê-las sem motor seria escrever validação sobre um
+objeto que ainda não existe. Ficam registradas aqui para que a sprint que
+integrar o cálculo as encontre já formuladas.
+
+### A. Consistência interna do resultado calculado
+
+Hoje `ResultadoCalculoCaso` é conferido contra o caso real e contra a receita,
+mas não contra **si mesmo**. Quando o motor existir, validar também:
+
+```text
+resultado.componentes
+↔ componentes confirmados da receita
+↔ componente_id de cada corte calculado
+```
+
+Sem componente fantasma (citado num corte e ausente da lista de componentes),
+sem componente omitido (na lista e sem corte correspondente) e sem duplicata.
+
+Um resultado internamente incoerente pode hoje passar pela comparação com o
+caso real por coincidência — se o caso real repetir a mesma incoerência.
+
+### B. Normalização semântica de `Decimal`
+
+`validar_resultado_contra_caso()` compara medidas por `str(Decimal)`. Isso
+trata como divergentes três representações do MESMO número:
+
+```text
+Decimal("1000")
+Decimal("1000.0")
+Decimal("1000.00")
+```
+
+A comparação futura deve normalizar a representação antes de comparar — por
+exemplo com `Decimal.compare_total` sobre valores normalizados, ou comparando
+`Decimal.normalize()`.
+
+Isto é **normalização de representação, não tolerância de fabricação**. A
+comparação dimensional continua exata: `1000` e `1000.5` seguem divergentes.
+Criar tolerância aqui esconderia justamente a diferença que o caso real serve
+para revelar.
