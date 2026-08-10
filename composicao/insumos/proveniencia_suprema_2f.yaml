@@ -136,8 +136,26 @@ fontes_no_repositorio:
       prova a composição física de nenhuma janela. Por não estar em
       TIPOS_DE_EVIDENCIA_PRIMARIA, não entra em nenhum fingerprint físico.
 
+  - id_fonte: FONTE-REFERENCIA-DIMENSIONAL-E4G
+    tipo: especialista_de_dominio
+    forma_referencia: arquivo
+    referencia: curadoria/handoffs/e4g/referencia_dimensional_suprema_2f.md
+    estado: CONFIRMADO_ESPECIALISTA
+    responsavel: Bruno
+    data: '2026-08-09'
+    sha256: b2a10941fad54830b84d82633edd8ae9412d848c93033cdf4a16a3df5c4021dc
+    tamanho_bytes: 8021
+    abrangencia: COMPARTILHADA
+    descricao: >-
+      ARBITRAGEM DERIVADA DE DOMÍNIO, não evidência física primária. Registra a
+      decisão do especialista sobre a SEMÂNTICA DA VARIÁVEL das expressões
+      dimensionais da ficha: L = largura do VÃO e H = altura do VÃO. O hash
+      prova a integridade DESTE documento e quais decisões ele registra — não
+      prova comprimento de corte nenhum. NÃO homologa expressão para produção,
+      NÃO decide política de fração e NÃO contém fórmula executável.
+
 # ---------------------------------------------------------------------------
-# Afirmações A01–A16
+# Afirmações A01–A16 (topologia, E.4F) e A17–A20 (referência dimensional, E.4G)
 #
 # papel DIRETA        a fonte mostra/registra a própria afirmação
 # papel CORROBORATIVA compatível com a afirmação, não a prova sozinha
@@ -416,6 +434,82 @@ afirmacoes:
     citacoes:
       - id_fonte: FONTE-TOPOLOGIA-E4E
         papel: DERIVADA
+
+  - identificador: A17
+    texto: >-
+      Nas expressões dimensionais da ficha, L é a LARGURA DO VÃO e H é a ALTURA
+      DO VÃO.
+    estado: CONFIRMADO_ESPECIALISTA
+    observacao: >-
+      ARBITRAGEM DE DOMÍNIO, não medição. Bruno confirmou explicitamente que a
+      expressão parte do vão e não da dimensão acabada do quadro. A aritmética
+      sozinha NÃO poderia ter decidido isto: como QUADRO = VÃO - 32 na largura e
+      VÃO - 5 na altura nos três casos, "vão - 32" e "a própria largura do
+      quadro" dão o mesmo número em todos os casos disponíveis. Coincidência
+      algébrica não é definição de variável.
+    citacoes:
+      - id_fonte: FONTE-REFERENCIA-DIMENSIONAL-E4G
+        papel: DERIVADA
+      - id_fonte: FONTE-01-FICHA-CAMPO-01-FICHA-CAMPO-DOCX
+        papel: CORROBORATIVA
+        observacao: >-
+          A seção 5 registra os cortes reais que a leitura L/H = vão reproduz
+          exatamente em seis perfis; a ficha não declara o significado de L/H.
+
+  - identificador: A18
+    texto: >-
+      Com L e H lidos como vão, as expressões L-32 (SU-001, SU-002), H-5
+      (SU-003) e H-55 (SU-039, SU-040, SU-041) reproduzem exatamente o corte
+      real medido no caso principal.
+    estado: CONFIRMADO_CASO_REAL
+    derivada_de: [A17]
+    observacao: >-
+      UM caso com corte real, não validação multicaso. As expressões permanecem
+      CANDIDATAS; nenhuma foi homologada para produção e nenhuma virou regra
+      executável. Os Casos B e C não têm saída de corte real - usar quadro ou
+      folha como substituto seria comparar grandezas diferentes.
+    citacoes:
+      - id_fonte: FONTE-01-FICHA-CAMPO-01-FICHA-CAMPO-DOCX
+        papel: DIRETA
+        observacao: Seção 5, coluna "Corte real (mm)", caso principal.
+      - id_fonte: FONTE-REFERENCIA-DIMENSIONAL-E4G
+        papel: DERIVADA
+
+  - identificador: A19
+    texto: >-
+      Para o SU-053 no caso principal, a expressão (L-132)/2 resulta em 957,5
+      enquanto o corte real medido é 957.
+    estado: CONFIRMADO_CASO_REAL
+    derivada_de: [A17]
+    observacao: >-
+      FATO REGISTRADO, não regra. Qual mecanismo transforma ou interpreta o
+      resultado fracionário na fabricação continua PENDENTE - nenhuma política
+      de fração foi escolhida. Para valores positivos, que é o caso de todo
+      comprimento de corte deste domínio, floor e trunc devolvem o mesmo
+      resultado: uma medição futura NÃO distingue as duas operações, no máximo
+      corrobora que a fração de 0,5 mm não foi levada para cima.
+    citacoes:
+      - id_fonte: FONTE-01-FICHA-CAMPO-01-FICHA-CAMPO-DOCX
+        papel: DIRETA
+        observacao: Seção 5, SU-053, corte real 957 e fórmula (L-132)/2.
+      - id_fonte: FONTE-REFERENCIA-DIMENSIONAL-E4G
+        papel: DERIVADA
+
+  - identificador: A20
+    texto: >-
+      Nos três casos medidos, VÃO menos QUADRO é 32 mm na largura e 5 mm na
+      altura, e a MEDIDA_INTERNA_DA_FOLHA menos o VIDRO é 6 mm nos dois eixos.
+    estado: CONFIRMADO_CASO_REAL
+    observacao: >-
+      RELAÇÃO EMPÍRICA OBSERVADA, não regra dimensional. A relação do vidro
+      considera os valores não conflitantes - o vidro da folha 2 do caso
+      principal continua em conflito (ver K2-VIDRO-FOLHA-2). Nenhuma destas
+      relações foi promovida a motor, e é justamente a constância de 32 e 5 que
+      impede a aritmética de decidir sozinha a semântica de L e H (ver A17).
+    citacoes:
+      - id_fonte: FONTE-01-FICHA-CAMPO-01-FICHA-CAMPO-DOCX
+        papel: DIRETA
+        observacao: Seções 2 e 9, três casos.
 
 # ---------------------------------------------------------------------------
 # Conflitos — preservados, não resolvidos
