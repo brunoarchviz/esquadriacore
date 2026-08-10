@@ -1,7 +1,7 @@
 # Referência dimensional da Suprema de correr 2 folhas — arbitragem de domínio
 
 **Tipologia:** `SUPREMA_CORRER_2F`
-**Arbitrado por:** Bruno de Oliveira Freitas — especialista de domínio
+**Arbitrado por:** Bruno Oliveira — especialista de domínio
 **Data:** 2026-08-09
 **Sprint:** E.4G, Rodada 2
 

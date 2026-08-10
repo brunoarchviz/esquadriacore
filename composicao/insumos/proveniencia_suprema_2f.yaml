@@ -143,8 +143,8 @@ fontes_no_repositorio:
     estado: CONFIRMADO_ESPECIALISTA
     responsavel: Bruno
     data: '2026-08-09'
-    sha256: 141704e841ecd325c9c6d91c4776b827b9caadc5b910a0628b94c617c8ac5394
-    tamanho_bytes: 8032
+    sha256: b2a10941fad54830b84d82633edd8ae9412d848c93033cdf4a16a3df5c4021dc
+    tamanho_bytes: 8021
     abrangencia: COMPARTILHADA
     descricao: >-
       ARBITRAGEM DERIVADA DE DOMÍNIO, não evidência física primária. Registra a
