@@ -46,6 +46,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # tests/test_promocao.py consulta `git show <commit histórico>:<path>`
+          # deliberadamente (COMMIT_PRE_PROMOCAO, em
+          # curadoria/promocao/evento.py) — precisa do histórico real, não só
+          # da ponta. Um número fixo de profundidade (ex.: 54) seria bomba-
+          # relógio: um commit novo empurraria o alvo para fora do clone de
+          # novo. O requisito é semântico ("preciso deste commit conhecido"),
+          # não posicional — fetch-depth: 0 é a única opção estável enquanto
+          # o repositório continuar deste tamanho.
+          fetch-depth: 0
 
       - name: Configurar Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0

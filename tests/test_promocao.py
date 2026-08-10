@@ -6,6 +6,7 @@ de verdade (falha injetada), não apenas o caminho feliz.
 """
 import copy
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -1114,7 +1115,7 @@ def test_suite_de_recuperacao_nao_altera_o_manifesto_rastreado():
     antes = hash_arquivo(auditoria.CAMINHO_MANIFESTO)
     import subprocess
     subprocess.run(
-        [".venv/bin/python", "-m", "pytest", "-q", "-p", "no:cacheprovider",
+        [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider",
          "tests/test_promocao.py", "-k",
          "journal or recuperar or preflight or interrupcao or crash"],
         cwd=RAIZ, capture_output=True, text=True, timeout=300)
