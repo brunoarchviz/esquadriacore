@@ -20,12 +20,22 @@ verificar_acervo_do_manifesto  bytes reais: existe, é arquivo, hash e tamanho
 O acervo bruto não entra no Git. O que entra é metadado: rótulo do acervo,
 caminho relativo, sha256 e tamanho — identidade do artefato sem o endereço da
 máquina de quem o guardou.
+
+DÍVIDA CONHECIDA — chaves desconhecidas no manifesto
+Fora do `localizador`, este leitor IGNORA em silêncio qualquer chave que não
+conheça: um `sha256x:` com erro de digitação não reprova, e o artefato fica sem
+hash sem que ninguém veja. A ficha de campo (`fontes.py`) já faz o oposto e
+reprova com sugestão do nome certo. Uniformizar as duas políticas é mudança de
+impacto amplo — atingiria todo manifesto existente — e foi deliberadamente
+deixada fora da rodada que introduziu o localizador. Registrada aqui para não
+virar decisão implícita.
 """
 from __future__ import annotations
 
 import hashlib
 import re
 import unicodedata
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -41,8 +51,27 @@ from .validar import verificar_artefato_no_acervo
 
 # Versão do SCHEMA do manifesto, não do conteúdo. Um manifesto sem versão seria
 # impossível de migrar sem adivinhar o formato de quem o escreveu.
-VERSAO_MANIFESTO = 1
-VERSOES_SUPORTADAS = (1,)
+#
+# VERSÃO 2 — `localizador` na citação (E.4H).
+#
+# O salto de versão é obrigatório, e o motivo é o comportamento comprovado do
+# leitor: campos desconhecidos são descartados EM SILÊNCIO na desserialização.
+# Um manifesto que declarasse `versao_manifesto: 1` e trouxesse `localizador`
+# seria aceito por um leitor da versão 1 — que devolveria a citação sem a
+# página, sem erro e sem aviso. A citação continuaria válida e apontaria para
+# um documento de 135 páginas sem dizer qual delas. A versão existe justamente
+# para que o leitor saiba o formato de quem escreveu; deixá-la em 1 faria o
+# campo mentir sobre o formato.
+#
+# É ADITIVO, não migração: a versão 1 continua suportada e nenhum manifesto
+# existente muda. O que a versão 2 acrescenta é a POSSIBILIDADE de localizador.
+VERSAO_MANIFESTO = 2
+VERSOES_SUPORTADAS = (1, 2)
+
+# A partir de qual versão `localizador` pode aparecer. Declarar localizador sob
+# a versão 1 é erro explícito: seria escrever um dado que o leitor da versão
+# declarada não consegue ler.
+VERSAO_MINIMA_LOCALIZADOR = 2
 
 ORIGEM_MANIFESTO = "manifesto de proveniência"
 
@@ -154,11 +183,96 @@ def inventariar_acervo(raiz_fisica, raiz_logica: str) -> tuple[dict, ...]:
 # ---------------------------------------------------------------------------
 
 @dataclass(frozen=True)
+class LocalizadorDeFonte:
+    """ONDE, dentro da fonte, está o que a citação afirma.
+
+    Um catálogo de 135 páginas citado sem localizador é uma referência que
+    ninguém consegue conferir sem reler o documento inteiro. O localizador é o
+    que torna a citação auditável na prática.
+
+    As duas páginas são grandezas DIFERENTES e não se substituem:
+
+    ```text
+    pagina_documento  o número impresso na página, identificação editorial
+    pagina_pdf        a posição no arquivo, contada por humano a partir de 1
+    ```
+
+    Num catálogo com folhas de rosto e capa, os dois divergem — o SUP JCR 200
+    da Alcoa está na página 117 impressa e na 113 do PDF. Chamar as duas de
+    `pagina` obrigaria quem lê a adivinhar qual das duas foi registrada, e a
+    conferência cairia na página errada.
+
+    `pagina_pdf` é base 1 de propósito: o manifesto é lido por pessoas com um
+    visualizador de PDF aberto, e nenhum visualizador conta a partir de zero.
+    Índice base 0 é detalhe de implementação e não entra em registro de
+    evidência.
+
+    Campos são todos opcionais entre si — uma norma pode ter seção sem página
+    útil, um desenho pode ter página sem seção nomeada —, mas um localizador
+    inteiramente vazio não localiza nada e é recusado na construção.
+
+    NÃO carrega caminho de arquivo: onde o artefato está montado é assunto de
+    `raiz_logica` + `referencia` na fonte. Aqui é posição DENTRO do documento.
+    """
+    pagina_documento: int | None = None
+    pagina_pdf: int | None = None
+    secao: str | None = None
+
+    CAMPOS_DE_PAGINA = ("pagina_documento", "pagina_pdf")
+
+    def __post_init__(self):
+        for campo in self.CAMPOS_DE_PAGINA:
+            valor = getattr(self, campo)
+            if valor is None:
+                continue
+            # `isinstance(True, int)` é True em Python: sem esta recusa,
+            # `pagina_pdf: true` viraria a página 1 em silêncio.
+            if isinstance(valor, bool):
+                raise ReceitaErro(
+                    f"localizador.{campo}: booleano não é número de página "
+                    f"({valor!r})")
+            if not isinstance(valor, int):
+                raise ReceitaErro(
+                    f"localizador.{campo}: página tem de ser inteiro, veio "
+                    f"{type(valor).__name__} ({valor!r}) — página aproximada "
+                    f"ou intervalo não é localização")
+            if valor <= 0:
+                raise ReceitaErro(
+                    f"localizador.{campo}: página tem de ser >= 1, veio "
+                    f"{valor} — a contagem é a do documento, base 1")
+        if self.secao is not None:
+            if not isinstance(self.secao, str) or not self.secao.strip():
+                raise ReceitaErro(
+                    "localizador.secao: seção vazia — ausente é None, não "
+                    "string em branco")
+            object.__setattr__(self, "secao", self.secao.strip())
+        if self.vazio:
+            raise ReceitaErro(
+                "localizador sem nenhum campo — um localizador que não "
+                "localiza nada é ruído; omita o campo inteiro")
+
+    @property
+    def vazio(self) -> bool:
+        return (self.pagina_documento is None and self.pagina_pdf is None
+                and self.secao is None)
+
+    def para_dict(self) -> dict:
+        return {"pagina_documento": self.pagina_documento,
+                "pagina_pdf": self.pagina_pdf, "secao": self.secao}
+
+
+@dataclass(frozen=True)
 class CitacaoDeFonte:
-    """Uma fonte, um papel. Uma afirmação cita quantas precisar."""
+    """Uma fonte, um papel. Uma afirmação cita quantas precisar.
+
+    `localizador` é OPCIONAL e puramente descritivo: ele diz onde conferir, e
+    nunca altera o papel da citação, a autoridade da fonte nem o estado da
+    afirmação. Uma citação com página não sustenta mais do que a mesma citação
+    sem página — quem decide isso é `papel` e o tipo da fonte."""
     id_fonte: str
     papel: PapelDaFonte
     observacao: str | None = None
+    localizador: LocalizadorDeFonte | None = None
 
     def __post_init__(self):
         if not _RE_ID_FONTE.fullmatch(self.id_fonte or ""):
@@ -166,6 +280,19 @@ class CitacaoDeFonte:
                               f"{self.id_fonte!r}")
         if not isinstance(self.papel, PapelDaFonte):
             object.__setattr__(self, "papel", PapelDaFonte(self.papel))
+        # Aceita o dicionário devolvido por `para_dict` para que o round-trip
+        # `CitacaoDeFonte(**c.para_dict())` reconstrua o objeto inteiro — do
+        # mesmo modo que `papel` aceita a string do enum.
+        if isinstance(self.localizador, Mapping):
+            object.__setattr__(self, "localizador",
+                               localizador_de_dict(self.localizador,
+                                                   "localizador"))
+        elif self.localizador is not None and not isinstance(
+                self.localizador, LocalizadorDeFonte):
+            raise ReceitaErro(
+                f"citação {self.id_fonte}: localizador tem de ser "
+                f"{LocalizadorDeFonte.__name__} ou mapeamento, veio "
+                f"{type(self.localizador).__name__}")
 
     @property
     def sustenta(self) -> bool:
@@ -173,7 +300,9 @@ class CitacaoDeFonte:
 
     def para_dict(self) -> dict:
         return {"id_fonte": self.id_fonte, "papel": self.papel.value,
-                "observacao": self.observacao}
+                "observacao": self.observacao,
+                "localizador": (self.localizador.para_dict()
+                                if self.localizador else None)}
 
 
 @dataclass(frozen=True)
@@ -324,7 +453,40 @@ def _texto(valor):
     return s or None
 
 
-def _citacoes(bruto, alvo: str) -> tuple[CitacaoDeFonte, ...]:
+CAMPOS_DO_LOCALIZADOR = ("pagina_documento", "pagina_pdf", "secao")
+
+
+def localizador_de_dict(bruto, alvo: str) -> LocalizadorDeFonte | None:
+    """Mapeamento cru -> `LocalizadorDeFonte`. Ausente é `None`, não vazio.
+
+    Chave desconhecida AQUI reprova, ao contrário do resto do manifesto, que as
+    ignora. A diferença é deliberada e está contida neste campo: um
+    `pagina_documeto` com erro de digitação, aceito em silêncio, produziria uma
+    citação que parece localizada e aponta para lugar nenhum. Como o campo é
+    novo, não existe manifesto legítimo que dependa da tolerância — e um
+    conjunto fechado de chaves é justamente o que se ganha ao escolher uma
+    dataclass em vez de um mapeamento livre.
+
+    Esta severidade NÃO é estendida ao resto do manifesto nesta rodada: mudar a
+    política global de chaves desconhecidas é decisão separada, de impacto bem
+    maior (ver notas do módulo)."""
+    if bruto is None:
+        return None
+    if not isinstance(bruto, Mapping):
+        raise ReceitaErro(f"{alvo}: localizador deve ser mapeamento, veio "
+                          f"{type(bruto).__name__}")
+    desconhecidas = sorted(set(bruto) - set(CAMPOS_DO_LOCALIZADOR))
+    if desconhecidas:
+        raise ReceitaErro(
+            f"{alvo}: campo desconhecido no localizador: {desconhecidas} "
+            f"(conhecidos: {list(CAMPOS_DO_LOCALIZADOR)})")
+    return LocalizadorDeFonte(
+        pagina_documento=bruto.get("pagina_documento"),
+        pagina_pdf=bruto.get("pagina_pdf"),
+        secao=bruto.get("secao"))
+
+
+def _citacoes(bruto, alvo: str, versao: int) -> tuple[CitacaoDeFonte, ...]:
     saida = []
     for item in (bruto or ()):
         if not isinstance(item, dict):
@@ -337,9 +499,18 @@ def _citacoes(bruto, alvo: str) -> tuple[CitacaoDeFonte, ...]:
             raise ReceitaErro(
                 f"{alvo}: papel desconhecido {papel!r} "
                 f"(conhecidos: {[p.value for p in PapelDaFonte]})") from e
-        saida.append(CitacaoDeFonte(id_fonte=_texto(item.get("id_fonte")) or "",
-                                    papel=papel,
-                                    observacao=_texto(item.get("observacao"))))
+        if ("localizador" in item and item["localizador"] is not None
+                and versao < VERSAO_MINIMA_LOCALIZADOR):
+            raise ReceitaErro(
+                f"{alvo}: localizador exige versao_manifesto >= "
+                f"{VERSAO_MINIMA_LOCALIZADOR}, e o manifesto declara "
+                f"{versao} — um leitor da versão declarada descartaria o "
+                f"localizador em silêncio")
+        saida.append(CitacaoDeFonte(
+            id_fonte=_texto(item.get("id_fonte")) or "", papel=papel,
+            observacao=_texto(item.get("observacao")),
+            localizador=localizador_de_dict(item.get("localizador"),
+                                            f"{alvo}/{item.get('id_fonte')}")))
     return tuple(saida)
 
 
@@ -438,7 +609,8 @@ def manifesto_de_dict(dados: dict) -> ManifestoProveniencia:
             identificador=ident, texto=_texto(a.get("texto")) or "",
             estado=EstadoConhecimento(_texto(a.get("estado"))
                                       or EstadoConhecimento.PENDENTE.value),
-            citacoes=_citacoes(a.get("citacoes"), f"afirmação {ident}"),
+            citacoes=_citacoes(a.get("citacoes"), f"afirmação {ident}",
+                               versao),
             derivada_de=tuple(_texto(x) for x in (a.get("derivada_de") or ())),
             observacao=_texto(a.get("observacao"))))
 
@@ -450,7 +622,7 @@ def manifesto_de_dict(dados: dict) -> ManifestoProveniencia:
         conflitos.append(ConflitoRegistrado(
             identificador=ident, descricao=_texto(c.get("descricao")) or "",
             valores=tuple(str(v) for v in (c.get("valores") or ())),
-            citacoes=_citacoes(c.get("citacoes"), f"conflito {ident}"),
+            citacoes=_citacoes(c.get("citacoes"), f"conflito {ident}", versao),
             estado=EstadoConhecimento(_texto(c.get("estado"))
                                       or EstadoConhecimento.PENDENTE.value)))
 
