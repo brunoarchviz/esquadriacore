@@ -193,9 +193,16 @@ class LocalizadorDeFonte:
     As duas páginas são grandezas DIFERENTES e não se substituem:
 
     ```text
-    pagina_documento  o número impresso na página, identificação editorial
+    pagina_documento  a identificação EDITORIAL da página, como impressa
     pagina_pdf        a posição no arquivo, contada por humano a partir de 1
     ```
+
+    `pagina_documento` aceita inteiro ou texto porque paginação editorial nem
+    sempre é número: `117` no catálogo Alcoa, mas `iv` num prefácio, `A-12` num
+    anexo, `117a` numa folha intercalada. Rótulo desses não é convertido nem
+    interpretado — `"iv"` é gravado como `"iv"`, e traduzir para `4` inventaria
+    uma numeração que o documento não usa. Só `pagina_pdf` é contagem, e por
+    isso continua sendo o único dos dois obrigado a ser inteiro.
 
     Num catálogo com folhas de rosto e capa, os dois divergem — o SUP JCR 200
     da Alcoa está na página 117 impressa e na 113 do PDF. Chamar as duas de
@@ -214,32 +221,53 @@ class LocalizadorDeFonte:
     NÃO carrega caminho de arquivo: onde o artefato está montado é assunto de
     `raiz_logica` + `referencia` na fonte. Aqui é posição DENTRO do documento.
     """
-    pagina_documento: int | None = None
+    pagina_documento: int | str | None = None
     pagina_pdf: int | None = None
     secao: str | None = None
 
-    CAMPOS_DE_PAGINA = ("pagina_documento", "pagina_pdf")
-
     def __post_init__(self):
-        for campo in self.CAMPOS_DE_PAGINA:
-            valor = getattr(self, campo)
-            if valor is None:
-                continue
-            # `isinstance(True, int)` é True em Python: sem esta recusa,
-            # `pagina_pdf: true` viraria a página 1 em silêncio.
-            if isinstance(valor, bool):
+        # `isinstance(True, int)` é True em Python: sem esta recusa,
+        # `pagina_pdf: true` viraria a página 1 em silêncio.
+        if isinstance(self.pagina_pdf, bool):
+            raise ReceitaErro(
+                f"localizador.pagina_pdf: booleano não é número de página "
+                f"({self.pagina_pdf!r})")
+        if self.pagina_pdf is not None:
+            if not isinstance(self.pagina_pdf, int):
                 raise ReceitaErro(
-                    f"localizador.{campo}: booleano não é número de página "
-                    f"({valor!r})")
-            if not isinstance(valor, int):
+                    f"localizador.pagina_pdf: posição no arquivo tem de ser "
+                    f"inteiro, veio {type(self.pagina_pdf).__name__} "
+                    f"({self.pagina_pdf!r}) — é contagem de páginas do PDF, "
+                    f"não rótulo editorial (esse é pagina_documento)")
+            if self.pagina_pdf <= 0:
                 raise ReceitaErro(
-                    f"localizador.{campo}: página tem de ser inteiro, veio "
-                    f"{type(valor).__name__} ({valor!r}) — página aproximada "
-                    f"ou intervalo não é localização")
-            if valor <= 0:
+                    f"localizador.pagina_pdf: tem de ser >= 1, veio "
+                    f"{self.pagina_pdf} — a contagem do arquivo é base 1")
+
+        if isinstance(self.pagina_documento, bool):
+            raise ReceitaErro(
+                f"localizador.pagina_documento: booleano não identifica "
+                f"página ({self.pagina_documento!r})")
+        if self.pagina_documento is not None:
+            if isinstance(self.pagina_documento, int):
+                if self.pagina_documento <= 0:
+                    raise ReceitaErro(
+                        f"localizador.pagina_documento: página numérica tem "
+                        f"de ser >= 1, veio {self.pagina_documento}")
+            elif isinstance(self.pagina_documento, str):
+                if not self.pagina_documento.strip():
+                    raise ReceitaErro(
+                        "localizador.pagina_documento: rótulo vazio — "
+                        "ausente é None, não string em branco")
+                object.__setattr__(self, "pagina_documento",
+                                   self.pagina_documento.strip())
+            else:
                 raise ReceitaErro(
-                    f"localizador.{campo}: página tem de ser >= 1, veio "
-                    f"{valor} — a contagem é a do documento, base 1")
+                    f"localizador.pagina_documento: tem de ser inteiro ou "
+                    f"rótulo editorial em texto, veio "
+                    f"{type(self.pagina_documento).__name__} "
+                    f"({self.pagina_documento!r})")
+
         if self.secao is not None:
             if not isinstance(self.secao, str) or not self.secao.strip():
                 raise ReceitaErro(
@@ -411,6 +439,32 @@ class ManifestoProveniencia:
         for campo in ("fontes", "afirmacoes", "conflitos", "notas"):
             object.__setattr__(self, campo,
                                como_tupla(getattr(self, campo), campo))
+        self._exigir_versao_do_localizador()
+
+    def _exigir_versao_do_localizador(self) -> None:
+        """`localizador` só existe a partir da versão 2. Vale em TODA porta.
+
+        A regra mora aqui, e não no leitor de YAML, porque o leitor é apenas
+        UMA das entradas: construir os objetos direto em Python e chamar
+        `para_dict()` produziria um documento declarado v1 com localizador
+        dentro — exatamente o que a versão 2 existe para impedir, emitido pela
+        porta dos fundos. Como um manifesto inválido não chega a ser
+        construído, nem o serializador nem `validar_manifesto` precisam repetir
+        a checagem."""
+        if self.versao >= VERSAO_MINIMA_LOCALIZADOR:
+            return
+        culpadas = sorted({
+            registro.identificador
+            for registro in tuple(self.afirmacoes) + tuple(self.conflitos)
+            for citacao in registro.citacoes
+            if citacao.localizador is not None})
+        if culpadas:
+            raise ReceitaErro(
+                f"manifesto declara versao_manifesto {self.versao} e traz "
+                f"localizador em {culpadas} — localizador exige versão "
+                f">= {VERSAO_MINIMA_LOCALIZADOR}. Um leitor da versão "
+                f"declarada descartaria o localizador em silêncio, e a "
+                f"citação chegaria sem a página do outro lado.")
 
     @property
     def artefatos_externos(self) -> tuple[FonteEvidencia, ...]:
@@ -486,7 +540,11 @@ def localizador_de_dict(bruto, alvo: str) -> LocalizadorDeFonte | None:
         secao=bruto.get("secao"))
 
 
-def _citacoes(bruto, alvo: str, versao: int) -> tuple[CitacaoDeFonte, ...]:
+def _citacoes(bruto, alvo: str) -> tuple[CitacaoDeFonte, ...]:
+    """Citações cruas -> objetos. A regra de versão do localizador NÃO mora
+    aqui: ela é invariante do manifesto inteiro e vive em
+    `ManifestoProveniencia._exigir_versao_do_localizador`, que cobre também a
+    construção direta de objetos."""
     saida = []
     for item in (bruto or ()):
         if not isinstance(item, dict):
@@ -499,13 +557,6 @@ def _citacoes(bruto, alvo: str, versao: int) -> tuple[CitacaoDeFonte, ...]:
             raise ReceitaErro(
                 f"{alvo}: papel desconhecido {papel!r} "
                 f"(conhecidos: {[p.value for p in PapelDaFonte]})") from e
-        if ("localizador" in item and item["localizador"] is not None
-                and versao < VERSAO_MINIMA_LOCALIZADOR):
-            raise ReceitaErro(
-                f"{alvo}: localizador exige versao_manifesto >= "
-                f"{VERSAO_MINIMA_LOCALIZADOR}, e o manifesto declara "
-                f"{versao} — um leitor da versão declarada descartaria o "
-                f"localizador em silêncio")
         saida.append(CitacaoDeFonte(
             id_fonte=_texto(item.get("id_fonte")) or "", papel=papel,
             observacao=_texto(item.get("observacao")),
@@ -559,6 +610,27 @@ def manifesto_de_dict(dados: dict) -> ManifestoProveniencia:
     raiz_logica = _texto(dados.get("raiz_logica")) or ""
     conjunto = _texto(dados.get("conjunto")) or ""
 
+    # DUAS REPRESENTAÇÕES DO MESMO REGISTRO, e o documento tem de escolher uma.
+    #
+    #   forma AUTORAL     `grupos` + `artefatos` + `fontes_no_repositorio`
+    #                     é como um humano escreve: o grupo carrega tipo,
+    #                     estado e abrangência para que 112 artefatos não
+    #                     repitam a mesma decisão 112 vezes
+    #   forma CANÔNICA    `fontes`, a lista achatada que `para_dict` emite e
+    #                     que o objeto de fato tem
+    #
+    # Aceitar as duas no MESMO documento significaria somar as listas: um
+    # artefato descrito nas duas formas viraria duas fontes, ou uma colisão de
+    # id_fonte descoberta lá adiante. Recusar aqui é dizer onde está o problema
+    # em vez de deixá-lo aparecer como duplicata sem origem.
+    autorais = [c for c in ("artefatos", "fontes_no_repositorio")
+                if dados.get(c)]
+    if dados.get("fontes") and autorais:
+        raise ReceitaErro(
+            f"manifesto: 'fontes' (forma canônica, emitida por para_dict) "
+            f"junto de {autorais} (forma autoral) — são duas representações "
+            f"do mesmo registro e somá-las duplicaria fontes. Use uma delas.")
+
     grupos = {}
     for g in (dados.get("grupos") or ()):
         if not isinstance(g, dict):
@@ -600,6 +672,28 @@ def manifesto_de_dict(dados: dict) -> ManifestoProveniencia:
             abrangencia=(_texto(f.get("abrangencia"))
                          or ABRANGENCIA_EXEMPLAR)))
 
+    for f in (dados.get("fontes") or ()):
+        if not isinstance(f, dict):
+            raise ReceitaErro("manifesto: fonte deve ser mapeamento")
+        fontes.append(FonteEvidencia(
+            id_fonte=_texto(f.get("id_fonte")) or "",
+            tipo=_texto(f.get("tipo")) or "",
+            referencia=_texto(f.get("referencia")) or "",
+            descricao=_texto(f.get("descricao")) or "",
+            estado=EstadoConhecimento(_texto(f.get("estado"))
+                                      or EstadoConhecimento.PENDENTE.value),
+            responsavel=_texto(f.get("responsavel")),
+            data=_texto(f.get("data")),
+            forma_referencia=_texto(f.get("forma_referencia")) or "arquivo",
+            sha256=_texto(f.get("sha256")),
+            tamanho_bytes=f.get("tamanho_bytes"),
+            # `raiz_logica` é o que distingue esta chave de
+            # `fontes_no_repositorio`, que não a lê: sem ela, um artefato de
+            # acervo externo não se reconstrói.
+            raiz_logica=_texto(f.get("raiz_logica")),
+            abrangencia=(_texto(f.get("abrangencia"))
+                         or ABRANGENCIA_EXEMPLAR)))
+
     afirmacoes = []
     for a in (dados.get("afirmacoes") or ()):
         if not isinstance(a, dict):
@@ -609,8 +703,7 @@ def manifesto_de_dict(dados: dict) -> ManifestoProveniencia:
             identificador=ident, texto=_texto(a.get("texto")) or "",
             estado=EstadoConhecimento(_texto(a.get("estado"))
                                       or EstadoConhecimento.PENDENTE.value),
-            citacoes=_citacoes(a.get("citacoes"), f"afirmação {ident}",
-                               versao),
+            citacoes=_citacoes(a.get("citacoes"), f"afirmação {ident}"),
             derivada_de=tuple(_texto(x) for x in (a.get("derivada_de") or ())),
             observacao=_texto(a.get("observacao"))))
 
@@ -622,7 +715,7 @@ def manifesto_de_dict(dados: dict) -> ManifestoProveniencia:
         conflitos.append(ConflitoRegistrado(
             identificador=ident, descricao=_texto(c.get("descricao")) or "",
             valores=tuple(str(v) for v in (c.get("valores") or ())),
-            citacoes=_citacoes(c.get("citacoes"), f"conflito {ident}", versao),
+            citacoes=_citacoes(c.get("citacoes"), f"conflito {ident}"),
             estado=EstadoConhecimento(_texto(c.get("estado"))
                                       or EstadoConhecimento.PENDENTE.value)))
 
