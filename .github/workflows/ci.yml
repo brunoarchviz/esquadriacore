@@ -1,0 +1,102 @@
+# CI / testes reproduzíveis
+#
+# O QUE ESTE CHECK PROVA
+# Que a suíte de testes do repositório passa, usando SOMENTE o que está
+# versionado no Git — nenhum arquivo bruto local, nenhum acervo externo,
+# nenhuma credencial.
+#
+# O QUE ESTE CHECK NÃO PROVA E NÃO SUBSTITUI
+# - a verificação física dos 112 artefatos do acervo externo
+#   (SUPREMA_CORRER_2F, fora do repositório por decisão da E.4F — ver
+#   composicao/proveniencia.py e composicao/validar.py);
+# - as regressões de OCR/PDF que dependem de catálogos reais colocados
+#   manualmente em dados_exemplo/ (ver CLAUDE.md) — não versionados;
+# - qualquer arbitragem de domínio (E.4E, E.4G) — decisão do especialista,
+#   não algo que teste automatizado possa confirmar ou negar;
+# - abertura dos gates de cálculo ou produção, que continuam bloqueados
+#   independentemente do resultado deste workflow.
+#
+# Os testes que dependem do acervo/catálogos ausentes se AUTO-PULAM
+# (skipif/skip explícitos já existentes na suíte — ver tests/test_basicos.py
+# e tests/test_proveniencia.py). Este workflow não cria acervo falso e não
+# finge ter verificado bytes que não estão disponíveis aqui.
+
+name: CI / testes reproduzíveis
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancela a execução anterior da mesma PR/branch quando um commit novo chega —
+# evita gastar minutos de runner em um resultado que já ficou obsoleto.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  testes:
+    name: testes reproduzíveis (repo-contained)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # tests/test_promocao.py consulta `git show <commit histórico>:<path>`
+          # deliberadamente (COMMIT_PRE_PROMOCAO, em
+          # curadoria/promocao/evento.py) — precisa do histórico real, não só
+          # da ponta. Um número fixo de profundidade (ex.: 54) seria bomba-
+          # relógio: um commit novo empurraria o alvo para fora do clone de
+          # novo. O requisito é semântico ("preciso deste commit conhecido"),
+          # não posicional — fetch-depth: 0 é a única opção estável enquanto
+          # o repositório continuar deste tamanho.
+          fetch-depth: 0
+
+      - name: Configurar Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          # 3.12 é a versão validada localmente (.venv usa 3.12.3). O projeto
+          # não declara python_requires/classificadores formalmente — GAP
+          # registrado no relatório da sprint INFRA-CI-1, não fechado aqui.
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-curadoria.txt
+
+      # Sem `pip install --upgrade pip`: buscar o pip mais novo do dia
+      # introduziria uma variável temporal que esta sprint não precisa. Usa o
+      # pip que o setup-python já configura junto com o Python 3.12.
+      #
+      # LIMITAÇÃO CONHECIDA, NÃO RESOLVIDA AQUI: requirements.txt e
+      # requirements-curadoria.txt fixam versão exata ou piso (`==`/`>=`), não
+      # uma árvore completa de dependências transitivas — não há lockfile. Este
+      # CI reproduz o que o projeto declara (checkout, Python, actions,
+      # comandos, subconjunto repo-contained de testes), mas não promete
+      # reprodução byte-a-byte da árvore inteira de pacotes instalados.
+      - name: Instalar dependências
+        run: |
+          python -m pip --version
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-curadoria.txt
+
+      - name: Coletar testes (falha cedo se algo não importa)
+        run: python -m pytest tests/ --collect-only -q
+
+      # ESQUADRIACORE_ACERVO_SUPREMA_CORRER_2F fica deliberadamente NÃO
+      # definida: sem ela, verificação física do acervo externo reprova
+      # (nunca "passa em silêncio" — ver composicao/validar.py) e os dois
+      # testes que dependem dela se auto-pulam via pytest.skip(). É o
+      # comportamento correto neste runner, não uma falha mascarada.
+      - name: Rodar suíte reproduzível
+        run: python -m pytest tests/ -q -rs
+
+      - name: Validar estrutura do manifesto de proveniência (sem acervo)
+        run: |
+          python -m composicao.cli validar-manifesto \
+            composicao/insumos/proveniencia_suprema_2f.yaml
