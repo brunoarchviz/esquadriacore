@@ -1,0 +1,288 @@
+# Manifesto de proveniência — ALCOA_LINHA_SUPREMA
+#
+# O QUE ESTE ARQUIVO É
+# Registro de METADADOS de UMA fonte: o catálogo técnico da Linha Suprema da
+# Alcoa, documentação PRIMÁRIA DO FABRICANTE em revisão HISTÓRICA (GMPE 009,
+# agosto de 2004). Traz o sha256 e o tamanho do PDF, mais as afirmações que o
+# próprio catálogo sustenta, cada uma com a página onde foi conferida.
+#
+# O QUE ESTE ARQUIVO NÃO É
+# Não é receita técnica e não é evidência de campo. Não contém fórmula de
+# corte, quantização, arbitragem nem qualquer medida de janela real. Não abre
+# gate de cálculo nem de produção.
+#
+# MANIFESTO AUTÔNOMO — DECISÃO ARQUITETURAL, NÃO OMISSÃO
+# Este manifesto é uma unidade autocontida de resolução, com raiz lógica
+# própria. Nenhuma afirmação daqui referencia fonte ou afirmação de outro
+# manifesto, e nada aqui é citado de fora: o contrato resolve `id_fonte` e
+# `derivada_de` apenas dentro do próprio documento, e `validar_manifesto`
+# exige que todo artefato externo esteja na raiz lógica DESTE manifesto.
+# A auditoria da E.4H concluiu que isso é o desenho correto, não uma
+# limitação a contornar — o catálogo afirma o que o FABRICANTE diz, enquanto
+# as regras da tipologia combinam catálogo com medição de campo e pertencem
+# ao domínio, não ao fabricante.
+#
+# ONDE ESTÁ O CATÁLOGO
+# Fora do repositório, de propósito (8,7 MB). O caminho físico é de quem roda:
+#   export ESQUADRIACORE_ACERVO_ALCOA_LINHA_SUPREMA=/pasta/que/contem/o/pdf
+#   python -m composicao.cli verificar-acervo \
+#       composicao/insumos/proveniencia_alcoa_suprema.yaml
+# Nenhum caminho absoluto de máquina entra neste arquivo.
+#
+# O QUE ESTE MANIFESTO DELIBERADAMENTE NÃO AFIRMA
+# Só entra aqui o que o catálogo DIZ, conferido página a página. Ficaram de
+# fora, por serem INTERPRETAÇÃO e não texto do fabricante:
+#   - que L e H do desenho medem as dimensões externas do QUADRO — depende de
+#     rastrear onde as linhas de cota terminam, leitura visual que este
+#     registro não tem como sustentar como literal;
+#   - que `H-50` mede a altura total da FOLHA — mesma razão;
+#   - que a folga do vidro é de 3 mm por lado — é aritmética sobre duas cotas,
+#     não uma frase do catálogo. As cotas em si estão em CAT-11, cruas;
+#   - que a tipologia que estudamos É o SUP JCR 200 — o catálogo não conhece
+#     nosso caso; essa identificação é conclusão nossa;
+#   - qualquer expressão em função do VÃO (L-32, H-5, H-55, (L-132)/2),
+#     quantização, arbitragem ficha x catálogo ou conclusão de Caso A/B/C.
+# Nenhuma dessas é declaração literal do fabricante, e atribuí-las a ele
+# inventaria procedência.
+#
+# RISCO HISTÓRICO
+# Revisão de agosto de 2004. Não assumir que descreve exemplares fabricados
+# depois. Quando o físico divergir do catálogo, registrar ambos — não corrigir
+# o físico para caber no catálogo.
+
+versao_manifesto: 2
+conjunto: ALCOA_LINHA_SUPREMA
+raiz_logica: ALCOA_LINHA_SUPREMA
+descricao: >-
+  Catálogo técnico da Linha Suprema — Alcoa, identificação GMPE 009 AGO 04,
+  135 páginas, título interno SUPREMA-2004.pmd, PDF criado em 2004-08-19.
+  Documentação primária do fabricante em revisão histórica. 1 artefato,
+  9.120.081 bytes. A data de criação do PDF NÃO prova a data em que a revisão
+  passou a valer, e as duas não devem ser confundidas.
+
+# ---------------------------------------------------------------------------
+# Grupos — a semântica mora aqui, não no scanner de arquivos
+# ---------------------------------------------------------------------------
+grupos:
+  - grupo: catalogo_fabricante
+    tipo: catalogo
+    estado: CONFIRMADO_CATALOGO
+    abrangencia: COMPARTILHADA
+    responsavel: Bruno
+    data: '2026-08-11'
+    descricao: >-
+      DOCUMENTAÇÃO PRIMÁRIA DO FABRICANTE, revisão histórica. Cobre a Linha
+      Suprema inteira, não um exemplar — por isso COMPARTILHADA. `responsavel`
+      e `data` registram quem trouxe o documento ao acervo e quando, não a
+      autoria nem a vigência do catálogo.
+
+# ---------------------------------------------------------------------------
+# Afirmações CAT-* — SOMENTE o que está impresso, conferido página a página
+#
+# Cada citação traz o localizador com as DUAS páginas, que neste catálogo não
+# coincidem e cujo deslocamento NÃO é constante: a folha impressa 45 é a 42ª
+# do PDF (-3) e a folha 117 é a 113ª (-4). É exatamente por isso que
+# `pagina_documento` e `pagina_pdf` são campos distintos.
+#
+# papel DIRETA — o catálogo mostra/registra a própria afirmação
+# ---------------------------------------------------------------------------
+afirmacoes:
+  - identificador: CAT-01
+    texto: >-
+      O catálogo registra a montagem SUP JCR 200 e a descreve como "Janela de
+      correr 2 folhas".
+    estado: CONFIRMADO_CATALOGO
+    observacao: >-
+      Texto impresso, tanto no índice de montagens quanto na própria prancha.
+      Afirma o que o catálogo diz sobre o SUP JCR 200 — NÃO afirma que a
+      tipologia estudada por nós é essa montagem, o que seria conclusão nossa.
+    citacoes:
+      - id_fonte: FONTE-ALCOA-LINHA-SUPREMA-PDF
+        papel: DIRETA
+        localizador:
+          pagina_documento: 116
+          pagina_pdf: 112
+          secao: Índice de montagens
+        observacao: 'Linha do índice: "SUP JCR 200 | Janela de correr 2 folhas | 117".'
+
+  - identificador: CAT-02
+    texto: >-
+      Na prancha do SUP JCR 200, os códigos de perfil da Linha Suprema
+      impressos são exatamente oito: SU-001, SU-002, SU-003, SU-039, SU-040,
+      SU-041, SU-053 e SU-102.
+    estado: CONFIRMADO_CATALOGO
+    observacao: >-
+      Conferido por extração do texto da prancha: o conjunto de códigos SU-
+      presentes é exatamente esse, sem nenhum a mais. A prancha traz ainda
+      componentes de outras famílias (FEC-636, MP-347, NYL-329, NYL-332,
+      NYL-335, NYL-414), que não são perfis SU- e por isso não entram na
+      contagem desta afirmação.
+    citacoes:
+      - id_fonte: FONTE-ALCOA-LINHA-SUPREMA-PDF
+        papel: DIRETA
+        localizador:
+          pagina_documento: 117
+          pagina_pdf: 113
+          secao: SUP JCR 200
+
+  - identificador: CAT-03
+    texto: 'O catálogo nomeia o SU-001 como "Marco superior / correr 2", 0,762 kg/m.'
+    estado: CONFIRMADO_CATALOGO
+    citacoes:
+      - id_fonte: FONTE-ALCOA-LINHA-SUPREMA-PDF
+        papel: DIRETA
+        localizador:
+          pagina_documento: 45
+          pagina_pdf: 42
+          secao: Perfis
+
+  - identificador: CAT-04
+    texto: 'O catálogo nomeia o SU-002 como "Marco inferior / correr 2", 0,707 kg/m.'
+    estado: CONFIRMADO_CATALOGO
+    citacoes:
+      - id_fonte: FONTE-ALCOA-LINHA-SUPREMA-PDF
+        papel: DIRETA
+        localizador:
+          pagina_documento: 45
+          pagina_pdf: 42
+          secao: Perfis
+
+  - identificador: CAT-05
+    texto: 'O catálogo nomeia o SU-003 como "Marco lateral / correr 2", 0,523 kg/m.'
+    estado: CONFIRMADO_CATALOGO
+    observacao: >-
+      O nome impresso é lateral NEUTRO — o catálogo não distingue esquerdo de
+      direito neste perfil.
+    citacoes:
+      - id_fonte: FONTE-ALCOA-LINHA-SUPREMA-PDF
+        papel: DIRETA
+        localizador:
+          pagina_documento: 45
+          pagina_pdf: 42
+          secao: Perfis
+
+  - identificador: CAT-06
+    texto: 'O catálogo nomeia o SU-039 como "Montante da folha", 0,520 kg/m.'
+    estado: CONFIRMADO_CATALOGO
+    citacoes:
+      - id_fonte: FONTE-ALCOA-LINHA-SUPREMA-PDF
+        papel: DIRETA
+        localizador:
+          pagina_documento: 59
+          pagina_pdf: 56
+          secao: Perfis
+
+  - identificador: CAT-07
+    texto: 'O catálogo nomeia o SU-040 como "Montante mão de amigo", 0,480 kg/m.'
+    estado: CONFIRMADO_CATALOGO
+    citacoes:
+      - id_fonte: FONTE-ALCOA-LINHA-SUPREMA-PDF
+        papel: DIRETA
+        localizador:
+          pagina_documento: 59
+          pagina_pdf: 56
+          secao: Perfis
+
+  - identificador: CAT-08
+    texto: 'O catálogo nomeia o SU-041 como "Montante mão de amigo", 0,507 kg/m.'
+    estado: CONFIRMADO_CATALOGO
+    observacao: >-
+      O catálogo dá ao SU-040 e ao SU-041 o MESMO nome, "Montante mão de
+      amigo", e pesos diferentes (0,480 e 0,507 kg/m). O nome impresso, sozinho,
+      não distingue um do outro.
+    citacoes:
+      - id_fonte: FONTE-ALCOA-LINHA-SUPREMA-PDF
+        papel: DIRETA
+        localizador:
+          pagina_documento: 59
+          pagina_pdf: 56
+          secao: Perfis
+
+  - identificador: CAT-09
+    texto: 'O catálogo nomeia o SU-053 como "Travessa da folha", 0,507 kg/m.'
+    estado: CONFIRMADO_CATALOGO
+    citacoes:
+      - id_fonte: FONTE-ALCOA-LINHA-SUPREMA-PDF
+        papel: DIRETA
+        localizador:
+          pagina_documento: 59
+          pagina_pdf: 56
+          secao: Perfis
+
+  - identificador: CAT-10
+    texto: 'O catálogo nomeia o SU-102 como "Baguete", 0,111 kg/m.'
+    estado: CONFIRMADO_CATALOGO
+    citacoes:
+      - id_fonte: FONTE-ALCOA-LINHA-SUPREMA-PDF
+        papel: DIRETA
+        localizador:
+          pagina_documento: 71
+          pagina_pdf: 68
+          secao: Perfis
+
+  - identificador: CAT-11
+    texto: >-
+      A prancha do SUP JCR 200 traz impressas as cotas L, H, H-50, H-134,
+      (L-131,2)/2 e (L-143,2)/2, esta última rotulada "Vidro".
+    estado: CONFIRMADO_CATALOGO
+    observacao: >-
+      REGISTRO CRU DAS COTAS, sem interpretação. Esta afirmação NÃO diz o que
+      cada cota mede, NÃO afirma que L e H são o quadro, NÃO deriva folga de
+      vidro e NÃO estabelece comprimento de corte de perfil nenhum. Determinar
+      a que geometria cada cota se refere exige rastrear as linhas de cota no
+      desenho, e essa leitura não é texto do fabricante — fica fora deste
+      manifesto por decisão explícita.
+    citacoes:
+      - id_fonte: FONTE-ALCOA-LINHA-SUPREMA-PDF
+        papel: DIRETA
+        localizador:
+          pagina_documento: 117
+          pagina_pdf: 113
+          secao: SUP JCR 200
+
+  - identificador: CAT-12
+    texto: >-
+      O SUP JCR 200A é uma montagem distinta do SUP JCR 200, também descrita
+      como "Janela de correr 2 folhas", e emprega os perfis SU-026, SU-028,
+      SU-251 e SU-291, que não aparecem no SUP JCR 200.
+    estado: CONFIRMADO_CATALOGO
+    observacao: >-
+      Importante contra confusão de família: "Suprema de correr 2 folhas" não
+      designa uma montagem única no catálogo. As duas compartilham SU-039,
+      SU-040, SU-041, SU-053 e SU-102, e diferem nos perfis de marco.
+    citacoes:
+      - id_fonte: FONTE-ALCOA-LINHA-SUPREMA-PDF
+        papel: DIRETA
+        localizador:
+          pagina_documento: 118
+          pagina_pdf: 114
+          secao: SUP JCR 200A
+
+# ---------------------------------------------------------------------------
+# Notas
+# ---------------------------------------------------------------------------
+notas:
+  - >-
+    Nenhuma fórmula de corte foi encontrada nas páginas inspecionadas nesta
+    ingestão. Isso NÃO afirma que o catálogo inteiro não contenha nenhuma: as
+    135 páginas não foram todas lidas visualmente.
+  - >-
+    O deslocamento entre folha impressa e página do PDF NÃO é constante neste
+    documento (-3 na região dos perfis, -4 na região das montagens). Registrar
+    apenas uma das duas páginas mandaria conferir a folha errada.
+  - >-
+    O catálogo dá nomes de PAPEL aos perfis ("Marco superior", "Travessa da
+    folha"). Esses nomes são do fabricante e descrevem o perfil no catálogo;
+    não são, por si, prova de qual peça ocupa qual posição numa janela real
+    medida em campo.
+
+# ---------------------------------------------------------------------------
+# Artefatos — o PDF vive FORA do Git. Só metadado entra aqui.
+# ---------------------------------------------------------------------------
+artefatos:
+  - id_fonte: FONTE-ALCOA-LINHA-SUPREMA-PDF
+    grupo: catalogo_fabricante
+    caminho_relativo: "alcoa-linha-suprema.pdf"
+    sha256: e64577df8d4ff33a7ec0d204f03a321136450507407e29f4e6c080e442d12deb
+    tamanho_bytes: 9120081
+    formato: pdf

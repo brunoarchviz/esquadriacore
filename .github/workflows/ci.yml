@@ -88,15 +88,21 @@ jobs:
       - name: Coletar testes (falha cedo se algo não importa)
         run: python -m pytest tests/ --collect-only -q
 
-      # ESQUADRIACORE_ACERVO_SUPREMA_CORRER_2F fica deliberadamente NÃO
-      # definida: sem ela, verificação física do acervo externo reprova
-      # (nunca "passa em silêncio" — ver composicao/validar.py) e os dois
-      # testes que dependem dela se auto-pulam via pytest.skip(). É o
-      # comportamento correto neste runner, não uma falha mascarada.
+      # As variáveis ESQUADRIACORE_ACERVO_* ficam deliberadamente NÃO
+      # definidas: sem elas, verificação física de acervo externo reprova
+      # (nunca "passa em silêncio" — ver composicao/validar.py) e os testes
+      # que dependem delas se auto-pulam via pytest.skip(). É o comportamento
+      # correto neste runner, não uma falha mascarada. Vale igualmente para o
+      # acervo de campo e para o catálogo do fabricante: nenhum dos dois
+      # arquivos está no Git, e ausência de evidência não vira homologação.
       - name: Rodar suíte reproduzível
         run: python -m pytest tests/ -q -rs
 
-      - name: Validar estrutura do manifesto de proveniência (sem acervo)
+      # Só a coerência interna dos manifestos, que dispensa os bytes. A
+      # conferência de sha256/tamanho é LOCAL, com o acervo montado.
+      - name: Validar estrutura dos manifestos de proveniência (sem acervo)
         run: |
           python -m composicao.cli validar-manifesto \
             composicao/insumos/proveniencia_suprema_2f.yaml
+          python -m composicao.cli validar-manifesto \
+            composicao/insumos/proveniencia_alcoa_suprema.yaml
