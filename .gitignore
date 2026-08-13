@@ -25,3 +25,6 @@ curadoria/insumos/
 # Painéis intermediários, inválidos, diagnósticos e recortes de trabalho ficam fora.
 !curadoria/composicao/painel_ground_truth_olhal_escovinha.png
 !curadoria/composicao/painel_interface_baguete_su225.png
+# Primeira visualização real da Suprema correr 2F (E.4H) — aguardando
+# validação visual do Bruno.
+!curadoria/composicao/vista_suprema_correr_2f.png
