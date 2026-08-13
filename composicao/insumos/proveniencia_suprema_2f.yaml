@@ -459,21 +459,41 @@ afirmacoes:
   - identificador: A18
     texto: >-
       Com L e H lidos como vão, as expressões L-32 (SU-001, SU-002), H-5
-      (SU-003) e H-55 (SU-039, SU-040, SU-041) reproduzem exatamente o corte
-      real medido no caso principal.
+      (SU-003) e H-55 (SU-039) reproduzem exatamente o corte real individual
+      medido no caso principal. Para H-55 em SU-040/SU-041, a seção 5 da
+      ficha traz uma ÚNICA linha compartilhada — "SU-040 e SU-041", Qtd=1,
+      690 mm — e não dois cortes individuais registrados separadamente;
+      essa linha não constitui evidência de corte físico individual
+      SU-040=690 nem SU-041=690, mesmo que ambos usem a mesma expressão.
     estado: CONFIRMADO_CASO_REAL
     derivada_de: [A17]
     observacao: >-
       UM caso com corte real, não validação multicaso. As expressões permanecem
       CANDIDATAS; nenhuma foi homologada para produção e nenhuma virou regra
       executável. Os Casos B e C não têm saída de corte real - usar quadro ou
-      folha como substituto seria comparar grandezas diferentes.
+      folha como substituto seria comparar grandezas diferentes. Nível
+      EXPRESSÃO e nível PERFIL não se equivalem aqui: a expressão H-55 tem
+      corroboração via SU-039 (corte individual) e via a linha compartilhada;
+      os perfis SU-040 e SU-041, individualmente, não têm corte próprio
+      comprovado — ver A07/A08, que já registram a mesma cautela sobre esses
+      dois perfis por outro ângulo (atribuição de plano).
     citacoes:
       - id_fonte: FONTE-01-FICHA-CAMPO-01-FICHA-CAMPO-DOCX
         papel: DIRETA
-        observacao: Seção 5, coluna "Corte real (mm)", caso principal.
+        observacao: >-
+          Seção 5, coluna "Corte real (mm)", caso principal. SU-001, SU-002,
+          SU-003 e SU-039 têm linha própria; SU-040 e SU-041 dividem uma
+          única linha "SU-040 e SU-041 | 1 | 690 | (H-55)".
       - id_fonte: FONTE-REFERENCIA-DIMENSIONAL-E4G
         papel: DERIVADA
+        observacao: >-
+          O documento E4G (§4) apresenta SU-040 e SU-041 em linhas separadas
+          da tabela, cada uma com "corte real 690, resíduo 0". O documento
+          permanece byte-idêntico ao hash citado — é registro histórico da
+          leitura feita em 2026-08-09 — e essa apresentação, re-auditada, é
+          menos precisa que a ficha bruta citada acima: a ficha tem uma linha
+          compartilhada, não duas. Ver correção em
+          curadoria/handoffs/e4h/correcao_epistemologica_pos_e4g.md.
 
   - identificador: A19
     texto: >-

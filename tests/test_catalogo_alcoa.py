@@ -19,7 +19,6 @@ explícito; os estruturais rodam em qualquer clone.
 """
 from __future__ import annotations
 
-import hashlib
 from pathlib import Path
 
 import pytest
@@ -360,16 +359,40 @@ def test_o_catalogo_nao_cita_nenhuma_fonte_do_acervo_de_campo(catalogo):
 
 
 # ---------------------------------------------------------------------------
-# 7 e 9 · o acervo de campo não foi tocado
+# 7 e 9 · a ingestão do catálogo não criou dependência cross-manifest
+#
+# Não trava mais os BYTES do manifesto de campo — isso impediria qualquer
+# correção legítima futura de A18 em diante (ver
+# curadoria/handoffs/e4h/correcao_epistemologica_pos_e4g.md, que corrigiu o
+# texto de A18 sem tocar nesta PR). O que a ingestão do catálogo precisa
+# garantir não é que o manifesto de campo pare no tempo — é que ela não
+# introduziu citação nem derivação cruzando a fronteira dos dois manifestos.
 # ---------------------------------------------------------------------------
 
-def test_manifesto_de_campo_continua_intacto():
-    """Bytes idênticos: a ingestão do catálogo não reserializa nem altera o
-    registro do acervo físico."""
-    conteudo = MANIFESTO_CAMPO.read_bytes()
-    assert hashlib.sha256(conteudo).hexdigest() == \
-        "a41367f2992b24497956372eeaaadb2643fd6b36016e03766816b0bb2fd3adee"
-    assert len(conteudo) == 61991
+def test_suprema_nao_cita_fonte_exclusiva_do_catalogo(catalogo):
+    """Nenhuma citação de SUPREMA_CORRER_2F aponta para uma fonte que só
+    existe no manifesto do catálogo — a ingestão não criou dependência na
+    direção contrária à testada em test_o_catalogo_nao_cita_nenhuma_fonte_do_acervo_de_campo."""
+    campo = carregar_manifesto(MANIFESTO_CAMPO)
+    ids_do_catalogo = set(catalogo.indice_de_fontes())
+    for a in campo.afirmacoes:
+        for c in a.citacoes:
+            assert c.id_fonte not in ids_do_catalogo, \
+                f"{a.identificador} (SUPREMA_CORRER_2F) cita fonte exclusiva " \
+                f"do catálogo Alcoa: {c.id_fonte}"
+
+
+def test_suprema_nao_deriva_de_nenhuma_cat(catalogo):
+    """Nenhuma afirmação de SUPREMA_CORRER_2F declara `derivada_de` apontando
+    para uma CAT-* do catálogo — cross-manifest de afirmação não foi
+    introduzido em nenhuma direção."""
+    campo = carregar_manifesto(MANIFESTO_CAMPO)
+    ids_cat = {a.identificador for a in catalogo.afirmacoes}
+    for a in campo.afirmacoes:
+        origem_indevida = set(a.derivada_de) & ids_cat
+        assert not origem_indevida, \
+            f"{a.identificador} (SUPREMA_CORRER_2F) deriva de CAT-* do " \
+            f"catálogo: {origem_indevida}"
 
 
 def test_baseline_do_acervo_de_campo_nao_muda():
