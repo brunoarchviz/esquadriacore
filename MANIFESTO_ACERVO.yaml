@@ -1,0 +1,368 @@
+# MANIFESTO_ACERVO — inventário do Acervo Compartilhado (Google Drive).
+#
+# Arquitetura (handoff 2026-08-15, seção 22): Drive guarda os binários; este
+# arquivo + acervo/manifesto.py são a autoridade em Git; o cache local é cópia
+# reconstruível. Ler acervo/manifesto.py para o schema e o validador.
+#
+# CONVENÇÃO DESTA RODADA — presente_no_drive:
+# `drive_file_id` é o localizador primário do item (seção 24 do handoff);
+# `caminho_drive` é só diagnóstico/humano. Nenhum drive_file_id foi coletado
+# nesta primeira leva (infra do manifesto, não varredura do Drive), então
+# `presente_no_drive` fica `false` em TODO item abaixo — mesmo nos que o
+# handoff descreve como fisicamente presentes no Drive. Isto não deve ser lido
+# como "ausente do Drive": é "localizador ainda não capturado nesta rodada".
+# NÃO ENCONTRADO != NÃO EXISTE. Ver `pontos_cegos_conhecidos`.
+#
+# Esta é uma primeira leva seletiva (handoff seção 23, item 9): NÃO cadastra
+# os 266 arquivos do cache — só os itens/coleções de maior valor e estado
+# claro que o handoff nomeia explicitamente.
+
+versao_manifesto: 1
+
+ultima_varredura:
+  data: "2026-08-15"
+  locais_cobertos:
+    - "ESQUADRIACORE_HANDOFF_OFICIAL_POS_ACERVO_2026-08-15.md (seções 10-22)"
+    - "repositório Git em HEAD 8aa46ad3d1070e1a5ad4df88905d0b6fc6651208"
+  pontos_cegos_conhecidos:
+    - "nenhum drive_file_id coletado nesta rodada — todo item fica presente_no_drive=false até uma varredura (rclone lsjson) confirmar o localizador"
+    - "266 arquivos do cache Drive não foram individualmente inventariados; apenas os itens/coleções de maior valor listados no handoff foram semeados"
+    - "~/Downloads/catalago-alcoa.pdf (candidato de faxina futura, possível relação com dados_exemplo/catalago-alcoa (1).pdf) não avaliado aqui — sem SHA-256 comparado"
+    - "caminho_drive exato de alcoa_gold3.pdf, alcoa-linha-suprema.pdf e dos consolidados L25/L30 não foi informado no handoff — não inventado"
+
+itens:
+  - id: ACV-COLECAO-SUPREMA-CORRER-2F
+    nome: "Suprema Correr 2F — evidências de campo"
+    granularidade: colecao
+    tipo: evidencia_campo
+    categoria: colecao_evidencias_de_campo
+    tags: [suprema, correr_2f, evidencia_campo]
+    fabricante: null
+    linha: "Suprema"
+    origem: campo
+    status_epistemologico: VIGENTE
+    autoridade: GIT
+    evidencia_primaria: true
+    homologado_por: null
+    data_homologacao: null
+    drive_file_id: null
+    caminho_drive: "01_FONTES_PRIMARIAS/evidencias_campo/SUPREMA_CORRER_2F/"
+    sha256: null
+    tamanho_bytes: null
+    mtime_origem: null
+    hash_calculado_em: null
+    substitui: null
+    duplicata_de: null
+    presente_no_drive: false
+    leitura_bootstrap: sob_demanda
+    referencia_repo: "composicao/insumos/proveniencia_suprema_2f.yaml"
+    resumo_uma_linha: "112 artefatos de campo da Suprema Correr 2F; proveniência e hash por arquivo vivem no manifesto Git, Drive é espelho."
+    observacao: "Contagem oficial 112 arquivos, não 113 (handoff seção 13). Git é autoridade via composicao/insumos/proveniencia_suprema_2f.yaml."
+
+  - id: ACV-ARQUIVO-ALCOA-GOLD3
+    nome: "alcoa_gold3.pdf"
+    granularidade: arquivo
+    tipo: catalogo
+    categoria: catalogo_fabricante
+    tags: [fundacional, prioridade_maxima, alcoa, gold3]
+    fabricante: ALCOA
+    linha: "Gold3"
+    origem: fabricante
+    status_epistemologico: VIGENTE
+    autoridade: DRIVE
+    evidencia_primaria: true
+    homologado_por: null
+    data_homologacao: null
+    drive_file_id: null
+    caminho_drive: null
+    sha256: null
+    tamanho_bytes: null
+    mtime_origem: null
+    hash_calculado_em: null
+    substitui: null
+    duplicata_de: null
+    presente_no_drive: false
+    leitura_bootstrap: sob_demanda
+    referencia_repo: null
+    resumo_uma_linha: "Catálogo Alcoa Gold3 — classificação FUNDACIONAL / PRIORIDADE_MAXIMA / REFERENCIA_HISTORICA_E_TECNICA (handoff seção 14)."
+    observacao: "Candidato natural a leitura_bootstrap=sempre dada a prioridade máxima declarada, mas essa promoção não foi feita aqui — é decisão editorial, não de infraestrutura. Caminho exato no Drive não informado."
+
+  - id: ACV-ARQUIVO-ALCOA-LINHA-SUPREMA
+    nome: "alcoa-linha-suprema.pdf"
+    granularidade: arquivo
+    tipo: catalogo
+    categoria: catalogo_fabricante
+    tags: [fundacional, prioridade_maxima, alcoa, linha_suprema]
+    fabricante: ALCOA
+    linha: "Suprema"
+    origem: fabricante
+    status_epistemologico: VIGENTE
+    autoridade: DRIVE
+    evidencia_primaria: true
+    homologado_por: null
+    data_homologacao: null
+    drive_file_id: null
+    caminho_drive: null
+    sha256: null
+    tamanho_bytes: null
+    mtime_origem: null
+    hash_calculado_em: null
+    substitui: null
+    duplicata_de: null
+    presente_no_drive: false
+    leitura_bootstrap: sob_demanda
+    referencia_repo: null
+    resumo_uma_linha: "Catálogo Alcoa Linha Suprema — classificação FUNDACIONAL / PRIORIDADE_MAXIMA / REFERENCIA_HISTORICA_E_TECNICA (handoff seção 14)."
+    observacao: "Mesma ressalva do ACV-ARQUIVO-ALCOA-GOLD3 sobre leitura_bootstrap=sempre. Caminho exato no Drive não informado."
+
+  - id: ACV-ARQUIVO-ALCOA-LINHA-25
+    nome: "ALCOA_CATALOGO_LINHA_25_COMPLETO.pdf"
+    granularidade: arquivo
+    tipo: catalogo
+    categoria: catalogo_fabricante_consolidado
+    tags: [alcoa, linha_25, consolidado]
+    fabricante: ALCOA
+    linha: "Linha 25"
+    origem: fabricante
+    status_epistemologico: VIGENTE
+    autoridade: DRIVE
+    evidencia_primaria: true
+    homologado_por: null
+    data_homologacao: null
+    drive_file_id: null
+    caminho_drive: null
+    sha256: "e94dbb2d0d354a3a86b3df8c6081cb7483ed11843dac532fd7227264ec2a67bd"
+    tamanho_bytes: null
+    mtime_origem: null
+    hash_calculado_em: null
+    substitui: null
+    duplicata_de: null
+    presente_no_drive: false
+    leitura_bootstrap: sob_demanda
+    referencia_repo: null
+    resumo_uma_linha: "Consolidado Alcoa Linha 25, 8 páginas; substitui os 27 fragmentos removidos do Drive após consolidação (handoff seção 15)."
+    observacao: "SHA-256 do handoff seção 15; formato (64 hex) conferido nesta rodada. Fragmentos originais preservados localmente em ~/Área de trabalho/Alcoa_L25/, fora do Git/Drive."
+
+  - id: ACV-ARQUIVO-ALCOA-LINHA-30
+    nome: "ALCOA_CATALOGO_LINHA_30_COMPLETO.pdf"
+    granularidade: arquivo
+    tipo: catalogo
+    categoria: catalogo_fabricante_consolidado
+    tags: [alcoa, linha_30, consolidado]
+    fabricante: ALCOA
+    linha: "Linha 30"
+    origem: fabricante
+    status_epistemologico: VIGENTE
+    autoridade: DRIVE
+    evidencia_primaria: true
+    homologado_por: null
+    data_homologacao: null
+    drive_file_id: null
+    caminho_drive: null
+    sha256: "a0c9bd3b1db18b58a5e76d97bcd00a1809b3a507cde84bdae9eaff39120ef4f4"
+    tamanho_bytes: null
+    mtime_origem: null
+    hash_calculado_em: null
+    substitui: null
+    duplicata_de: null
+    presente_no_drive: false
+    leitura_bootstrap: sob_demanda
+    referencia_repo: null
+    resumo_uma_linha: "Consolidado Alcoa Linha 30, 19 páginas; substitui os fragmentos removidos do Drive após consolidação (handoff seção 15)."
+    observacao: "SHA-256 do handoff seção 15; formato (64 hex) conferido nesta rodada. Fragmentos originais preservados localmente em ~/Área de trabalho/Alcoa_L30/, fora do Git/Drive."
+
+  - id: ACV-ARQUIVO-CENTENARIO
+    nome: "Centenário.pdf"
+    granularidade: arquivo
+    tipo: catalogo
+    categoria: consulta_rapida
+    tags: [centenario, consulta_rapida]
+    fabricante: null
+    linha: null
+    origem: null
+    status_epistemologico: VIGENTE
+    autoridade: DRIVE
+    evidencia_primaria: false
+    homologado_por: null
+    data_homologacao: null
+    drive_file_id: null
+    caminho_drive: null
+    sha256: null
+    tamanho_bytes: null
+    mtime_origem: null
+    hash_calculado_em: null
+    substitui: null
+    duplicata_de: null
+    presente_no_drive: false
+    leitura_bootstrap: sob_demanda
+    referencia_repo: "tests/test_basicos.py"
+    resumo_uma_linha: "Papel de CONSULTA_RAPIDA_DE_PERFIS — códigos e identificação básica; não é fonte principal de montagem/usinagem/acessórios (handoff seção 16)."
+    observacao: "Fabricante não atribuído por inferência — não informado no handoff. Localização exata no Drive não informada; uso local documentado em dados_exemplo/ para o teste de regressão do Centenário (CLAUDE.md)."
+
+  - id: ACV-ARQUIVO-VIDRACEIRO-RICO-SUPREMA
+    nome: "LmqMTA_0___1_ManualEsquadriaPRO_SUPREMA.v4.pdf"
+    granularidade: arquivo
+    tipo: material_didatico
+    categoria: fonte_secundaria
+    tags: [vidraceiro_rico, material_didatico, suprema]
+    fabricante: null
+    linha: "Suprema"
+    origem: terceiro_editor
+    status_epistemologico: VIGENTE
+    autoridade: DRIVE
+    evidencia_primaria: false
+    homologado_por: null
+    data_homologacao: null
+    drive_file_id: null
+    caminho_drive: "02_BASES_TECNICAS/dados_auxiliares/material_didatico/vidraceiro_rico/"
+    sha256: null
+    tamanho_bytes: null
+    mtime_origem: null
+    hash_calculado_em: null
+    substitui: null
+    duplicata_de: null
+    presente_no_drive: false
+    leitura_bootstrap: sob_demanda
+    referencia_repo: null
+    resumo_uma_linha: "Manual PRO Suprema do Vidraceiro Rico — fonte secundária/material didático: tipologias, montagens, nomenclatura, planos de corte (handoff seção 17)."
+    observacao: "Classificação FONTE_SECUNDARIA / MATERIAL_DIDATICO — não é fonte oficial de fabricante."
+
+  - id: ACV-ARQUIVO-VIDRACEIRO-RICO-GOLD
+    nome: "kA7Jjz_0___1_MANUAL_PRO_GOLD.pdf"
+    granularidade: arquivo
+    tipo: material_didatico
+    categoria: fonte_secundaria
+    tags: [vidraceiro_rico, material_didatico, gold]
+    fabricante: null
+    linha: "Gold"
+    origem: terceiro_editor
+    status_epistemologico: VIGENTE
+    autoridade: DRIVE
+    evidencia_primaria: false
+    homologado_por: null
+    data_homologacao: null
+    drive_file_id: null
+    caminho_drive: "02_BASES_TECNICAS/dados_auxiliares/material_didatico/vidraceiro_rico/"
+    sha256: null
+    tamanho_bytes: null
+    mtime_origem: null
+    hash_calculado_em: null
+    substitui: null
+    duplicata_de: null
+    presente_no_drive: false
+    leitura_bootstrap: sob_demanda
+    referencia_repo: null
+    resumo_uma_linha: "Manual PRO Gold do Vidraceiro Rico — fonte secundária/material didático: tipologias, montagens, nomenclatura, planos de corte (handoff seção 17)."
+    observacao: "Classificação FONTE_SECUNDARIA / MATERIAL_DIDATICO — não é fonte oficial de fabricante."
+
+  - id: ACV-ARQUIVO-PACRE-SUPREMA-PERFIS
+    nome: "PACRE SUPREMA - PERFIS Full1.pdf"
+    granularidade: arquivo
+    tipo: catalogo
+    categoria: catalogo_editado
+    tags: [alcoa, pacre, suprema, edicao_terceiro]
+    fabricante: ALCOA
+    linha: "Suprema"
+    origem: terceiro_editor
+    status_epistemologico: VIGENTE
+    autoridade: DRIVE
+    evidencia_primaria: false
+    homologado_por: null
+    data_homologacao: null
+    drive_file_id: null
+    caminho_drive: "01_FONTES_PRIMARIAS/catalogos_fabricantes/ALCOA/EDICOES_PACRE/"
+    sha256: null
+    tamanho_bytes: null
+    mtime_origem: null
+    hash_calculado_em: null
+    substitui: null
+    duplicata_de: null
+    presente_no_drive: false
+    leitura_bootstrap: sob_demanda
+    referencia_repo: null
+    resumo_uma_linha: "Catálogo Alcoa Suprema editado/enriquecido pela PACRE — fabricante-base ALCOA, editor PACRE, papel CATALOGO_ALCOA_EDITADO (handoff seção 18); não é catálogo de fabricante PACRE independente."
+    observacao: "Útil sobretudo para nomenclatura e consulta de perfis, por correção de domínio de Bruno."
+
+  - id: ACV-ARQUIVO-PACRE-GOLD-FINAL
+    nome: "LINHA GOLD FINAL.pdf"
+    granularidade: arquivo
+    tipo: catalogo
+    categoria: catalogo_editado
+    tags: [alcoa, pacre, gold, edicao_terceiro]
+    fabricante: ALCOA
+    linha: "Gold"
+    origem: terceiro_editor
+    status_epistemologico: VIGENTE
+    autoridade: DRIVE
+    evidencia_primaria: false
+    homologado_por: null
+    data_homologacao: null
+    drive_file_id: null
+    caminho_drive: "01_FONTES_PRIMARIAS/catalogos_fabricantes/ALCOA/EDICOES_PACRE/"
+    sha256: null
+    tamanho_bytes: null
+    mtime_origem: null
+    hash_calculado_em: null
+    substitui: null
+    duplicata_de: null
+    presente_no_drive: false
+    leitura_bootstrap: sob_demanda
+    referencia_repo: null
+    resumo_uma_linha: "Catálogo Alcoa Gold editado/enriquecido pela PACRE — fabricante-base ALCOA, editor PACRE, papel CATALOGO_ALCOA_EDITADO (handoff seção 18); não é catálogo de fabricante PACRE independente."
+    observacao: "Útil sobretudo para nomenclatura e consulta de perfis, por correção de domínio de Bruno."
+
+  - id: ACV-COLECAO-ESPELHO-VISUAL-CONTORNOS
+    nome: "Espelho visual — contornos (Drive)"
+    granularidade: colecao
+    tipo: espelho_visual
+    categoria: espelho_visual_git
+    tags: [espelho_visual, contornos, curadoria]
+    fabricante: null
+    linha: null
+    origem: null
+    status_epistemologico: VIGENTE
+    autoridade: GIT
+    evidencia_primaria: false
+    homologado_por: null
+    data_homologacao: null
+    drive_file_id: null
+    caminho_drive: "03_ARTEFATOS_HOMOLOGADOS/contornos/"
+    sha256: null
+    tamanho_bytes: null
+    mtime_origem: null
+    hash_calculado_em: null
+    substitui: null
+    duplicata_de: null
+    presente_no_drive: false
+    leitura_bootstrap: sob_demanda
+    referencia_repo: "curadoria/contornos/"
+    resumo_uma_linha: "Espelho visual no Drive dos contornos curados; Git (curadoria/contornos/) é autoridade canônica, Drive é cópia de consulta (papel ESPELHO_VISUAL_CANONICO_GIT, handoff seção 20)."
+    observacao: "Cobertura relevante inclui SU-102×TMS-102, SU-005, SU-056 rejeitado, SU-280 excluído, LG-003/LG-006, SU-228/SU-230 sem homologação numérica."
+
+  - id: ACV-COLECAO-ESPELHO-VISUAL-COMPARATIVOS
+    nome: "Espelho visual — comparativos (Drive)"
+    granularidade: colecao
+    tipo: espelho_visual
+    categoria: espelho_visual_git
+    tags: [espelho_visual, comparativos, curadoria]
+    fabricante: null
+    linha: null
+    origem: null
+    status_epistemologico: VIGENTE
+    autoridade: GIT
+    evidencia_primaria: false
+    homologado_por: null
+    data_homologacao: null
+    drive_file_id: null
+    caminho_drive: "03_ARTEFATOS_HOMOLOGADOS/comparativos/"
+    sha256: null
+    tamanho_bytes: null
+    mtime_origem: null
+    hash_calculado_em: null
+    substitui: null
+    duplicata_de: null
+    presente_no_drive: false
+    leitura_bootstrap: sob_demanda
+    referencia_repo: "curadoria/comparacao/"
+    resumo_uma_linha: "Espelho visual no Drive dos comparativos lado a lado; Git (curadoria/comparacao/) é autoridade canônica, Drive é cópia de consulta (papel ESPELHO_VISUAL_CANONICO_GIT, handoff seção 20)."
+    observacao: "Cobertura relevante inclui SU-102×TMS-102, SU-005, SU-056 rejeitado, SU-280 excluído, LG-003/LG-006, SU-228/SU-230 sem homologação numérica."
