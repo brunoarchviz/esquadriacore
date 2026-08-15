@@ -95,6 +95,23 @@ def test_item_com_presente_no_drive_nao_booleano_reprova():
         ItemAcervo(**_item_minimo(presente_no_drive="sim"))
 
 
+def test_item_colecao_sem_sha256_e_valido():
+    """Coleção não é obrigada a ter hash individual — só arquivo tem bytes
+    únicos para hashear; a coleção é o conjunto."""
+    item = ItemAcervo(**_item_minimo(granularidade="colecao", sha256=None))
+    assert item.granularidade is Granularidade.COLECAO
+    assert item.sha256 is None
+
+
+def test_item_com_editado_por_e_papel_documental():
+    item = ItemAcervo(**_item_minimo(
+        fabricante="ALCOA", editado_por="PACRE",
+        papel_documental="CATALOGO_ALCOA_EDITADO"))
+    assert item.fabricante == "ALCOA"
+    assert item.editado_por == "PACRE"
+    assert item.papel_documental == "CATALOGO_ALCOA_EDITADO"
+
+
 # ---------------------------------------------------------------------------
 # Leitura do dict cru — mesmas recusas, pela porta de manifesto_de_dict
 # ---------------------------------------------------------------------------
@@ -224,6 +241,16 @@ def test_manifesto_real_nao_afirma_presenca_no_drive_sem_localizador():
     sem_localizador = [i.id for i in manifesto.itens if i.presente_no_drive
                        and not i.drive_file_id]
     assert sem_localizador == []
+
+
+def test_manifesto_real_edicoes_pacre_preservam_fabricante_base():
+    manifesto = carregar_manifesto(MANIFESTO_REAL)
+    for id_item in ("ACV-ARQUIVO-PACRE-SUPREMA-PERFIS",
+                    "ACV-ARQUIVO-PACRE-GOLD-FINAL"):
+        item = manifesto.item(id_item)
+        assert item.fabricante == "ALCOA"
+        assert item.editado_por == "PACRE"
+        assert item.papel_documental == "CATALOGO_ALCOA_EDITADO"
 
 
 def test_manifesto_real_linha_25_e_30_tem_sha256_valido():

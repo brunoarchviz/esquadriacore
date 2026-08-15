@@ -40,6 +40,8 @@ itens:
     fabricante: null
     linha: "Suprema"
     origem: campo
+    editado_por: null
+    papel_documental: null
     status_epistemologico: VIGENTE
     autoridade: GIT
     evidencia_primaria: true
@@ -68,6 +70,8 @@ itens:
     fabricante: ALCOA
     linha: "Gold3"
     origem: fabricante
+    editado_por: null
+    papel_documental: null
     status_epistemologico: VIGENTE
     autoridade: DRIVE
     evidencia_primaria: true
@@ -96,6 +100,8 @@ itens:
     fabricante: ALCOA
     linha: "Suprema"
     origem: fabricante
+    editado_por: null
+    papel_documental: null
     status_epistemologico: VIGENTE
     autoridade: DRIVE
     evidencia_primaria: true
@@ -124,6 +130,8 @@ itens:
     fabricante: ALCOA
     linha: "Linha 25"
     origem: fabricante
+    editado_por: null
+    papel_documental: null
     status_epistemologico: VIGENTE
     autoridade: DRIVE
     evidencia_primaria: true
@@ -152,6 +160,8 @@ itens:
     fabricante: ALCOA
     linha: "Linha 30"
     origem: fabricante
+    editado_por: null
+    papel_documental: null
     status_epistemologico: VIGENTE
     autoridade: DRIVE
     evidencia_primaria: true
@@ -180,6 +190,8 @@ itens:
     fabricante: null
     linha: null
     origem: null
+    editado_por: null
+    papel_documental: null
     status_epistemologico: VIGENTE
     autoridade: DRIVE
     evidencia_primaria: false
@@ -208,6 +220,8 @@ itens:
     fabricante: null
     linha: "Suprema"
     origem: terceiro_editor
+    editado_por: null
+    papel_documental: null
     status_epistemologico: VIGENTE
     autoridade: DRIVE
     evidencia_primaria: false
@@ -236,6 +250,8 @@ itens:
     fabricante: null
     linha: "Gold"
     origem: terceiro_editor
+    editado_por: null
+    papel_documental: null
     status_epistemologico: VIGENTE
     autoridade: DRIVE
     evidencia_primaria: false
@@ -264,6 +280,8 @@ itens:
     fabricante: ALCOA
     linha: "Suprema"
     origem: terceiro_editor
+    editado_por: PACRE
+    papel_documental: CATALOGO_ALCOA_EDITADO
     status_epistemologico: VIGENTE
     autoridade: DRIVE
     evidencia_primaria: false
@@ -292,6 +310,8 @@ itens:
     fabricante: ALCOA
     linha: "Gold"
     origem: terceiro_editor
+    editado_por: PACRE
+    papel_documental: CATALOGO_ALCOA_EDITADO
     status_epistemologico: VIGENTE
     autoridade: DRIVE
     evidencia_primaria: false
@@ -320,6 +340,8 @@ itens:
     fabricante: null
     linha: null
     origem: null
+    editado_por: null
+    papel_documental: null
     status_epistemologico: VIGENTE
     autoridade: GIT
     evidencia_primaria: false
@@ -348,6 +370,8 @@ itens:
     fabricante: null
     linha: null
     origem: null
+    editado_por: null
+    papel_documental: null
     status_epistemologico: VIGENTE
     autoridade: GIT
     evidencia_primaria: false

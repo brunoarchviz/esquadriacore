@@ -121,6 +121,12 @@ class ItemAcervo:
     fabricante: str | None = None
     linha: str | None = None
     origem: str | None = None
+    # `fabricante` é a origem-base do conteúdo técnico; `editado_por` é quem
+    # reeditou/enriqueceu o documento sem ser o fabricante. Confundir os dois
+    # promoveria o editor a autor do catálogo (handoff seção 18) — por isso
+    # ficam em campos separados em vez de um único "autor".
+    editado_por: str | None = None
+    papel_documental: str | None = None
     autoridade: str | None = None
     evidencia_primaria: bool | None = None
     homologado_por: str | None = None
@@ -205,7 +211,8 @@ class ItemAcervo:
             "granularidade": self.granularidade.value, "tipo": self.tipo,
             "categoria": self.categoria, "tags": list(self.tags),
             "fabricante": self.fabricante, "linha": self.linha,
-            "origem": self.origem,
+            "origem": self.origem, "editado_por": self.editado_por,
+            "papel_documental": self.papel_documental,
             "status_epistemologico": self.status_epistemologico.value,
             "autoridade": self.autoridade,
             "evidencia_primaria": self.evidencia_primaria,
@@ -283,6 +290,8 @@ def _item_de_dict(bruto: dict) -> ItemAcervo:
         fabricante=_texto(bruto.get("fabricante")),
         linha=_texto(bruto.get("linha")),
         origem=_texto(bruto.get("origem")),
+        editado_por=_texto(bruto.get("editado_por")),
+        papel_documental=_texto(bruto.get("papel_documental")),
         autoridade=_texto(bruto.get("autoridade")),
         evidencia_primaria=bruto.get("evidencia_primaria"),
         homologado_por=_texto(bruto.get("homologado_por")),
