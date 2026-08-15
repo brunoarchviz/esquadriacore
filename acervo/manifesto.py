@@ -65,15 +65,18 @@ class LeituraBootstrap(str, Enum):
     SEMPRE = "sempre"
 
 
-class StatusEpistemologico(str, Enum):
-    """Vocabulário editorial do bootstrap (seção 15), aplicado ao item de
-    acervo em vez de a uma afirmação de handoff — mesma pergunta ("isto ainda
-    vale, ou é passado preservado?"), aplicada a um binário em vez de um fato."""
-    VIGENTE = "VIGENTE"
-    HISTORICO = "HISTORICO"
-    CONGELADO = "CONGELADO"
-    INCERTO_SEM_ARBITRAGEM = "INCERTO_SEM_ARBITRAGEM"
-    SUGESTAO = "SUGESTAO"
+# `status_epistemologico` é texto livre por decisão desta auditoria, não
+# enum fechado. `granularidade` e `leitura_bootstrap` têm seus valores
+# explicitamente listados no handoff pós-acervo (seção 22) — fonte canônica
+# legítima para travar como enum. `status_epistemologico` só tem o NOME do
+# campo no handoff; o conjunto VIGENTE/HISTORICO/CONGELADO/... que a v1 desta
+# implementação chegou a enforcar como enum vinha do vocabulário editorial do
+# Bootstrap Claude (seções 9/15) — pensado para classificar handoff/relatório,
+# não schema de item de acervo, e nem sequer versionado neste repositório.
+# Vincular esse vocabulário como taxonomia fechada do campo foi inferência
+# desta implementação, não fonte canônica do dado. Mantida a informação como
+# texto livre, com a mesma checagem estrutural mínima dos outros campos de
+# texto obrigatórios (não vazio).
 
 
 def _texto(valor):
@@ -112,7 +115,7 @@ class ItemAcervo:
     tipo: str
     presente_no_drive: bool
     leitura_bootstrap: LeituraBootstrap
-    status_epistemologico: StatusEpistemologico
+    status_epistemologico: str
     resumo_uma_linha: str
     drive_file_id: str | None = None
     caminho_drive: str | None = None
@@ -171,16 +174,11 @@ class ItemAcervo:
                     f"{self.id}: leitura_bootstrap desconhecida "
                     f"{self.leitura_bootstrap!r} (conhecidas: "
                     f"{[v.value for v in LeituraBootstrap]})") from e
-        if not isinstance(self.status_epistemologico, StatusEpistemologico):
-            try:
-                object.__setattr__(
-                    self, "status_epistemologico",
-                    StatusEpistemologico(self.status_epistemologico))
-            except ValueError as e:
-                raise ManifestoAcervoErro(
-                    f"{self.id}: status_epistemologico desconhecido "
-                    f"{self.status_epistemologico!r} (conhecidos: "
-                    f"{[v.value for v in StatusEpistemologico]})") from e
+        if not (self.status_epistemologico or "").strip():
+            raise ManifestoAcervoErro(f"{self.id}: status_epistemologico "
+                                      f"ausente")
+        object.__setattr__(self, "status_epistemologico",
+                           self.status_epistemologico.strip())
         if not isinstance(self.presente_no_drive, bool):
             raise ManifestoAcervoErro(
                 f"{self.id}: presente_no_drive deve ser booleano, veio "
@@ -213,7 +211,7 @@ class ItemAcervo:
             "fabricante": self.fabricante, "linha": self.linha,
             "origem": self.origem, "editado_por": self.editado_por,
             "papel_documental": self.papel_documental,
-            "status_epistemologico": self.status_epistemologico.value,
+            "status_epistemologico": self.status_epistemologico,
             "autoridade": self.autoridade,
             "evidencia_primaria": self.evidencia_primaria,
             "homologado_por": self.homologado_por,
@@ -384,10 +382,19 @@ def validar_manifesto(manifesto: ManifestoAcervo) -> tuple[ProblemaValidacao, ..
     indice = {i.id: i for i in manifesto.itens}
 
     for item in manifesto.itens:
-        if item.presente_no_drive and not item.drive_file_id:
+        # `drive_file_id` é o localizador primário (handoff seção 24), mas
+        # exigi-lo sempre que presente_no_drive=true forçaria uma escolha
+        # falsa: declarar presença física conhecida como false só porque o ID
+        # ainda não foi coletado seria inventar ausência (o oposto do erro
+        # anterior desta implementação, que inventava ausência para não
+        # inventar ID). Para v1, um `caminho_drive` confirmado sustenta o
+        # registro provisoriamente; só reprova quando NENHUM dos dois existe.
+        if item.presente_no_drive and not item.drive_file_id and not item.caminho_drive:
             problemas.append(ProblemaValidacao(
-                item.id, "presente_no_drive=true sem drive_file_id", None,
-                "drive_file_id do item no Drive"))
+                item.id, "presente_no_drive=true sem drive_file_id e sem "
+                "caminho_drive", None,
+                "drive_file_id (preferencial) ou ao menos caminho_drive "
+                "confirmado"))
         for campo in ("substitui", "duplicata_de"):
             alvo = getattr(item, campo)
             if alvo is None:

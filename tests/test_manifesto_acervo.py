@@ -16,8 +16,8 @@ import pytest
 
 from acervo.manifesto import (Granularidade, ItemAcervo, LeituraBootstrap,
                               ManifestoAcervo, ManifestoAcervoErro,
-                              StatusEpistemologico, carregar_manifesto,
-                              manifesto_de_dict, validar_manifesto)
+                              carregar_manifesto, manifesto_de_dict,
+                              validar_manifesto)
 
 RAIZ = Path(__file__).resolve().parent.parent
 MANIFESTO_REAL = RAIZ / "MANIFESTO_ACERVO.yaml"
@@ -41,7 +41,7 @@ def test_item_minimo_valido_constroi():
     item = ItemAcervo(**_item_minimo())
     assert item.granularidade is Granularidade.ARQUIVO
     assert item.leitura_bootstrap is LeituraBootstrap.SOB_DEMANDA
-    assert item.status_epistemologico is StatusEpistemologico.VIGENTE
+    assert item.status_epistemologico == "VIGENTE"
     assert item.tags == ()
 
 
@@ -65,9 +65,19 @@ def test_item_com_leitura_bootstrap_desconhecida_reprova():
         ItemAcervo(**_item_minimo(leitura_bootstrap="as_vezes"))
 
 
-def test_item_com_status_epistemologico_desconhecido_reprova():
+def test_item_com_status_epistemologico_vazio_reprova():
     with pytest.raises(ManifestoAcervoErro):
-        ItemAcervo(**_item_minimo(status_epistemologico="TALVEZ"))
+        ItemAcervo(**_item_minimo(status_epistemologico=""))
+
+
+def test_item_com_status_epistemologico_fora_do_vocabulario_do_bootstrap_aceita():
+    """status_epistemologico NÃO é enum fechado (auditoria pré-merge da PR
+    #16): o handoff só nomeia o campo, não os valores permitidos. Travar em
+    VIGENTE/HISTORICO/CONGELADO/... teria promovido vocabulário editorial do
+    bootstrap — pensado para relatório, não para este schema — a taxonomia de
+    dado. Qualquer texto não vazio é aceito nesta v1."""
+    item = ItemAcervo(**_item_minimo(status_epistemologico="TALVEZ"))
+    assert item.status_epistemologico == "TALVEZ"
 
 
 def test_item_sem_resumo_reprova():
@@ -158,11 +168,43 @@ def test_validar_manifesto_id_duplicado_reprova():
     assert any("duplicado" in p.regra for p in problemas)
 
 
-def test_validar_manifesto_presente_no_drive_sem_localizador_reprova():
+# Casos A/B/C/D da auditoria pré-merge da PR #16 (drive_file_id não coletado
+# não pode virar sinônimo de "ausente do Drive").
+
+def test_validar_manifesto_caso_a_id_e_caminho_aprova():
+    m = manifesto_de_dict({"versao_manifesto": 1, "itens": [_item_minimo(
+        presente_no_drive=True, drive_file_id="1AbC",
+        caminho_drive="pasta/arquivo.pdf")]})
+    assert validar_manifesto(m) == ()
+
+
+def test_validar_manifesto_caso_b_so_caminho_confirmado_aprova():
+    """v1: sem drive_file_id ainda, mas com caminho_drive confirmado
+    empiricamente — presença conhecida não pode virar false só porque o
+    localizador primário não foi coletado."""
+    m = manifesto_de_dict({"versao_manifesto": 1, "itens": [_item_minimo(
+        presente_no_drive=True, drive_file_id=None,
+        caminho_drive="pasta/arquivo.pdf")]})
+    assert validar_manifesto(m) == ()
+
+
+def test_validar_manifesto_caso_c_sem_id_e_sem_caminho_reprova():
     m = manifesto_de_dict({"versao_manifesto": 1, "itens": [
-        _item_minimo(presente_no_drive=True, drive_file_id=None)]})
+        _item_minimo(presente_no_drive=True, drive_file_id=None,
+                     caminho_drive=None)]})
     problemas = validar_manifesto(m)
-    assert any("drive_file_id" in p.regra for p in problemas)
+    assert any("drive_file_id" in p.regra and "caminho_drive" in p.regra
+               for p in problemas)
+
+
+def test_validar_manifesto_caso_d_ausente_nao_reprova():
+    """presente_no_drive=false é estado válido por si — não é reprovado pelo
+    validador; a auditoria é sobre não usá-lo como substituto preguiçoso de
+    'ID não coletado', o que é responsabilidade de curadoria, não do
+    validador estrutural."""
+    m = manifesto_de_dict({"versao_manifesto": 1, "itens": [_item_minimo(
+        presente_no_drive=False, drive_file_id=None, caminho_drive=None)]})
+    assert validar_manifesto(m) == ()
 
 
 def test_validar_manifesto_presente_no_drive_com_localizador_aprova():
@@ -232,15 +274,45 @@ def test_manifesto_real_tem_os_itens_semeados_pelo_handoff():
     assert esperados <= ids_reais
 
 
-def test_manifesto_real_nao_afirma_presenca_no_drive_sem_localizador():
-    """Nesta rodada nenhum drive_file_id foi coletado — ver comentário no
-    topo do YAML. Este teste trava essa convenção: se alguém marcar
-    presente_no_drive=true sem preencher drive_file_id, o validador (não só
-    este teste) já reprova, mas aqui documentamos a intenção da rodada."""
+def test_manifesto_real_presentes_no_drive_tem_localizador_ou_caminho():
+    """Auditoria pré-merge da PR #16 confirmou os 12 itens via rclone lsjson
+    (read-only) — todos ganharam drive_file_id real. Este teste trava a
+    invariante (mais fraca que "todos têm ID"): presente_no_drive=true nunca
+    pode ficar sem NENHUM dos dois localizadores — nem ID nem caminho — o
+    validador já reprova isso, mas aqui documentamos a intenção do YAML."""
     manifesto = carregar_manifesto(MANIFESTO_REAL)
     sem_localizador = [i.id for i in manifesto.itens if i.presente_no_drive
-                       and not i.drive_file_id]
+                       and not i.drive_file_id and not i.caminho_drive]
     assert sem_localizador == []
+
+
+def test_manifesto_real_todos_os_12_semeados_tem_drive_file_id_real():
+    """Nesta rodada os 12 itens foram confirmados com ID real (caso A da
+    auditoria) — não dependem mais só de caminho_drive (caso B, permitido em
+    v1 mas não é o estado atual deste manifesto)."""
+    manifesto = carregar_manifesto(MANIFESTO_REAL)
+    for id_item in ("ACV-COLECAO-SUPREMA-CORRER-2F", "ACV-ARQUIVO-ALCOA-GOLD3",
+                    "ACV-ARQUIVO-ALCOA-LINHA-SUPREMA",
+                    "ACV-ARQUIVO-ALCOA-LINHA-25", "ACV-ARQUIVO-ALCOA-LINHA-30",
+                    "ACV-ARQUIVO-CENTENARIO",
+                    "ACV-ARQUIVO-VIDRACEIRO-RICO-SUPREMA",
+                    "ACV-ARQUIVO-VIDRACEIRO-RICO-GOLD",
+                    "ACV-ARQUIVO-PACRE-SUPREMA-PERFIS",
+                    "ACV-ARQUIVO-PACRE-GOLD-FINAL",
+                    "ACV-COLECAO-ESPELHO-VISUAL-CONTORNOS",
+                    "ACV-COLECAO-ESPELHO-VISUAL-COMPARATIVOS"):
+        item = manifesto.item(id_item)
+        assert item.presente_no_drive is True, id_item
+        assert item.drive_file_id, id_item
+
+
+def test_manifesto_real_nome_pacre_suprema_bate_com_arquivo_real_no_drive():
+    """Nome real tem DOIS espaços entre 'PERFIS' e 'Full1' (confirmado via
+    rclone lsjson em 2026-08-15); o handoff pós-acervo seção 18 registrava um
+    espaço só. `nome` foi corrigido para bater com o arquivo real."""
+    manifesto = carregar_manifesto(MANIFESTO_REAL)
+    item = manifesto.item("ACV-ARQUIVO-PACRE-SUPREMA-PERFIS")
+    assert item.nome == "PACRE SUPREMA - PERFIS  Full1.pdf"
 
 
 def test_manifesto_real_edicoes_pacre_preservam_fabricante_base():
