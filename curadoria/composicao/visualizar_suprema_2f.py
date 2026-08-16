@@ -45,8 +45,14 @@ def gerar(saida: str = SAIDA) -> str:
     geometrias = {a.geometria_padrao_id: bib.geometria(a.geometria_padrao_id)
                  for a in associacoes}
 
+    # Ângulos explícitos, não o isométrico padrão. A composição usa Y como
+    # altura da janela e Z como profundidade do quadro, enquanto o matplotlib
+    # trata Z como vertical — com o padrão (35°, 45°) a janela aparece
+    # DEITADA, o que atrapalha exatamente a leitura que o Bruno precisa fazer.
+    # Só apresentação (ADR-002): não muda nada da cena.
     vista = Vista(id="V-SUPREMA-2F-ILUSTRATIVA", cena_id=cena.id,
-                 tipo_projecao="isometrica", estilo="tecnico_ilustrativo")
+                 tipo_projecao="isometrica", estilo="tecnico_ilustrativo",
+                 angulo_elevacao_graus=60.0, angulo_azimute_graus=-75.0)
 
     return renderizar(vista, cena, perfis, associacoes, geometrias, saida)
 

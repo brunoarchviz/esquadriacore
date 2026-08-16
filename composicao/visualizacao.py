@@ -12,170 +12,296 @@ geometria (contorno de cada perfil)             já homologada, E.4C
 posição/comprimento de desenho                  ILUSTRATIVO — este módulo
 ```
 
-Nenhuma constante aqui deriva de caso real, fórmula candidata ou catálogo.
-Trocar os valores muda a aparência do desenho, nunca uma regra de cálculo —
-não existe regra de cálculo neste módulo para mudar.
+RECONSTRUÇÃO PÓS-VALIDAÇÃO VISUAL DO BRUNO
+A primeira versão desta cena posicionava cada peça a partir de MARGENS
+ilustrativas fixas (folga central, margem folha↔quadro, margem do baguete).
+O efeito colateral só ficou visível quando Bruno montou a composição na
+viewport: com margens, nenhuma peça encosta em nenhuma outra, e o conjunto
+inteiro lê como "peças curtas" — travessa que não fecha a folha, baguete
+flutuando no meio do vidro, montante que não alcança o marco.
+
+A regra mudou: **as peças são posicionadas pelas próprias faces, para se
+encontrarem**. Nenhuma margem arbitrária sobrou. O que define onde cada peça
+começa e termina é a face da peça vizinha, medida na geometria homologada —
+não um número escolhido para "ficar bonito".
+
+Três achados empíricos do diagnóstico, todos confirmados na cena anterior:
+
+```text
+SU-003        ia só até y=1200, mas o SU-001 vai até 1233 — não alcançava a
+              extremidade do trilho superior (Bruno)
+folhas        ambas em z≈0, coplanares: duas folhas de uma correr NÃO podem
+              se sobrepor se estiverem no mesmo plano, e é por isso que "um
+              dos lados ficaria sempre aberto"
+travessas     SU-053 superior em y=[1200,1251], por CIMA do trilho, fora do
+              vão
+```
+
+O que continua ILUSTRATIVO e não é medida de fabricação: as dimensões do
+envelope (2000×1200), a profundidade de cada plano de folha, e a decisão de
+que a sobreposição central vale a largura do montante central. Trocar esses
+valores muda a aparência do desenho, nunca uma regra de cálculo — não existe
+regra de cálculo neste módulo para mudar.
 """
 from __future__ import annotations
 
+import numpy as np
+
+from core_engine.renderer import _pontos_no_mundo
 from domain.entidades import CenaTecnica, InstanciaCena
 
 from .modelos import ComponenteReceita, PapelComponente
 from .receita import PLANO_EXTERNO, PLANO_INTERNO, construir_receita_preliminar
 
 # ---------------------------------------------------------------------------
-# Dimensões ILUSTRATIVAS — não são vão, quadro, folha, corte nem catálogo.
-# Escolhidas apenas para que o desenho tenha proporção reconhecível de janela.
+# Envelope ILUSTRATIVO — não é vão, quadro, folha, corte nem catálogo.
+# Ancorado no SU-002: Bruno validou o trilho inferior exatamente onde estava
+# e pediu que ele fosse a referência fixa; tudo abaixo é medido a partir dele.
 # ---------------------------------------------------------------------------
 LARGURA_ILUSTRATIVA_MM = 2000.0
 ALTURA_ILUSTRATIVA_MM = 1200.0
 
-# Vão livre entre as duas folhas onde SU-040/SU-041 se encontram — puramente
-# de desenho, para que o "encontro central" seja visível como uma lacuna, não
-# como uma sobreposição. Não é a sobreposição real (E.4E registra que ela é
-# dimensional e segue PENDENTE).
+# Profundidade (Z) em que a face frontal de cada folha começa. As duas folhas
+# de uma correr vivem em planos distintos — sem isso elas não podem correr uma
+# sobre a outra, e a composição não fecha de jeito nenhum. Os dois valores
+# cabem dentro da profundidade do marco (71mm, medida em SU-001/SU-002) e são
+# de desenho: a distância real entre planos é dimensional e segue PENDENTE.
+Z_DA_FOLHA = {PLANO_INTERNO: 6.0, PLANO_EXTERNO: 38.0}
+
+# Recuo do baguete dentro do plano da própria folha — só para ele não brigar
+# em Z com o montante que o segura.
+Z_RECUO_DO_BAGUETE_MM = 4.0
+
+# ---------------------------------------------------------------------------
+# Orientação de cada peça, em ângulos do frame local (rx, ry, rz).
 #
-# 60mm, não 40mm: a largura real da geometria homologada do SU-040/SU-041 é
-# 42,4mm — com 40mm de folga as duas peças se sobrepunham em ~2,4mm em vez de
-# deixar a lacuna visível que o comentário acima promete (achado da correção
-# visual pós-validação do Bruno, PR #15).
-FOLGA_ENCONTRO_CENTRAL_MM = 60.0
-
-# Margem entre o baguete (moldura do vidro) e a face interna da folha —
-# ilustrativa, não é a folga de encaixe do vidro (pergunta aberta ao
-# especialista, ver receita.PERGUNTAS_ABERTAS).
-MARGEM_BAGUETE_MM = 60.0
-
-# Margem entre a face externa da folha (montante lateral / travessas) e o
-# quadro (marco) — ilustrativa, escolhida para exceder a maior largura de
-# perfil observada nesta composição (~71mm, SU-001/002/003), garantindo que
-# a folha não desenhe por cima do quadro. Sem essa margem, SU-039 (montante
-# lateral) e SU-053 (travessa) caíam exatamente nas mesmas coordenadas do
-# marco e ficavam ocultos atrás dele (achado da correção visual pós-validação
-# do Bruno, PR #15) — não é folga de encaixe real, é só separação de desenho.
-MARGEM_FOLHA_QUADRO_MM = 90.0
-
-_LARGURA_FOLHA = (LARGURA_ILUSTRATIVA_MM - FOLGA_ENCONTRO_CENTRAL_MM) / 2
-
-# Posição X ilustrativa de cada folha (lado a lado, não sobrepostas — a
-# sobreposição real de uma correr de 2 folhas é dimensional e não está
-# confirmada; representar as folhas lado a lado, com uma lacuna no centro,
-# evita fingir uma medida que não temos).
-_X_INICIO_FOLHA = {
-    PLANO_INTERNO: 0.0,
-    PLANO_EXTERNO: _LARGURA_FOLHA + FOLGA_ENCONTRO_CENTRAL_MM,
+# NÃO HÁ ESPELHAMENTO em lugar nenhum, e isso é uma decisão de domínio, não
+# de estilo: uma barra extrudada não pode ser espelhada no mundo físico —
+# precisaria de outra matriz de extrusão. Um par esquerda/direita da mesma
+# barra é sempre a MESMA seção girada 180° em torno do próprio eixo. Foi
+# exatamente essa a correção que Bruno fez no SU-003 na viewport (trocou o
+# espelho por rotação), e ela foi generalizada para todos os pares.
+#
+# SU-003: os ângulos vieram da validação visual do Bruno. Eles rolam o perfil
+# 90° em torno do próprio eixo, e o efeito é que o marco lateral passa a ter
+# 26mm de largura e 71mm de profundidade — a MESMA profundidade dos trilhos
+# SU-001/SU-002. Na versão anterior ele estava deitado (71 de largura, 26 de
+# profundidade) e o quadro não tinha profundidade coerente.
+# ---------------------------------------------------------------------------
+ORIENTACAO = {
+    "QUADRO-SUPERIOR": (0, 0, 0),
+    "QUADRO-INFERIOR": (0, 0, 0),
+    "QUADRO-LATERAL-1": (180, 0, 90),
+    "QUADRO-LATERAL-2": (0, 0, 90),
+    "MONTANTE-CENTRAL": (90, 0, 90),
+    "TRAVESSA-INFERIOR": (0, 0, 0),
+    "TRAVESSA-SUPERIOR": (180, 0, 0),
+    "BAGUETE-HORIZONTAL-1": (180, 0, 0),
+    "BAGUETE-HORIZONTAL-2": (0, 0, 0),
+    "BAGUETE-VERTICAL-1": (90, 0, 90),
+    "BAGUETE-VERTICAL-2": (270, 0, 90),
 }
-
-# Dentro de cada folha, o montante central fica do lado do encontro (voltado
-# para o centro da janela) e o montante lateral do lado de fora.
-_LADO_DO_MONTANTE_CENTRAL = {PLANO_INTERNO: "direita", PLANO_EXTERNO: "esquerda"}
-
-# Ordem de desenho dos 4 baguetes de uma folha (2 horizontais + 2 verticais).
-# A arbitragem NÃO fixou qual baguete é o superior/inferior ou
-# esquerdo/direito (receita._BAGUETES_DA_FOLHA: posicao=None em todos) — a
-# ordem abaixo é só uma ESCOLHA DE DESENHO para não sobrepor as 4 peças no
-# mesmo lugar, não uma afirmação de domínio.
-_ORDEM_DE_DESENHO_DO_BAGUETE = {
-    "BAGUETE-HORIZONTAL-1": "topo",
-    "BAGUETE-HORIZONTAL-2": "base",
-    "BAGUETE-VERTICAL-1": "esquerda",
-    "BAGUETE-VERTICAL-2": "direita",
-}
+# O montante lateral é o único que depende da folha: os dois são a mesma
+# barra em lados opostos, logo giram 180° um em relação ao outro.
+ORIENTACAO_MONTANTE_LATERAL = {PLANO_INTERNO: (90, 0, 90),
+                               PLANO_EXTERNO: (270, 0, 90)}
 
 
-def _sufixo_do_componente(componente: ComponenteReceita) -> str:
-    """Último segmento do identificador — ex. 'MONTANTE-CENTRAL',
-    'BAGUETE-HORIZONTAL-1'. Usado só para saber qual baguete é qual, já que o
-    papel sozinho (BAGUETE) não distingue os quatro de uma folha."""
+def _sufixo(componente: ComponenteReceita) -> str:
     return componente.identificador.rsplit(":", 1)[-1]
 
 
-def _posicao_e_comprimento(componente: ComponenteReceita) -> tuple[tuple[float, float], float]:
-    """(posicao_mm, comprimento_mm) ilustrativos para UM componente da
-    topologia confirmada. Lê só papel/orientação/folha/posição — nunca
-    inventa um papel novo."""
-    papel = componente.papel
+def _orientacao(componente: ComponenteReceita) -> tuple[float, float, float]:
+    if componente.papel is PapelComponente.MONTANTE_LATERAL_FOLHA:
+        return ORIENTACAO_MONTANTE_LATERAL[componente.folha]
+    return ORIENTACAO[_sufixo(componente)]
 
-    if papel is PapelComponente.MARCO_SUPERIOR:
-        return (0.0, ALTURA_ILUSTRATIVA_MM), LARGURA_ILUSTRATIVA_MM
-    if papel is PapelComponente.MARCO_INFERIOR:
-        return (0.0, 0.0), LARGURA_ILUSTRATIVA_MM
+
+# ---------------------------------------------------------------------------
+# Medida da seção NO MUNDO
+#
+# A pergunta que a montagem faz o tempo todo é "quanto esta peça ocupa em X,
+# depois de girada?". Responder isso lendo a bounding box do catálogo daria a
+# resposta errada assim que a peça fosse rolada — foi esse o erro que deixou o
+# marco lateral com a profundidade trocada. Aqui a resposta vem da MESMA
+# função que o renderer usa para desenhar, então o que a montagem calcula e o
+# que aparece na imagem não podem divergir.
+# ---------------------------------------------------------------------------
+
+def _secao_no_mundo(contorno, rotacao_xyz) -> dict:
+    pts = _pontos_no_mundo(contorno, 0.0, 0.0, (0.0, 0.0), rotacao_xyz, 0.0)
+    return {eixo: (float(pts[:, i].min()), float(pts[:, i].max()))
+            for i, eixo in enumerate("xyz")}
+
+
+def _deslocamento(secao: dict, eixo: str, face: float, encostar: str) -> float:
+    """Translação que põe a face pedida da peça exatamente em `face`."""
+    minimo, maximo = secao[eixo]
+    return face - (minimo if encostar == "inicio" else maximo)
+
+
+class _Montagem:
+    """Monta a cena medindo cada peça pela vizinha, nunca por margem fixa."""
+
+    def __init__(self, receita):
+        self.receita = receita
+        self.secoes = {}
+        for c in receita.componentes:
+            rot = _orientacao(c)
+            chave = (c.perfil.perfil_id_oficial, rot)
+            if chave not in self.secoes:
+                self.secoes[chave] = _secao_no_mundo(
+                    _contorno_de(c.perfil.perfil_id_oficial), rot)
+        self._calcular()
+
+    def secao(self, componente):
+        return self.secoes[(componente.perfil.perfil_id_oficial,
+                            _orientacao(componente))]
+
+    # -- geometria derivada, toda a partir do SU-002 -----------------------
+    def _calcular(self):
+        comp = {_sufixo(c): c for c in self.receita.componentes}
+        L, H = LARGURA_ILUSTRATIVA_MM, ALTURA_ILUSTRATIVA_MM
+
+        # Quadro: SU-001 e SU-002 ficam onde Bruno validou. O envelope é o que
+        # eles descrevem, e não um número escolhido à parte.
+        self.topo_do_quadro = H + self.secao(comp["QUADRO-SUPERIOR"])["y"][1]
+        self.vao_y = (self.secao(comp["QUADRO-INFERIOR"])["y"][1],  # topo do SU-002
+                      H)                                           # base do SU-001
+
+        # O marco lateral vai do fundo até a extremidade do trilho superior:
+        # Bruno mostrou que ele deve alcançar o topo do SU-001 e passar o
+        # trilho, para o parafuso entrar no olhal (o "J invertido").
+        self.altura_do_lateral = self.topo_do_quadro
+        larg_lateral = _largura(self.secao(comp["QUADRO-LATERAL-1"]), "x")
+        self.vao_x = (larg_lateral, L - larg_lateral)
+
+        # Folhas: a sobreposição central vale a largura do montante central,
+        # de modo que SU-040 e SU-041 ocupem a MESMA faixa em X e se cruzem
+        # em planos diferentes — é assim que a mão de amigo lê como encaixe,
+        # e não como duas peças separadas por uma lacuna.
+        self.sobreposicao = _largura(self.secao(comp["MONTANTE-CENTRAL"]), "x")
+        vao_livre = self.vao_x[1] - self.vao_x[0]
+        self.largura_da_folha = (vao_livre + self.sobreposicao) / 2
+        self.x_da_folha = {
+            PLANO_INTERNO: (self.vao_x[0], self.vao_x[0] + self.largura_da_folha),
+            PLANO_EXTERNO: (self.vao_x[1] - self.largura_da_folha, self.vao_x[1]),
+        }
+        self.altura_da_folha = self.vao_y[1] - self.vao_y[0]
+        self.larg_montante_lateral = _largura(
+            self.secao(comp["MONTANTE-LATERAL"]), "x")
+        self.altura_da_travessa = _largura(
+            self.secao(comp["TRAVESSA-INFERIOR"]), "y")
+
+    def vao_da_folha_x(self, folha):
+        """Faixa X entre as faces internas dos DOIS montantes da folha — é
+        onde a travessa começa e termina, e onde o vidro (e o baguete) cabe."""
+        x0, x1 = self.x_da_folha[folha]
+        if folha is PLANO_INTERNO:
+            return (x0 + self.larg_montante_lateral, x1 - self.sobreposicao)
+        return (x0 + self.sobreposicao, x1 - self.larg_montante_lateral)
+
+    def vao_da_folha_y(self):
+        """Faixa Y entre as faces internas das duas travessas."""
+        return (self.vao_y[0] + self.altura_da_travessa,
+                self.vao_y[1] - self.altura_da_travessa)
+
+    def montante_lateral_x(self, folha):
+        """Faixa X ocupada pelo montante lateral da folha."""
+        x0, x1 = self.x_da_folha[folha]
+        larg = self.larg_montante_lateral
+        return (x0, x0 + larg) if folha is PLANO_INTERNO else (x1 - larg, x1)
+
+    def montante_central_x(self):
+        """A MESMA faixa para os dois planos — é o encontro central."""
+        x0, x1 = self.x_da_folha[PLANO_INTERNO]
+        return (x1 - self.sobreposicao, x1)
+
+
+def _largura(secao, eixo):
+    return secao[eixo][1] - secao[eixo][0]
+
+
+_CONTORNOS: dict = {}
+
+
+def _contorno_de(perfil_id: str):
+    """Contorno homologado do perfil, via contrato de consumo. Em cache: a
+    montagem consulta a mesma seção muitas vezes."""
+    if perfil_id not in _CONTORNOS:
+        from contrato.consumo import carregar_biblioteca
+        bib = carregar_biblioteca()
+        assoc = next(a for a in bib.associacoes if a.perfil_id == perfil_id)
+        geo = bib.geometria(assoc.geometria_padrao_id)
+        _CONTORNOS[perfil_id] = geo.contorno_externo
+    return _CONTORNOS[perfil_id]
+
+
+def _posicao_e_comprimento(componente: ComponenteReceita, m: _Montagem):
+    """(x, y, z, comprimento) de UM componente, tudo medido pelas faces das
+    peças vizinhas. Lê só papel/orientação/folha — nunca inventa um papel."""
+    papel = componente.papel
+    sec = m.secao(componente)
+    sufixo = _sufixo(componente)
+
+    if papel in (PapelComponente.MARCO_SUPERIOR, PapelComponente.MARCO_INFERIOR):
+        # Referência fixa de Bruno: os dois trilhos ficam exatamente onde
+        # estavam. Alterá-los invalidaria a validação visual já feita.
+        y = ALTURA_ILUSTRATIVA_MM if papel is PapelComponente.MARCO_SUPERIOR else 0.0
+        return (0.0, y, 0.0), LARGURA_ILUSTRATIVA_MM
+
     if papel is PapelComponente.MARCO_LATERAL:
-        # As duas ocorrências são idênticas na topologia (lateral neutro,
-        # E.4E) — o desenho as separa esquerda/direita só para não desenhar
-        # as duas no mesmo lugar, sem que isso vire identidade de domínio.
-        lado_x = 0.0 if componente.identificador.endswith("LATERAL-1") \
-            else LARGURA_ILUSTRATIVA_MM
-        return (lado_x, 0.0), ALTURA_ILUSTRATIVA_MM
+        primeiro = sufixo.endswith("LATERAL-1")
+        face = 0.0 if primeiro else LARGURA_ILUSTRATIVA_MM
+        x = _deslocamento(sec, "x", face, "inicio" if primeiro else "fim")
+        z = _deslocamento(sec, "z", 0.0, "inicio")
+        return (x, 0.0, z), m.altura_do_lateral
 
     if componente.folha is None:
         raise ValueError(
             f"{componente.identificador}: papel de folha sem `folha` "
             f"definida — topologia mudou de forma que este módulo não prevê")
-    x0 = _X_INICIO_FOLHA[componente.folha]
+    z_folha = Z_DA_FOLHA[componente.folha]
 
     if papel is PapelComponente.MONTANTE_LATERAL_FOLHA:
-        # Recuado MARGEM_FOLHA_QUADRO_MM da face do quadro (ver comentário na
-        # constante) — sem o recuo, cai exatamente sobre o marco lateral.
-        lado = "esquerda" if _LADO_DO_MONTANTE_CENTRAL[componente.folha] == "direita" \
-            else "direita"
-        x = x0 + MARGEM_FOLHA_QUADRO_MM if lado == "esquerda" \
-            else x0 + _LARGURA_FOLHA - MARGEM_FOLHA_QUADRO_MM
-        return (x, 0.0), ALTURA_ILUSTRATIVA_MM
+        faixa = m.montante_lateral_x(componente.folha)
+        x = _deslocamento(sec, "x", faixa[0], "inicio")
+        z = _deslocamento(sec, "z", z_folha, "inicio")
+        return (x, m.vao_y[0], z), m.altura_da_folha
+
     if papel is PapelComponente.MONTANTE_CENTRAL_FOLHA:
-        lado = _LADO_DO_MONTANTE_CENTRAL[componente.folha]
-        x = x0 if lado == "esquerda" else x0 + _LARGURA_FOLHA
-        return (x, 0.0), ALTURA_ILUSTRATIVA_MM
+        faixa = m.montante_central_x()
+        x = _deslocamento(sec, "x", faixa[0], "inicio")
+        z = _deslocamento(sec, "z", z_folha, "inicio")
+        return (x, m.vao_y[0], z), m.altura_da_folha
+
     if papel in (PapelComponente.TRAVESSA_SUPERIOR_FOLHA,
-                PapelComponente.TRAVESSA_INFERIOR_FOLHA):
-        # Recua só a ponta que toca o quadro (a ponta do encontro central já
-        # tem folga suficiente via FOLGA_ENCONTRO_CENTRAL_MM) — mesmo motivo
-        # do recuo do montante lateral, mesma constante.
-        x_travessa = x0 + MARGEM_FOLHA_QUADRO_MM if componente.folha == PLANO_INTERNO else x0
-        comprimento_travessa = _LARGURA_FOLHA - MARGEM_FOLHA_QUADRO_MM
-        y = ALTURA_ILUSTRATIVA_MM if papel is PapelComponente.TRAVESSA_SUPERIOR_FOLHA else 0.0
-        return (x_travessa, y), comprimento_travessa
+                 PapelComponente.TRAVESSA_INFERIOR_FOLHA):
+        # A travessa vai de montante a montante: as faces internas dos dois
+        # verticais da folha, e nada mais. É o que fecha a folha.
+        x0, x1 = m.vao_da_folha_x(componente.folha)
+        superior = papel is PapelComponente.TRAVESSA_SUPERIOR_FOLHA
+        y = _deslocamento(sec, "y", m.vao_y[1] if superior else m.vao_y[0],
+                          "fim" if superior else "inicio")
+        z = _deslocamento(sec, "z", z_folha, "inicio")
+        return (_deslocamento(sec, "x", x0, "inicio"), y, z), x1 - x0
 
     if papel is PapelComponente.BAGUETE:
-        sufixo = _sufixo_do_componente(componente)
-        lado = _ORDEM_DE_DESENHO_DO_BAGUETE[sufixo]
-        x_vidro0 = x0 + MARGEM_BAGUETE_MM
-        largura_vidro = _LARGURA_FOLHA - 2 * MARGEM_BAGUETE_MM
-        y_vidro0 = MARGEM_BAGUETE_MM
-        altura_vidro = ALTURA_ILUSTRATIVA_MM - 2 * MARGEM_BAGUETE_MM
-        if lado == "topo":
-            return (x_vidro0, y_vidro0 + altura_vidro), largura_vidro
-        if lado == "base":
-            return (x_vidro0, y_vidro0), largura_vidro
-        if lado == "esquerda":
-            return (x_vidro0, y_vidro0), altura_vidro
-        return (x_vidro0 + largura_vidro, y_vidro0), altura_vidro
+        x0, x1 = m.vao_da_folha_x(componente.folha)
+        y0, y1 = m.vao_da_folha_y()
+        z = _deslocamento(sec, "z", z_folha + Z_RECUO_DO_BAGUETE_MM, "inicio")
+        if sufixo.startswith("BAGUETE-HORIZONTAL"):
+            topo = sufixo.endswith("-1")
+            y = _deslocamento(sec, "y", y1 if topo else y0,
+                              "fim" if topo else "inicio")
+            return (_deslocamento(sec, "x", x0, "inicio"), y, z), x1 - x0
+        esquerda = sufixo.endswith("-1")
+        x = _deslocamento(sec, "x", x0 if esquerda else x1,
+                          "inicio" if esquerda else "fim")
+        return (x, y0, z), y1 - y0
 
     raise ValueError(f"{componente.identificador}: papel {papel} sem regra "
                      f"de desenho neste módulo")
-
-
-def _deve_espelhar(componente: ComponenteReceita) -> bool:
-    """Perfis de esquadria não são simétricos (confirmado na geometria
-    homologada de SU-003 e SU-102 — refletir o contorno produz uma forma
-    mensuravelmente diferente da original, não a mesma peça). Um par visual
-    esquerda/direita ou topo/base desenhado com a MESMA seção transversal nos
-    dois lados deixa pelo menos um deles de cabeça para trás. Espelha-se
-    sempre o segundo membro do par (LATERAL-2, base, direita), mantendo o
-    primeiro (LATERAL-1, topo, esquerda) como referência não alterada.
-
-    Achado da correção visual pós-validação do Bruno (PR #15): ele não
-    conseguiu determinar visualmente qual dos dois sentidos é o correto para
-    SU-003/SU-102 — esta é a escolha de desenho proposta para nova
-    conferência, não uma afirmação de que está definitivamente certa."""
-    papel = componente.papel
-    if papel is PapelComponente.MARCO_LATERAL:
-        return componente.identificador.endswith("LATERAL-2")
-    if papel is PapelComponente.BAGUETE:
-        sufixo = _sufixo_do_componente(componente)
-        lado = _ORDEM_DE_DESENHO_DO_BAGUETE[sufixo]
-        return lado in ("base", "direita")
-    return False
 
 
 def montar_cena_suprema_2f(receita=None) -> CenaTecnica:
@@ -186,18 +312,19 @@ def montar_cena_suprema_2f(receita=None) -> CenaTecnica:
     `receita=None` usa `construir_receita_preliminar()` — a mesma fonte que o
     gate de visualização já lê."""
     receita = receita or construir_receita_preliminar()
+    m = _Montagem(receita)
     instancias = []
     for c in receita.componentes:
-        posicao_mm, comprimento_mm = _posicao_e_comprimento(c)
-        rotacao_graus = 90.0 if c.orientacao == "vertical" else 0.0
-        if _deve_espelhar(c):
-            rotacao_graus += 180.0
+        (x, y, z), comprimento = _posicao_e_comprimento(c, m)
+        rot = _orientacao(c)
         instancias.append(InstanciaCena(
             instancia_id=c.identificador,
             perfil_id=c.perfil.perfil_id_oficial,
-            posicao_mm=posicao_mm,
-            rotacao_graus=rotacao_graus,
-            comprimento_mm=comprimento_mm,
+            posicao_mm=(x, y),
+            rotacao_graus=90.0 if c.orientacao == "vertical" else 0.0,
+            comprimento_mm=comprimento,
+            rotacao_xyz=rot,
+            posicao_z_mm=z,
         ))
     return CenaTecnica(id=f"{receita.codigo}:CENA-ILUSTRATIVA",
                        tipo_id=receita.codigo, instancias=instancias)

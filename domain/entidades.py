@@ -160,12 +160,38 @@ class Tipo:
 @dataclass
 class InstanciaCena:
     """Uma peça posicionada na Cena. REFERENCIA o perfil por id — nunca copia
-    dado físico (ADR-001, o invariante mais importante do domínio)."""
+    dado físico (ADR-001, o invariante mais importante do domínio).
+
+    `rotacao_graus` cobre os dois casos originais (0 = extrusão horizontal,
+    90 = vertical) e continua sendo o caminho usado por quem só precisa
+    disso.
+
+    `rotacao_xyz` é OPCIONAL e, quando presente, prevalece: são três ângulos
+    em graus aplicados como Rz·Ry·Rx sobre o frame local da peça
+    (+X = extrusão, +Y = segunda coordenada do contorno, +Z = primeira).
+    Existe porque um perfil de esquadria pode precisar ser rolado em torno do
+    próprio eixo — o marco lateral da Suprema, por exemplo, tem 71mm num
+    sentido e 26mm no outro, e qual dos dois vira profundidade do quadro
+    muda a peça de lugar no mundo sem mudar nem posição nem comprimento.
+    Dois ângulos não bastam para dizer isso; três bastam.
+
+    `posicao_mm` continua sendo (x, y) por compatibilidade; `posicao_z_mm`
+    acrescenta a profundidade, necessária desde que a composição passou a ter
+    planos distintos (folha interna e externa de uma correr não são
+    coplanares).
+
+    NÃO existe espelhamento aqui, e isso é deliberado: um perfil extrudado
+    não pode ser espelhado no mundo físico — precisaria de outra matriz de
+    extrusão. Um par esquerda/direita da mesma barra é sempre a MESMA seção
+    girada, nunca refletida. Oferecer espelho aqui deixaria o desenho afirmar
+    uma peça que não existe."""
     instancia_id: str
     perfil_id: str
     posicao_mm: tuple[float, float]
     rotacao_graus: float
     comprimento_mm: float
+    rotacao_xyz: tuple[float, float, float] | None = None
+    posicao_z_mm: float = 0.0
 
 
 @dataclass

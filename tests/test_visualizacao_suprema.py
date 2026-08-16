@@ -167,3 +167,144 @@ def test_viewport_cobre_os_tres_grupos_de_validacao():
     from collections import Counter
     grupos = Counter(i["grupo"] for i in _viewport().coletar()["instancias"])
     assert grupos == Counter({"QUADRO": 4, "FOLHAS": 8, "BAGUETES": 8})
+
+
+# ---------------------------------------------------------------------------
+# Montagem: as peças têm de SE ENCONTRAR
+#
+# Cada teste abaixo trava um defeito que a validação visual do Bruno
+# encontrou na primeira versão da cena — quando ela era montada por margens
+# ilustrativas fixas e nenhuma peça encostava na vizinha. São invariantes de
+# DESENHO, não de fabricação: nenhum deles afirma medida, corte ou folga.
+# ---------------------------------------------------------------------------
+
+def _caixas():
+    """Bounding box no mundo de cada instância, pela mesma função que o
+    renderer usa para desenhar."""
+    import numpy as np
+    from core_engine.renderer import _pontos_no_mundo
+    from composicao.visualizacao import _contorno_de
+
+    caixas = {}
+    for inst in montar_cena_suprema_2f().instancias:
+        ct = _contorno_de(inst.perfil_id)
+        pts = np.vstack([
+            _pontos_no_mundo(ct, 0.0, inst.rotacao_graus, inst.posicao_mm,
+                             inst.rotacao_xyz, inst.posicao_z_mm),
+            _pontos_no_mundo(ct, inst.comprimento_mm, inst.rotacao_graus,
+                             inst.posicao_mm, inst.rotacao_xyz,
+                             inst.posicao_z_mm)])
+        caixas[inst.instancia_id.split(":", 1)[-1]] = {
+            eixo: (float(pts[:, i].min()), float(pts[:, i].max()))
+            for i, eixo in enumerate("xyz")}
+    return caixas
+
+
+def test_marcos_horizontais_seguem_onde_bruno_validou():
+    """SU-002 é a âncora que Bruno pediu para não mexer, e SU-001 ele deu
+    como correto. Mover qualquer um dos dois invalidaria a validação visual
+    já feita."""
+    c = _caixas()
+    assert c["QUADRO-INFERIOR"]["x"] == (0.0, 2000.0)
+    assert c["QUADRO-INFERIOR"]["y"][0] == 0.0
+    assert c["QUADRO-SUPERIOR"]["x"] == (0.0, 2000.0)
+    assert c["QUADRO-SUPERIOR"]["y"][0] == 1200.0
+
+
+def test_marco_lateral_alcanca_a_extremidade_do_trilho_superior():
+    """Bruno: o SU-003 deve chegar até a extremidade do trilho superior. Na
+    versão anterior ele parava em 1200 e o SU-001 ia até 1233."""
+    c = _caixas()
+    topo = c["QUADRO-SUPERIOR"]["y"][1]
+    for lado in ("QUADRO-LATERAL-1", "QUADRO-LATERAL-2"):
+        assert c[lado]["y"][1] == pytest.approx(topo)
+        assert c[lado]["y"][0] == pytest.approx(0.0)
+
+
+def test_marco_lateral_tem_a_profundidade_do_quadro():
+    """Os quatro perfis do quadro fecham o mesmo volume: se o lateral tiver
+    profundidade diferente dos trilhos, o quadro não é um quadro."""
+    c = _caixas()
+    prof = c["QUADRO-INFERIOR"]["z"]
+    for lado in ("QUADRO-LATERAL-1", "QUADRO-LATERAL-2"):
+        assert c[lado]["z"] == pytest.approx(prof)
+
+
+def test_marco_lateral_nao_escapa_do_envelope():
+    c = _caixas()
+    assert c["QUADRO-LATERAL-1"]["x"][0] == pytest.approx(0.0)
+    assert c["QUADRO-LATERAL-2"]["x"][1] == pytest.approx(2000.0)
+
+
+def test_as_duas_folhas_ficam_em_planos_distintos():
+    """O defeito que fazia "um dos lados ficar sempre aberto": as duas folhas
+    estavam coplanares, e duas folhas de uma correr coplanares não podem se
+    sobrepor."""
+    c = _caixas()
+    interna = c["FOLHA-INTERNA:MONTANTE-CENTRAL"]["z"]
+    externa = c["FOLHA-EXTERNA:MONTANTE-CENTRAL"]["z"]
+    assert interna[1] <= externa[0] or externa[1] <= interna[0]
+
+
+def test_mao_de_amigo_ocupa_a_mesma_faixa_horizontal():
+    """SU-040 e SU-041 se cruzam: mesma faixa em X, planos diferentes. É isso
+    que faz o encontro central ler como encaixe, e não como duas peças
+    separadas por uma lacuna."""
+    c = _caixas()
+    assert (c["FOLHA-INTERNA:MONTANTE-CENTRAL"]["x"]
+            == pytest.approx(c["FOLHA-EXTERNA:MONTANTE-CENTRAL"]["x"]))
+
+
+def test_travessas_encostam_nos_montantes_da_propria_folha():
+    """Sem folga: a travessa vai de montante a montante. Era aqui que a folha
+    "ficava aberta"."""
+    c = _caixas()
+    for folha, lateral, central in (
+            ("FOLHA-INTERNA", "MONTANTE-LATERAL", "MONTANTE-CENTRAL"),
+            ("FOLHA-EXTERNA", "MONTANTE-CENTRAL", "MONTANTE-LATERAL")):
+        esq = c[f"{folha}:{lateral}"]["x"][1]
+        dir_ = c[f"{folha}:{central}"]["x"][0]
+        for t in ("TRAVESSA-SUPERIOR", "TRAVESSA-INFERIOR"):
+            assert c[f"{folha}:{t}"]["x"] == pytest.approx((esq, dir_))
+
+
+def test_travessas_ficam_dentro_do_vao_do_quadro():
+    """A travessa superior chegava a y=1251, POR CIMA do trilho superior."""
+    c = _caixas()
+    base_do_trilho_superior = c["QUADRO-SUPERIOR"]["y"][0]
+    topo_do_trilho_inferior = c["QUADRO-INFERIOR"]["y"][1]
+    for folha in ("FOLHA-INTERNA", "FOLHA-EXTERNA"):
+        assert c[f"{folha}:TRAVESSA-SUPERIOR"]["y"][1] <= base_do_trilho_superior
+        assert c[f"{folha}:TRAVESSA-INFERIOR"]["y"][0] >= topo_do_trilho_inferior
+
+
+def test_baguetes_encostam_no_quadro_da_folha():
+    """Bruno deu a posição dos baguetes como certa e o comprimento como
+    curto: eles flutuavam a 60mm de tudo."""
+    c = _caixas()
+    for folha in ("FOLHA-INTERNA", "FOLHA-EXTERNA"):
+        vao_y = (c[f"{folha}:TRAVESSA-INFERIOR"]["y"][1],
+                 c[f"{folha}:TRAVESSA-SUPERIOR"]["y"][0])
+        for b in ("BAGUETE-VERTICAL-1", "BAGUETE-VERTICAL-2"):
+            assert c[f"{folha}:{b}"]["y"] == pytest.approx(vao_y)
+
+
+def test_as_duas_folhas_sao_praticamente_identicas():
+    """Princípio de domínio informado por Bruno: as duas folhas de uma correr
+    são praticamente iguais; a diferença fica nas mãos de amigo."""
+    c = _caixas()
+    def largura(k):
+        return c[k]["x"][1] - c[k]["x"][0]
+    for peca in ("TRAVESSA-SUPERIOR", "TRAVESSA-INFERIOR",
+                 "BAGUETE-HORIZONTAL-1", "BAGUETE-HORIZONTAL-2"):
+        assert largura(f"FOLHA-INTERNA:{peca}") == pytest.approx(
+            largura(f"FOLHA-EXTERNA:{peca}"))
+
+
+def test_nenhuma_instancia_usa_espelhamento():
+    """Uma barra extrudada não pode ser espelhada no mundo físico — pares
+    esquerda/direita são a mesma seção girada. O caminho `rotacao_xyz` não
+    oferece espelho, e nenhuma instância pode cair no caminho antigo que
+    oferecia."""
+    for inst in montar_cena_suprema_2f().instancias:
+        assert inst.rotacao_xyz is not None

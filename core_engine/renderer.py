@@ -54,30 +54,61 @@ def resolver_geometria(perfil: Perfil,
 # Extrusão (migrada da Fase 0, com o bug de achatamento já corrigido)
 # ---------------------------------------------------------------------------
 
-def extrudar_perfil(contorno_mm, comprimento_mm, rotacao_graus, posicao_mm):
-    """`rotacao_graus` em {0, 90, 180, 270}. 0/90 escolhem o eixo de extrusão
-    (horizontal/vertical) e reproduzem exatamente o comportamento anterior a
-    E.4H-visual-fix. 180/270 usam o MESMO eixo que 0/90, respectivamente, mas
-    espelham a seção transversal em torno do próprio eixo local — necessário
-    porque perfis de esquadria não são simétricos (ex.: SU-003, SU-102): duas
-    ocorrências espelhadas do mesmo perfil (lado esquerdo vs. direito de um
-    par simétrico) precisam do espelho, não de outro ângulo de extrusão."""
-    contorno = np.array(contorno_mm, dtype=float)
-    n = len(contorno)
+def _matriz_rotacao(rx, ry, rz):
+    """R = Rz·Ry·Rx sobre o frame local (+X extrusão, +Y contorno[1],
+    +Z contorno[0]). Ordem fixada aqui e repetida em qualquer consumidor: uma
+    ordem diferente do outro lado giraria a peça para outro lugar."""
+    (cx, sx), (cy, sy), (cz, sz) = ((np.cos(np.radians(g)), np.sin(np.radians(g)))
+                                    for g in (rx, ry, rz))
+    X = np.array([[1, 0, 0], [0, cx, -sx], [0, sx, cx]])
+    Y = np.array([[cy, 0, sy], [0, 1, 0], [-sy, 0, cy]])
+    Z = np.array([[cz, -sz, 0], [sz, cz, 0], [0, 0, 1]])
+    return Z @ Y @ X
+
+
+def _pontos_no_mundo(contorno, avanco, rotacao_graus, posicao_mm,
+                     rotacao_xyz=None, posicao_z_mm=0.0, eixo_a_max=None):
+    """Seção 2D -> pontos no mundo, na altura `avanco` da extrusão.
+
+    Dois caminhos, e o antigo continua bit a bit o que era:
+
+    ```text
+    rotacao_xyz ausente   0/90 = horizontal/vertical, 180/270 = idem
+                          espelhados. Caminho histórico, intocado.
+    rotacao_xyz presente  três ângulos livres no frame local. Prevalece.
+    ```
+
+    O espelho só existe no caminho histórico. Ele não foi levado para o
+    caminho novo de propósito: refletir a seção descreveria uma barra que
+    nenhuma matriz de extrusão produz (ver `InstanciaCena`)."""
+    pts = np.asarray(contorno, dtype=float)
+    n = len(pts)
     dx, dy = posicao_mm
-    secao_a = contorno[:, 0]
-    secao_b = contorno[:, 1]
+
+    if rotacao_xyz is not None:
+        R = _matriz_rotacao(*rotacao_xyz)
+        local = np.stack([np.full(n, float(avanco)), pts[:, 1], pts[:, 0]], axis=1)
+        return local @ R.T + np.array([dx, dy, float(posicao_z_mm)])
 
     vertical = abs((rotacao_graus % 180) - 90) < 1e-6
     espelhado = rotacao_graus >= 180 - 1e-6
-    a = (secao_a.max() - secao_a) if espelhado else secao_a
-
+    ref = pts[:, 0].max() if eixo_a_max is None else eixo_a_max
+    a = (ref - pts[:, 0]) if espelhado else pts[:, 0]
     if vertical:
-        v_inicio = np.stack([a + dx, np.full(n, dy), secao_b], axis=1)
-        v_fim = np.stack([a + dx, np.full(n, dy + comprimento_mm), secao_b], axis=1)
-    else:
-        v_inicio = np.stack([np.full(n, dx), secao_b + dy, a], axis=1)
-        v_fim = np.stack([np.full(n, dx + comprimento_mm), secao_b + dy, a], axis=1)
+        return np.stack([a + dx, np.full(n, dy + avanco), pts[:, 1]], axis=1)
+    return np.stack([np.full(n, dx + avanco), pts[:, 1] + dy, a], axis=1)
+
+
+def extrudar_perfil(contorno_mm, comprimento_mm, rotacao_graus, posicao_mm,
+                    rotacao_xyz=None, posicao_z_mm=0.0):
+    """Extrusão de perfil MACIÇO. Ver `_pontos_no_mundo` para a convenção de
+    eixos e para a diferença entre o caminho histórico e `rotacao_xyz`."""
+    contorno = np.array(contorno_mm, dtype=float)
+    n = len(contorno)
+    v_inicio = _pontos_no_mundo(contorno, 0.0, rotacao_graus, posicao_mm,
+                                rotacao_xyz, posicao_z_mm)
+    v_fim = _pontos_no_mundo(contorno, comprimento_mm, rotacao_graus,
+                             posicao_mm, rotacao_xyz, posicao_z_mm)
 
     faces = [v_inicio.tolist(), v_fim.tolist()]
     for i in range(n):
@@ -87,7 +118,8 @@ def extrudar_perfil(contorno_mm, comprimento_mm, rotacao_graus, posicao_mm):
 
 
 def extrudar_com_furos(contorno_externo, vazios_internos, comprimento_mm,
-                       rotacao_graus, posicao_mm, passo_mm=1.5):
+                       rotacao_graus, posicao_mm, passo_mm=1.5,
+                       rotacao_xyz=None, posicao_z_mm=0.0):
     """Extrusão de perfil OCO (ADR-008, rascunho): paredes do contorno externo
     e de cada vazio interno + tampas em grade que respeitam os furos.
 
@@ -95,24 +127,15 @@ def extrudar_com_furos(contorno_externo, vazios_internos, comprimento_mm,
     convenção de eixos do extrudar_perfil (o protótipo usava frame próprio,
     que ignoraria rotacao/posicao e reintroduziria o bug de achatamento).
 
-    Espelho (`rotacao_graus` 180/270, ver `extrudar_perfil`) usa como
-    referência o `secao_a.max()` do CONTORNO EXTERNO, nunca o de cada
-    polígono isoladamente — os vazios internos (furos) têm de espelhar em
-    torno do mesmo eixo do contorno que os contém, ou o furo se desloca em
-    relação à parede."""
-    vertical = abs((rotacao_graus % 180) - 90) < 1e-6
-    espelhado = rotacao_graus >= 180 - 1e-6
+    O espelho do caminho histórico usa como referência o `secao_a.max()` do
+    CONTORNO EXTERNO, nunca o de cada polígono isoladamente — os vazios
+    internos (furos) têm de espelhar em torno do mesmo eixo do contorno que
+    os contém, ou o furo se desloca em relação à parede."""
     eixo_a_max = float(np.asarray(contorno_externo, dtype=float)[:, 0].max())
 
     def _mapear(pontos_2d, avanco):
-        pts = np.asarray(pontos_2d, dtype=float)
-        n = len(pts)
-        dx, dy = posicao_mm
-        a = (eixo_a_max - pts[:, 0]) if espelhado else pts[:, 0]
-        if vertical:
-            return np.stack([a + dx, np.full(n, dy + avanco), pts[:, 1]],
-                            axis=1)
-        return np.stack([np.full(n, dx + avanco), pts[:, 1] + dy, a], axis=1)
+        return _pontos_no_mundo(pontos_2d, avanco, rotacao_graus, posicao_mm,
+                                rotacao_xyz, posicao_z_mm, eixo_a_max)
 
     faces = []
     for poligono in [contorno_externo] + list(vazios_internos or []):
@@ -206,13 +229,15 @@ def renderizar(vista: Vista,
                 f"Cena {cena.id} referencia perfil inexistente: {inst.perfil_id}")
         geo = resolver_geometria(perfil, associacoes, geometrias)
 
+        extra = {"rotacao_xyz": getattr(inst, "rotacao_xyz", None),
+                 "posicao_z_mm": getattr(inst, "posicao_z_mm", 0.0)}
         if geo.contorno_externo:
             faces = extrudar_com_furos(geo.contorno_externo, geo.vazios_internos,
                                        inst.comprimento_mm, inst.rotacao_graus,
-                                       inst.posicao_mm)
+                                       inst.posicao_mm, **extra)
         else:
             faces = extrudar_perfil(geo.contorno_mm, inst.comprimento_mm,
-                                    inst.rotacao_graus, inst.posicao_mm)
+                                    inst.rotacao_graus, inst.posicao_mm, **extra)
         e_vidro = (perfil.categoria == "vidro")
         cor_base = cor_vidro if e_vidro else cor_aluminio
         alpha = vista.opacidade_vidro if e_vidro else 1.0

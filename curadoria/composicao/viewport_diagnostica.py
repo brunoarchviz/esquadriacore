@@ -9,9 +9,10 @@ NÃO é CAD, não é editor de fabricação, não calcula nada. Existe para elim
 um gargalo de COMUNICAÇÃO: descrever orientação espacial por texto custa
 dezenas de rodadas; apontar na tela custa minutos.
 
-O que entra aqui é o ESTADO INICIAL DA PR #15 — inclusive as orientações de
-SU-003 e SU-102, que são HIPÓTESE não homologada. A ferramenta não afirma que
-esse estado está certo; ela existe justamente para Bruno dizer o que está.
+O que entra aqui é o ESTADO ATUAL da composição. A orientação do SU-003 já
+passou pela validação visual do Bruno; as demais continuam sendo proposta do
+desenho, não afirmação de domínio. A ferramenta não afirma que o estado está
+certo; ela existe justamente para Bruno dizer o que está.
 
 ```text
 composicao/receita.py        topologia confirmada  — NÃO tocado
@@ -59,8 +60,6 @@ GRUPO_DO_PAPEL = {
     PapelComponente.BAGUETE: "BAGUETES",
 }
 
-ANGULOS = (0, 90, 180, 270)
-
 
 # ---------------------------------------------------------------------------
 # Modelo de transformação exposto a Bruno
@@ -70,12 +69,9 @@ ANGULOS = (0, 90, 180, 270)
 #     +Y local = segunda coordenada do contorno
 #     +Z local = primeira coordenada do contorno
 #
-# Sobre ela: espelho opcional (reflexão em Z local), depois rotação em passos
-# de 90° (rx, ry, rz), depois translação (tx, ty, tz).
-#
-# Esse frame não foi escolhido por gosto: é o único em que o estado atual da
-# PR cai em ângulos exatos (0/90/180/270) sem resto — o que torna possível
-# Bruno raciocinar em cliques de 90° em vez de números arbitrários.
+# Sobre ela: rotação em passos de 90° (rx, ry, rz), depois translação
+# (tx, ty, tz). É o MESMO frame que `composicao.visualizacao` usa, então o que
+# Bruno vê aqui e o que a imagem oficial desenha não podem divergir.
 # ---------------------------------------------------------------------------
 
 def _rot(eixo: str, graus: float) -> np.ndarray:
@@ -108,37 +104,43 @@ def _mundo_pelo_modelo(contorno, comprimento, transform):
     return np.concatenate(saida)
 
 
-def _mundo_pelo_renderer(contorno, comprimento, rotacao_graus, posicao_mm):
-    """Vértices que o renderer da PR produz hoje. Referência de verdade: se o
-    modelo local não bater com isto, a ferramenta estaria mostrando uma
-    composição diferente da que o artefato da PR mostra."""
-    faces = extrudar_perfil(contorno, comprimento, rotacao_graus, posicao_mm)
+def _mundo_pelo_renderer(contorno, comprimento, instancia):
+    """Vértices que o renderer produz hoje. Referência de verdade: se o modelo
+    local não bater com isto, a ferramenta estaria mostrando uma composição
+    diferente da que a imagem oficial mostra."""
+    faces = extrudar_perfil(contorno, comprimento, instancia.rotacao_graus,
+                            instancia.posicao_mm,
+                            rotacao_xyz=instancia.rotacao_xyz,
+                            posicao_z_mm=instancia.posicao_z_mm)
     return np.concatenate([np.asarray(faces[0]), np.asarray(faces[1])])
 
 
-def deduzir_transform(contorno, comprimento, rotacao_graus, posicao_mm):
-    """Traduz (rotacao_graus, posicao_mm) da PR para o modelo local.
+def deduzir_transform(contorno, comprimento, instancia):
+    """Transformação local da instância, CONFERIDA contra o renderer.
 
-    Não confia na tradução: varre os 64 pares de ângulos × 2 estados de
-    espelho e devolve só o que reproduz os vértices do renderer dentro de
-    1e-6 mm. Se nada bater, levanta erro em vez de exibir algo que não é a
-    composição da PR."""
-    alvo = _mundo_pelo_renderer(contorno, comprimento, rotacao_graus,
-                                posicao_mm)
-    dx, dy = posicao_mm
-    for espelhado in (False, True):
-        for rx in ANGULOS:
-            for ry in ANGULOS:
-                for rz in ANGULOS:
-                    cand = {"tx": float(dx), "ty": float(dy), "tz": 0.0,
-                            "rx": rx, "ry": ry, "rz": rz,
-                            "espelhado": espelhado}
-                    obtido = _mundo_pelo_modelo(contorno, comprimento, cand)
-                    if np.allclose(obtido, alvo, atol=1e-6):
-                        return cand
-    raise RuntimeError(
-        f"nenhuma combinação local reproduz rotacao={rotacao_graus} "
-        f"posicao={posicao_mm} — o modelo da viewport divergiria do renderer")
+    Desde que a cena passou a carregar `rotacao_xyz`/`posicao_z_mm`, não há
+    mais nada a deduzir: a composição já fala o mesmo idioma da viewport. O
+    que continua havendo é a conferência — os vértices que este modelo produz
+    têm de bater com os que o renderer desenha, dentro de 1e-6 mm, ou a
+    viewport estaria mostrando uma composição diferente da imagem oficial e
+    Bruno validaria a coisa errada.
+
+    `espelhado` permanece no formato exportado por compatibilidade com o que
+    Bruno já usou, mas a composição não gera mais espelho: um perfil extrudado
+    não pode ser espelhado no mundo físico (ver `InstanciaCena`)."""
+    rx, ry, rz = instancia.rotacao_xyz or (0.0, 0.0, 0.0)
+    dx, dy = instancia.posicao_mm
+    cand = {"tx": float(dx), "ty": float(dy), "tz": float(instancia.posicao_z_mm),
+            "rx": rx, "ry": ry, "rz": rz, "espelhado": False}
+
+    alvo = _mundo_pelo_renderer(contorno, comprimento, instancia)
+    obtido = _mundo_pelo_modelo(contorno, comprimento, cand)
+    if not np.allclose(obtido, alvo, atol=1e-6):
+        raise RuntimeError(
+            f"{instancia.instancia_id}: o modelo da viewport não reproduz o "
+            f"que o renderer desenha (erro máx "
+            f"{np.abs(obtido - alvo).max():.6f} mm)")
+    return cand
 
 
 # ---------------------------------------------------------------------------
@@ -171,8 +173,7 @@ def coletar() -> dict:
             }
 
         transform = deduzir_transform(geometrias[codigo]["externo"],
-                                      inst.comprimento_mm, inst.rotacao_graus,
-                                      inst.posicao_mm)
+                                      inst.comprimento_mm, inst)
         instancias.append({
             "id": inst.instancia_id,
             "rotulo": inst.instancia_id.split(":", 1)[-1],
