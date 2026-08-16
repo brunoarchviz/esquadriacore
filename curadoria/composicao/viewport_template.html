@@ -108,28 +108,7 @@
 
 <div id="lateral">
   <h1>Suprema correr 2F
-    <small>viewport diagnóstica — estado atual da composição</small></h1>
-
-  <div class="bloco fechado" id="b-export">
-    <h2><span class="seta">▾</span> Exportar</h2>
-    <div class="corpo">
-      <button id="copiar">COPIAR ESTADO AJUSTADO</button>
-      <textarea id="saida" readonly placeholder="Ajuste alguma peça e clique em COPIAR ESTADO."></textarea>
-      <div class="nota">Cole este texto na conversa. Nada aqui altera o código
-        sozinho. Abertura das folhas, pivô e atalhos não entram no export.</div>
-    </div>
-  </div>
-
-  <div class="bloco fechado" id="b-keymap">
-    <h2><span class="seta">▾</span> Atalhos / keymap</h2>
-    <div class="corpo">
-      <div id="km-lista"></div>
-      <div class="linha-btn"><button id="km-reset" class="largo">restaurar padrões</button></div>
-      <div class="nota">Clique no atalho e pressione a tecla nova. Fica salvo
-        neste navegador.</div>
-    </div>
-  </div>
-
+    <small>cena — hierarquia e visibilidade</small></h1>
   <div id="lista"></div>
 </div>
 
@@ -175,7 +154,10 @@
       <div class="corpo">
         <div class="linha-btn" style="margin-top:0">
           <button id="mover" class="largo">mover</button>
-          <button id="alinhar" class="largo">alinhar ⇉</button>
+          <button id="espelhar" class="largo">espelhar</button>
+        </div>
+        <div class="linha-btn">
+          <button id="alinhar" class="largo">alinhar ⇉ paralelo</button>
         </div>
         <div style="color:var(--fraco);font-size:10px;margin-top:9px">RESTRIÇÃO DE EIXO</div>
         <div class="grade">
@@ -188,10 +170,11 @@
           <button data-eixo="YZ">YZ</button>
         </div>
         <div style="color:var(--fraco);font-size:10px;margin-top:9px">PIVÔ DE MANIPULAÇÃO</div>
-        <div class="grade" style="grid-template-columns:repeat(3,1fr)">
+        <div class="grade" style="grid-template-columns:repeat(4,1fr)">
           <button data-pivo="CENTER" class="on">centro</button>
           <button data-pivo="INICIO">início</button>
           <button data-pivo="FIM">fim</button>
+          <button data-pivo="AUTO">auto</button>
         </div>
         <div class="linha-btn"><button id="pick-vert" class="largo">pegar vértice…</button></div>
         <div class="nota" style="margin-top:5px">O pivô é só o ponto de pega da
@@ -273,6 +256,17 @@
       <div class="corpo">
         <div class="linha-btn" style="margin-top:0">
           <button id="wire" class="largo">wireframe</button>
+          <button id="edged" class="largo">edged faces</button>
+        </div>
+        <div class="linha-btn">
+          <button id="shade" class="largo on">shade selected</button>
+        </div>
+        <div class="grade" style="grid-template-columns:repeat(5,1fr);">
+          <button data-vista="TOP">TOP</button>
+          <button data-vista="FRONT">FRO</button>
+          <button data-vista="LEFT">LEF</button>
+          <button data-vista="RIGHT">RIG</button>
+          <button data-vista="PERSPECTIVE" class="on">PER</button>
         </div>
         <div class="linha-btn">
           <button id="isolar" class="largo">isolar</button>
@@ -286,6 +280,27 @@
           <button id="enquadrar" class="largo"
             title="Ajusta a câmera para mostrar todos os objetos atualmente visíveis.">ZOOM EXTENTS</button>
         </div>
+      </div>
+    </div>
+
+    <div class="bloco fechado" id="b-export">
+      <h2><span class="seta">▾</span> Exportar estado</h2>
+      <div class="corpo">
+        <button id="copiar">COPIAR ESTADO AJUSTADO</button>
+        <textarea id="saida" readonly placeholder="Ajuste alguma peça e clique em COPIAR ESTADO."></textarea>
+        <div class="nota">Cole este texto na conversa. Nada aqui altera o
+          código sozinho. Abertura das folhas, pivô, câmera e atalhos não
+          entram no export.</div>
+      </div>
+    </div>
+
+    <div class="bloco fechado" id="b-keymap">
+      <h2><span class="seta">▾</span> Atalhos / keymap</h2>
+      <div class="corpo">
+        <div id="km-lista"></div>
+        <div class="linha-btn"><button id="km-reset" class="largo">restaurar padrões</button></div>
+        <div class="nota">Clique no atalho e pressione a tecla nova. Fica
+          salvo neste navegador.</div>
       </div>
     </div>
   </div>
@@ -306,13 +321,16 @@ const REFERENCIA_FIXA = "QUADRO-INFERIOR";
 // variação clara da folha: com dois conjuntos de baguete parecidos com as
 // duas folhas, era fácil pegar a peça errada — foi o que aconteceu na
 // montagem manual do Bruno.
+// Quatro famílias distintas entre si E distintas do AZUL, que é reservado
+// ao ESTADO de seleção. A folha externa era azulada e parecia
+// permanentemente selecionada — categoria nenhuma pode imitar um estado.
 const COR = {
-  QUADRO:        [172,178,188],   // alumínio neutro
-  FOLHA_INTERNA: [201,171,120],   // âmbar
-  FOLHA_EXTERNA: [120,163,201],   // azul
-  BAGUETES:      [126,186,142],   // verde — categoria própria
+  QUADRO:        [186,186,180],   // cinza quente
+  FOLHA_INTERNA: [214,168, 88],   // ouro
+  FOLHA_EXTERNA: [198,112,150],   // rosa
+  BAGUETES:      [124,182,124],   // verde
 };
-const COR_BAG_INT = [150,196,140], COR_BAG_EXT = [116,178,160];
+const COR_BAG_INT = [140,190,120], COR_BAG_EXT = [110,176,146];
 
 function secaoDe(p){
   if (p.grupo==="QUADRO") return "QUADRO";
@@ -342,12 +360,47 @@ let modo="SHADED", ferramenta="SELECT";
 let snapOn=false, snapOrigem=null, snapAlvoVis=null;
 let alinhando=false, pegandoVertice=false;
 let eixoTravado="FREE";                       // FREE|X|Y|Z|XY|XZ|YZ
-let pivoModo="CENTER";                        // CENTER|INICIO|FIM|VERTICE
+let pivoModo="CENTER";                        // CENTER|INICIO|FIM|VERTICE|AUTO
+let sombrearSel=true;                         // F2 — Shade Selected
+let arestas=false;                            // F4 — Edged Faces
+// Um clique some 1-2px de tremida; um orbit passa MUITO disso. Só acima
+// deste limiar a câmera é considerada em rotação.
+const LIMIAR_ORBITA=4;
 let pivoVertice=null;                         // {pecaId,a,b,t} — pega manual
 let vista="PERSPECTIVE";
 let ultimoMouse={x:0,y:0};
 const abertura={PLANO_INTERNO:0, PLANO_EXTERNO:0};
 const cam={alvo:[1000,600,0], dist:3400, yaw:-28, pitch:20, orto:false};
+
+// --- sessão suja / rascunho local -----------------------------------------
+// Recarregar a página perdia o trabalho inteiro em silêncio. `sujo()` marca
+// que existe ajuste manual; o navegador passa a avisar antes de sair, e um
+// rascunho fica em localStorage para o caso do acidente acontecer mesmo
+// assim. O rascunho NÃO é estado oficial da composição — é rede de proteção.
+const CHAVE_RASCUNHO="esquadriacore_viewport_rascunho_v1";
+let temAlteracao=false;
+function sujo(){
+  // A PRIMEIRA alteração grava na hora: é justamente ela que se perde se o
+  // acidente acontecer nos primeiros segundos. As seguintes esperam um
+  // pouco, para não gravar a cada clique de +1mm.
+  const primeira=!temAlteracao;
+  temAlteracao=true;
+  if (primeira) return salvaRascunho();
+  clearTimeout(sujo._t);
+  sujo._t=setTimeout(salvaRascunho,800);
+}
+function salvaRascunho(){
+  try{
+    localStorage.setItem(CHAVE_RASCUNHO,JSON.stringify({
+      quando:new Date().toISOString(),
+      pecas:pecas.map(p=>({id:p.id,t:p.t,bloqueado:p.bloqueado,visivel:p.visivel})),
+    }));
+  }catch(e){}
+}
+addEventListener("beforeunload",e=>{
+  if (!temAlteracao) return;              // sem alteração, sem incômodo
+  e.preventDefault(); e.returnValue="";
+});
 
 const MASCARA={FREE:[1,1,1], X:[1,0,0], Y:[0,1,0], Z:[0,0,1],
                XY:[1,1,0], XZ:[1,0,1], YZ:[0,1,1]};
@@ -419,16 +472,39 @@ function centroDaPonta(p,t){
 }
 const ativo=()=>pecas.find(p=>p.id===ativoId) || selecionadas()[0] || null;
 
+function centroDaPeca(p){
+  const {mn,mx}=caixa([p]);
+  return [(mn[0]+mx[0])/2,(mn[1]+mx[1])/2,(mn[2]+mx[2])/2];
+}
+// AUTO / FOLLOW VIEW: numa barra longa com zoom numa das pontas, o pivô fixo
+// no centro fica fora da tela e o gizmo some da região de trabalho. No modo
+// AUTO escolhe-se, entre INÍCIO / CENTRO / FIM, o que projeta mais perto de
+// onde o Bruno está olhando. Isso NÃO move a peça nem altera coordenada
+// alguma — troca só o ponto de pega da interface.
+function pontoAuto(a){
+  const W=tela.clientWidth,H=tela.clientHeight;
+  const B=baseCam(),esc=escalaBase(W,H);
+  const foco=[ultimoMouse.x||W/2, ultimoMouse.y||H/2];
+  let melhor=null,d2=Infinity;
+  for (const P of [centroDaPonta(a,0),centroDaPeca(a),centroDaPonta(a,a.comprimento)]) {
+    const s=projeta(P,B,W/2,H/2,esc);
+    if (!cam.orto && s[2]<=1) continue;
+    const d=(s[0]-foco[0])**2+(s[1]-foco[1])**2;
+    if (d<d2){ d2=d; melhor=P; }
+  }
+  return melhor||centroDaPeca(a);
+}
 function pontoDePega(){
   const a=ativo(); if (!a) return null;
+  // Escolha manual do Bruno é autoridade e nunca é substituída pelo AUTO.
   if (pivoModo==="VERTICE" && pivoVertice) {
     const p=pecas.find(x=>x.id===pivoVertice.pecaId);
     if (p) return mundo(p,pivoVertice.a,pivoVertice.b,pivoVertice.t);
   }
   if (pivoModo==="INICIO") return centroDaPonta(a,0);
   if (pivoModo==="FIM") return centroDaPonta(a,a.comprimento);
-  const {mn,mx}=caixa([a]);
-  return [(mn[0]+mx[0])/2,(mn[1]+mx[1])/2,(mn[2]+mx[2])/2];
+  if (pivoModo==="AUTO") return pontoAuto(a);
+  return centroDaPeca(a);
 }
 
 // --- câmera ---------------------------------------------------------------
@@ -456,9 +532,19 @@ function mundoSobCursor(sx,sy){
           cam.alvo[1]+B.dir[1]*u+B.cima[1]*v,
           cam.alvo[2]+B.dir[2]*u+B.cima[2]*v];
 }
+const ANGULO_USUARIO={yaw:-28,pitch:20};
+const PRESETS_ORTO=[[0,90],[0,0],[90,0],[-90,0]];   // TOP, FRONT, RIGHT, LEFT
 function defineVista(v){
+  const eraPreset=PRESETS_ORTO.some(([y,p])=>cam.yaw===y&&cam.pitch===p);
   vista=v;
-  if (v==="PERSPECTIVE") cam.orto=false;
+  if (v==="PERSPECTIVE") {
+    cam.orto=false;
+    // Sair de uma vista ortográfica só desligando a projeção deixaria a
+    // câmera olhando exatamente de cima (ou de frente) — uma "perspectiva"
+    // sem nenhuma perspectiva, em que uma barra vertical vira um ponto.
+    // Voltar ao ângulo 3/4 é o que qualquer viewport faz.
+    if (eraPreset) { cam.yaw=ANGULO_USUARIO.yaw; cam.pitch=ANGULO_USUARIO.pitch; }
+  }
   else {
     cam.orto=true;
     if (v==="TOP"){cam.yaw=0;cam.pitch=90;}
@@ -466,7 +552,7 @@ function defineVista(v){
     if (v==="RIGHT"){cam.yaw=90;cam.pitch=0;}
     if (v==="LEFT"){cam.yaw=-90;cam.pitch=0;}
   }
-  document.querySelectorAll("#vistas button").forEach(b=>
+  document.querySelectorAll("[data-vista]").forEach(b=>
     b.classList.toggle("on",b.dataset.vista===v));
   pintaHud(); desenha();
 }
@@ -481,13 +567,10 @@ function zoomNoCursor(){
 
 // --- desenho --------------------------------------------------------------
 const tela=document.getElementById("tela"), ctx=tela.getContext("2d");
-const pick=document.createElement("canvas");
-const pctx=pick.getContext("2d",{willReadFrequently:true});
 function dimensiona(){
   const r=window.devicePixelRatio||1;
   tela.width=tela.clientWidth*r; tela.height=tela.clientHeight*r;
   ctx.setTransform(r,0,0,r,0,0);
-  pick.width=tela.clientWidth; pick.height=tela.clientHeight;
 }
 const LUZ=norm([0.45,0.75,0.5]);
 let vertsTela=[];
@@ -535,11 +618,16 @@ function desenha(){
       const n=norm(cruz(sub(it.f.pts[1],it.f.pts[0]),sub(it.f.pts[2],it.f.pts[0])));
       const i=0.32+0.68*Math.abs(pto(n,LUZ));
       let base=corDe(p);
-      if (s) base=base.map((c,k)=>Math.round(c*0.72+[168,196,224][k]*0.28));
+      // SHADE SELECTED: o realce entra na FACE, sem apagar a cor da
+      // categoria — a peça continua legível como quadro/folha/baguete. Com
+      // o modo desligado a seleção aparece só pelo contorno.
+      if (s && sombrearSel)
+        base=base.map((c,k)=>Math.round(c*0.72+[168,196,224][k]*0.28));
       const cor=base.map(c=>Math.round(Math.min(255,c*i)));
       ctx.fillStyle=`rgb(${cor[0]},${cor[1]},${cor[2]})`;
-      ctx.strokeStyle=s?"rgba(127,180,232,.9)":"rgba(20,22,26,.55)";
-      ctx.lineWidth=s?1.2:.5;
+      ctx.strokeStyle = s ? "rgba(127,180,232,.95)"
+                          : (arestas ? "rgba(16,18,22,.85)" : "rgba(20,22,26,.55)");
+      ctx.lineWidth = s ? 1.4 : (arestas ? 1 : .5);
       traca(ctx,it); ctx.fill("evenodd"); ctx.stroke();
     }
   }
@@ -618,38 +706,41 @@ function bracoEm(sx,sy){
   return null;
 }
 
-function pecaEm(sx,sy){
-  const W=tela.clientWidth,H=tela.clientHeight;
-  pctx.clearRect(0,0,W,H);
-  const B=baseCam(),prep=preparaFaces(B,W/2,H/2,escalaBase(W,H));
-  for (const it of prep) {
-    const k=it.f.peca.idx+1;
-    pctx.fillStyle=`rgb(${k&255},${(k>>8)&255},${(k>>16)&255})`;
-    traca(pctx,it); pctx.fill("evenodd");
+// Ponto dentro de um conjunto de anéis, regra par-ímpar — a MESMA que o
+// desenho usa em `fill("evenodd")`, então o que se vê e o que se clica são a
+// mesma figura, furos inclusive.
+function dentroDosAneis(x,y,aneis){
+  let cruzamentos=0;
+  for (const an of aneis) {
+    for (let i=0,j=an.length-1;i<an.length;j=i++) {
+      const a=an[i], b=an[j];
+      if ((a[1]>y)!==(b[1]>y)) {
+        const xi=a[0]+(y-a[1])*(b[0]-a[0])/(b[1]-a[1]);
+        if (x<xi) cruzamentos++;
+      }
+    }
   }
-  // Leitura por JANELA com voto majoritário, não por pixel único.
-  //
-  // Ler 1x1 se mostrou não confiável: no mesmo buffer em que a varredura
-  // completa devolve rgb(4,0,0) (índice 4, correto), a leitura 1x1 no MESMO
-  // ponto devolveu rgb(5,0,1) — uma cor que este código nunca desenha, ou
-  // seja, um valor mesclado. Com isso o clique sobre a peça simplesmente não
-  // selecionava nada. A janela ignora os valores mesclados (que não
-  // correspondem a nenhum índice) e ainda perdoa o clique alguns pixels fora,
-  // o que importa porque muitos perfis aqui são finos na tela.
-  const R=3, x0=Math.max(0,Math.round(sx)-R), y0=Math.max(0,Math.round(sy)-R);
-  const larg=Math.min(2*R+1,W-x0), alt=Math.min(2*R+1,H-y0);
-  if (larg<=0||alt<=0) return null;
-  const d=pctx.getImageData(x0,y0,larg,alt).data;
-  const votos=new Map();
-  for (let i=0;i<d.length;i+=4) {
-    const k=d[i]|(d[i+1]<<8)|(d[i+2]<<16);
-    if (k>0 && k<=pecas.length) votos.set(k,(votos.get(k)||0)+1);
-  }
-  let melhor=0,qtd=0;
-  for (const [k,n] of votos) if (n>qtd){ qtd=n; melhor=k; }
-  return melhor ? pecas[melhor-1] : null;
+  return (cruzamentos&1)===1;
 }
 
+// Seleção ANALÍTICA: testa o ponto contra os polígonos já projetados, da
+// frente para o fundo.
+//
+// A versão anterior desenhava a cena num canvas oculto com uma cor por peça
+// e lia o pixel de volta. Essa leitura se mostrou não confiável duas vezes:
+// primeiro devolvendo uma cor mesclada que não corresponde a peça nenhuma, e
+// depois devolvendo peça mesmo com TODAS as peças ocultas — buffer obsoleto.
+// O sintoma para o Bruno era o clique não selecionar (ou selecionar o que não
+// estava na tela). Sem leitura de volta, o problema não tem como existir.
+function pecaEm(sx,sy){
+  const W=tela.clientWidth,H=tela.clientHeight;
+  const B=baseCam(),prep=preparaFaces(B,W/2,H/2,escalaBase(W,H));
+  for (let i=prep.length-1;i>=0;i--) {          // prep vem do fundo p/ frente
+    const it=prep[i];
+    if (dentroDosAneis(sx,sy,it.tampa||[it.proj])) return it.f.peca;
+  }
+  return null;
+}
 // --- interação ------------------------------------------------------------
 let arrasta=null;
 tela.addEventListener("contextmenu",e=>e.preventDefault());
@@ -677,7 +768,10 @@ tela.addEventListener("mousedown",e=>{
   }
 });
 addEventListener("mouseup",e=>{
-  if (arrasta && arrasta.gizmo) { arrasta=null; sincroniza(); return; }
+  if (arrasta && arrasta.gizmo) {
+    if (arrasta.moveu) sujo();
+    arrasta=null; sincroniza(); return;
+  }
   if (arrasta && !arrasta.moveu && e.button===0) clique(e,arrasta);
   arrasta=null;
 });
@@ -686,11 +780,20 @@ addEventListener("mousemove",e=>{
   const sx=e.clientX-r.left, sy=e.clientY-r.top;
   ultimoMouse={x:sx,y:sy};
   if (!arrasta) {
+    // `cursor()` consulta o buffer de selecão, que re-renderiza a cena;
+    // fazer isso a cada pixel travaria a viewport. 70ms é imperceptível para
+    // a mão e barato para a máquina.
+    const agora=performance.now();
+    if (agora-(ultimoMouse.quando||0)>70) {
+      ultimoMouse.quando=agora;
+      tela.style.cursor=cursor(sx,sy);
+    }
     if (snapOn||pegandoVertice) {
       const antes=snapAlvoVis;
       snapAlvoVis=maisProximo(sx,sy,pegandoVertice);
       if (antes!==snapAlvoVis) desenha();
     }
+    if (pivoModo==="AUTO" && ferramenta==="MOVE" && sel.size) desenha();
     return;
   }
   const dx=e.clientX-arrasta.x, dy=e.clientY-arrasta.y;
@@ -703,6 +806,11 @@ addEventListener("mousemove",e=>{
     const k=cam.dist/escalaBase(tela.clientWidth,tela.clientHeight);
     for (let i=0;i<3;i++) cam.alvo[i]-=(B.dir[i]*dx-B.cima[i]*dy)*k;
   } else if (arrasta.botao===0) {
+    // Só um ORBIT DE VERDADE tira a vista ortográfica. Antes, qualquer
+    // tremida de 1px durante um clique já jogava a viewport em PERSPECTIVE —
+    // era o que fazia o clique no vazio "sair do TOP" sozinho.
+    arrasta.acumulado=(arrasta.acumulado||0)+Math.abs(dx)+Math.abs(dy);
+    if (arrasta.acumulado<LIMIAR_ORBITA) return;
     if (vista!=="PERSPECTIVE") defineVista("PERSPECTIVE");
     cam.yaw-=dx*0.4;
     cam.pitch=Math.max(-88,Math.min(88,cam.pitch+dy*0.4));
@@ -780,7 +888,7 @@ function cliqueSnap(a){
   const moviveis=selecionadas().filter(p=>!p.bloqueado);
   if (!moviveis.length) { msg("seleção bloqueada — 🔓 liberar para mover"); snapOrigem=null; return; }
   moviveis.forEach(p=>{ p.t.tx+=d[0]; p.t.ty+=d[1]; p.t.tz+=d[2]; invalida(p); });
-  snapOrigem=null; msg("snap aplicado"); sincroniza();
+  snapOrigem=null; sujo(); msg("snap aplicado"); sincroniza();
 }
 
 function pegaVertice(a){
@@ -804,14 +912,33 @@ function msg(t){
 const ANG=[0,90,180,270];
 const eixoExtrusao=t=>aplica(matriz(t.rx,t.ry,t.rz),[1,0,0]);
 function traco(A,B){ let s=0; for(let i=0;i<3;i++) for(let j=0;j<3;j++) s+=A[i][j]*B[i][j]; return s; }
+// Alinha a ORIENTAÇÃO INTEIRA à da referência, não só o eixo de extrusão.
+//
+// A versão anterior exigia apenas que o eixo ficasse paralelo e, entre os
+// candidatos, escolhia o MAIS PARECIDO COM O ATUAL. O efeito prático era que
+// ela não fazia nada nos dois casos mais comuns:
+//   · peça com o eixo já paralelo, mas ROLADA no próprio eixo → devolvia a
+//     mesma rotação;
+//   · peça com o eixo invertido 180° → idem, porque |dot| = 1 também conta
+//     como paralelo.
+// Ou seja: só corrigia quando o eixo estava perpendicular. Em tudo o mais o
+// Bruno via a mensagem de confirmação e a peça parada.
+//
+// Agora a referência é quem manda: entre os candidatos com eixo paralelo,
+// vence o mais próximo da orientação DA REFERÊNCIA — o que normaliza também
+// o rolamento. O sentido do eixo atual é preservado quando existe candidato
+// com o mesmo sentido, para não virar a peça ponta com ponta sem pedido.
 function alinhaParalelo(alvo,refT){
-  const eixoRef=eixoExtrusao(refT), atual=matriz(alvo.rx,alvo.ry,alvo.rz);
+  const eixoRef=eixoExtrusao(refT), eixoAtual=eixoExtrusao(alvo);
+  const refM=matriz(refT.rx,refT.ry,refT.rz);
+  const sentidoAtual=Math.sign(pto(eixoAtual,eixoRef));
   let melhor=null,score=-1e9;
   for (const rx of ANG) for (const ry of ANG) for (const rz of ANG) {
     const M=matriz(rx,ry,rz);
     const d=pto(aplica(M,[1,0,0]),eixoRef);
-    if (Math.abs(Math.abs(d)-1)>1e-6) continue;
-    const s=traco(atual,M)+(d>0?0.5:0);
+    if (Math.abs(Math.abs(d)-1)>1e-6) continue;      // eixo não paralelo
+    const mesmoSentido = sentidoAtual===0 || Math.sign(d)===sentidoAtual;
+    const s=traco(refM,M)+(mesmoSentido?10:0);
     if (s>score){ score=s; melhor={rx,ry,rz}; }
   }
   return melhor;
@@ -834,19 +961,27 @@ function aplicaAlinhamento(ref){
       : "alinhar: nada para girar (referência é a própria seleção)");
     sincroniza(); return;
   }
-  let n=0;
+  let n=0, iguais=0;
   for (const p of alvos) {
     const r=alinhaParalelo(p.t,ref.t);
     if (!r) continue;
-    Object.assign(p.t,r); invalida(p); n++;
+    const mudou = r.rx!==p.t.rx || r.ry!==p.t.ry || r.rz!==p.t.rz;
+    Object.assign(p.t,r); invalida(p);
+    if (mudou) n++; else iguais++;
   }
-  msg(`${ref.codigo}/${ref.rotulo} como referência → ${n} peça(s) alinhada(s)`);
+  // Silêncio é o pior resultado possível aqui: se nada mudou, dizer que nada
+  // mudou — e por quê.
+  msg(n ? `${ref.codigo}/${ref.rotulo} como referência → ${n} peça(s) alinhada(s)`
+        : `já estava(m) paralela(s) a ${ref.codigo}/${ref.rotulo} — nada a girar`);
+  if (n) sujo();
   sincroniza();
 }
 
 // --- keymap ---------------------------------------------------------------
 const ACOES=[
-  ["mover","Mover","W"], ["snap","Snap","S"], ["wire","Wireframe","F3"],
+  ["mover","Mover","W"], ["espelhar","Espelhar (mirror)","M"],
+  ["snap","Snap","S"], ["wire","Wireframe","F3"],
+  ["shade","Shade selected","F2"], ["edged","Edged faces","F4"],
   ["zoomCursor","Zoom no cursor","Z"], ["zoomExt","Zoom extents","E"],
   ["align","Alinhar paralelo","A"], ["esconder","Esconder","H"],
   ["isolar","Isolar","I"], ["mostrar","Mostrar todos","G"],
@@ -857,6 +992,7 @@ const ACOES=[
   ["eixoY","Eixo Y","3"], ["eixoZ","Eixo Z","4"],
   ["pivoCentro","Pivô centro","5"], ["pivoInicio","Pivô início","6"],
   ["pivoFim","Pivô fim","7"], ["pivoVert","Pegar vértice","8"],
+  ["pivoAuto","Pivô auto (follow view)","9"],
 ];
 const CHAVE_KM="esquadriacore_viewport_keymap_v1";
 let keymap={};
@@ -872,6 +1008,8 @@ function salvaKeymap(){ try{ localStorage.setItem(CHAVE_KM,JSON.stringify(keymap
 
 const EXECUTA={
   mover:()=>alternaFerramenta(), snap:()=>alternaSnap(), wire:()=>alternaModo(),
+  espelhar:()=>espelha(), shade:()=>alternaSombra(), edged:()=>alternaArestas(),
+  pivoAuto:()=>definePivo("AUTO"),
   zoomCursor:()=>zoomNoCursor(), zoomExt:()=>enquadrar(), align:()=>entraAlinhar(),
   esconder:()=>{selecionadas().forEach(p=>p.visivel=false);sincroniza();},
   isolar:()=>{ if(sel.size){pecas.forEach(p=>p.visivel=sel.has(p.id));sincroniza();enquadrar();} },
@@ -949,6 +1087,44 @@ function alternaFerramenta(){
   document.getElementById("mover").classList.toggle("on",ferramenta==="MOVE");
   pintaHud(); desenha();
 }
+function alternaSombra(){
+  sombrearSel=!sombrearSel;
+  document.getElementById("shade").classList.toggle("on",sombrearSel);
+  msg("shade selected "+(sombrearSel?"ligado":"desligado"));
+  pintaHud(); desenha();
+}
+function alternaArestas(){
+  arestas=!arestas;
+  document.getElementById("edged").classList.toggle("on",arestas);
+  msg("edged faces "+(arestas?"ligado":"desligado"));
+  pintaHud(); desenha();
+}
+// MIRROR: espelha a seção no eixo local, o mesmo espelhamento que a
+// composição já sabia representar. Transformação VISUAL de curadoria — não
+// afirma que existe uma barra espelhada de fábrica.
+function espelha(){
+  mexe(p=>p.t.espelhado=!p.t.espelhado);
+  const s=selecionadas().filter(p=>!p.bloqueado);
+  if (s.length) msg(`espelhado: ${s.map(p=>p.codigo).join(", ")}`);
+}
+
+// Cursor contextual: o Bruno precisa saber pelo cursor o que vai acontecer
+// ANTES de clicar.
+function cursor(sx,sy){
+  if (arrasta) {
+    if (arrasta.gizmo) return "grabbing";
+    if (arrasta.botao===1) return "move";
+    return "grabbing";
+  }
+  if (alinhando || pegandoVertice) return "crosshair";
+  if (ferramenta==="MOVE" && sel.size) {
+    const b=bracoEm(sx,sy);
+    if (b) return b.livre ? "grab" : (b.eixo==="Y" ? "ns-resize" : "ew-resize");
+  }
+  const p=pecaEm(sx,sy);
+  if (!p) return "default";
+  return (ferramenta==="MOVE" && sel.has(p.id)) ? "grab" : "pointer";
+}
 function defineEixo(e){
   eixoTravado=e;
   document.querySelectorAll("[data-eixo]").forEach(b=>
@@ -968,7 +1144,8 @@ function iniciaPegaVertice(){
   msg("clique num vértice da peça SELECIONADA para virar o pivô");
   desenha();
 }
-const NOME_PIVO={CENTER:"CENTRO",INICIO:"INÍCIO",FIM:"FIM",VERTICE:"VÉRTICE"};
+const NOME_PIVO={CENTER:"CENTRO",INICIO:"INÍCIO",FIM:"FIM",VERTICE:"VÉRTICE",
+                 AUTO:"AUTO"};
 function pintaHud(){
   document.getElementById("hud-vista").textContent=vista;
   const f=document.getElementById("tag-ferr");
@@ -983,7 +1160,8 @@ function pintaHud(){
   const s=document.getElementById("tag-snap");
   s.textContent=snapOn?"SNAP ON":"SNAP OFF"; s.classList.toggle("on",snapOn);
   const m=document.getElementById("tag-modo");
-  m.textContent=modo; m.classList.toggle("on",modo==="WIREFRAME");
+  m.textContent=modo+(arestas?" +EDGED":"")+(sombrearSel?"":" (sem shade sel)");
+  m.classList.toggle("on",modo==="WIREFRAME"||arestas);
 }
 
 // --- painel ---------------------------------------------------------------
@@ -1042,7 +1220,7 @@ function montaLista(){
   el.querySelectorAll("[data-olho]").forEach(o=>o.onclick=ev=>{
     ev.stopPropagation();
     const p=pecas.find(x=>x.id===o.dataset.olho);
-    p.visivel=!p.visivel; sincroniza();
+    p.visivel=!p.visivel; sujo(); sincroniza();
   });
   // Olho do grupo vive no cabeçalho, então continua clicável com o grupo
   // recolhido.
@@ -1075,8 +1253,9 @@ function pintaCtrl(){
   // bloqueada: desabilitado não explica nada, e a exigência é recusar a
   // transformação DIZENDO por quê. Quem recusa é `mexe`.
   document.querySelectorAll("#ctrl button").forEach(b=>{
-    if (["mostrar-tudo","enquadrar","wire","snap","fechar-folhas"].includes(b.id)) return;
-    if (b.dataset.eixo||b.dataset.pivo) return;
+    if (["mostrar-tudo","enquadrar","wire","snap","fechar-folhas","shade",
+         "edged","copiar","km-reset"].includes(b.id)) return;
+    if (b.dataset.eixo||b.dataset.pivo||b.dataset.vista) return;
     b.disabled=!on;
   });
   const alvo=document.getElementById("alvo"), meta=document.getElementById("meta");
@@ -1121,6 +1300,7 @@ function mexe(fn){
   }
   if (s.length<todas.length)
     msg(`${todas.length-s.length} peça(s) bloqueada(s) foram ignoradas`);
+  sujo();
   s.forEach(p=>{ fn(p); invalida(p); });
   sincroniza();
 }
@@ -1133,13 +1313,19 @@ document.querySelectorAll("[data-move]").forEach(b=>b.onclick=()=>mexe(p=>{
 }));
 document.querySelectorAll("[data-eixo]").forEach(b=>b.onclick=()=>defineEixo(b.dataset.eixo));
 document.querySelectorAll("[data-pivo]").forEach(b=>b.onclick=()=>definePivo(b.dataset.pivo));
+// Os botões de vista estavam SEM handler: as vistas só respondiam pelo
+// teclado, e os testes anteriores nunca clicaram nesses botões.
+document.querySelectorAll("[data-vista]").forEach(b=>b.onclick=()=>defineVista(b.dataset.vista));
 document.getElementById("pick-vert").onclick=iniciaPegaVertice;
 document.getElementById("mover").onclick=alternaFerramenta;
+document.getElementById("espelhar").onclick=espelha;
 document.getElementById("snap").onclick=alternaSnap;
 document.getElementById("wire").onclick=alternaModo;
+document.getElementById("shade").onclick=alternaSombra;
+document.getElementById("edged").onclick=alternaArestas;
 document.getElementById("alinhar").onclick=entraAlinhar;
 document.getElementById("lock").onclick=()=>{
-  selecionadas().forEach(p=>p.bloqueado=true); msg("bloqueado"); sincroniza(); };
+  selecionadas().forEach(p=>p.bloqueado=true); sujo(); msg("bloqueado"); sincroniza(); };
 document.getElementById("unlock").onclick=()=>{
   const ref=selecionadas().some(p=>p.rotulo===REFERENCIA_FIXA);
   selecionadas().forEach(p=>p.bloqueado=false);
@@ -1239,6 +1425,30 @@ document.getElementById("copiar").onclick=()=>{
 // --- início ---------------------------------------------------------------
 addEventListener("resize",()=>{ dimensiona(); desenha(); });
 carregaKeymap(); montaKeymap();
+
+// Rascunho de sessão anterior: só oferece restauro se houver de fato algo
+// diferente do estado inicial da composição.
+function ofereceRascunho(){
+  let r=null;
+  try{ r=JSON.parse(localStorage.getItem(CHAVE_RASCUNHO)||"null"); }catch(e){}
+  if (!r||!r.pecas) return;
+  const porId=Object.fromEntries(r.pecas.map(x=>[x.id,x]));
+  const difere=pecas.some(p=>{
+    const x=porId[p.id]; if (!x) return false;
+    return ["tx","ty","tz","rx","ry","rz"].some(k=>x.t[k]!==p.inicial[k])
+        || x.t.espelhado!==p.inicial.espelhado;
+  });
+  if (!difere) { localStorage.removeItem(CHAVE_RASCUNHO); return; }
+  const quando=r.quando?new Date(r.quando).toLocaleString("pt-BR"):"sessão anterior";
+  if (confirm(`Foi encontrada uma sessão não finalizada (${quando}).\n`
+             +`Restaurar os ajustes?\n\nOK = restaurar   ·   Cancelar = descartar`)) {
+    pecas.forEach(p=>{ const x=porId[p.id]; if (!x) return;
+      p.t={...x.t}; p.bloqueado=!!x.bloqueado; p.visivel=!!x.visivel; invalida(p); });
+    temAlteracao=true;
+    setTimeout(()=>msg("sessão anterior restaurada"),50);
+  } else localStorage.removeItem(CHAVE_RASCUNHO);
+}
+ofereceRascunho();
 dimensiona(); pintaHud(); sincroniza(); enquadrar();
 </script>
 </body>
