@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suprema correr 2F — viewport diagnóstica</title>
+<style>
+  :root {
+    --bg:#14161a; --painel:#1c1f25; --linha:#2b3038; --texto:#dfe3ea;
+    --fraco:#8b94a3; --ativo:#7fb4e8; --alerta:#e0a33c;
+  }
+  * { box-sizing:border-box; }
+  html,body { height:100%; margin:0; overflow:hidden; }
+  body { display:flex; background:var(--bg); color:var(--texto);
+    font:13px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+
+  #lateral { width:300px; flex:0 0 300px; background:var(--painel);
+    border-right:1px solid var(--linha); display:flex; flex-direction:column;
+    overflow:hidden; transition:margin-left .18s ease; }
+  body.recolhido #lateral { margin-left:-300px; }
+  #lateral h1 { font-size:13px; margin:0; padding:11px 14px 3px; }
+  #lateral h1 small { display:block; color:var(--fraco); font-weight:400; font-size:11px; }
+  #recolher { position:absolute; top:10px; left:10px; z-index:5; padding:3px 8px; }
+
+  .bloco { border-top:1px solid var(--linha); }
+  .bloco > h2 { font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--fraco); margin:0; padding:9px 14px; cursor:pointer;
+    display:flex; align-items:center; gap:7px; user-select:none; }
+  .bloco > h2 .seta { font-size:9px; transition:transform .15s; }
+  .bloco.fechado > h2 .seta { transform:rotate(-90deg); }
+  .bloco.fechado > .corpo { display:none; }
+  .corpo { padding:0 14px 12px; }
+
+  /* olho no estilo painel de camadas: sempre no mesmo lugar, clique direto */
+  .olho { flex:0 0 18px; width:18px; text-align:center; cursor:pointer;
+    font-size:12px; line-height:1; user-select:none; }
+  .olho.off { opacity:.22; }
+  .olho.misto { opacity:.55; }
+
+  #lista { overflow-y:auto; flex:1; }
+  #lista .bloco > .corpo { padding:0 0 6px; }
+  .item { display:flex; align-items:center; gap:7px; padding:5px 14px 5px 10px;
+    cursor:pointer; border-left:3px solid transparent; }
+  .item:hover { background:#232830; }
+  .item.sel { background:#223143; border-left-color:var(--ativo); }
+  .item.ativo { border-left-color:#ffd166; }
+  .item.oculto .cod, .item.oculto .rot { opacity:.4; }
+  .item .pino { width:9px; height:9px; border-radius:2px; flex:0 0 9px; }
+  .item .cod { font-weight:600; min-width:50px; }
+  .item .rot { color:var(--fraco); font-size:11px; flex:1; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap; }
+  .item .est { font-size:11px; }
+
+  #palco { flex:1; position:relative; min-width:0; }
+  canvas { display:block; width:100%; height:100%; }
+  #hud { position:absolute; left:14px; top:44px; pointer-events:none;
+    font:12px ui-monospace,monospace; line-height:1.8; }
+  #hud .vista { font-weight:600; letter-spacing:.06em; }
+  .tag { display:inline-block; padding:1px 7px; border-radius:4px;
+    background:#2a2f38; color:var(--fraco); margin-right:5px; }
+  .tag.on { background:#2c4a36; color:#86e0aa; }
+  .tag.aviso { background:#5a4520; color:#ffd166; }
+  #hud .msg { color:var(--alerta); }
+  #dica { position:absolute; left:14px; bottom:10px; color:var(--fraco);
+    font-size:11px; pointer-events:none; line-height:1.7; }
+
+  #vistas { position:absolute; top:10px; left:50%; transform:translateX(-50%);
+    display:flex; gap:4px; background:rgba(28,31,37,.92);
+    border:1px solid var(--linha); border-radius:7px; padding:4px; }
+  #vistas button { padding:4px 9px; font-size:11px; }
+  #vistas button.on { background:#35506e; border-color:#4a6f96; }
+
+  #ctrl { position:absolute; top:10px; right:12px; width:284px;
+    background:rgba(28,31,37,.96); border:1px solid var(--linha);
+    border-radius:8px; max-height:calc(100% - 20px); overflow-y:auto; }
+  #ctrl .topo { padding:12px 12px 4px; }
+  #ctrl .alvo { font-weight:600; }
+  #ctrl .meta { color:var(--fraco); font-size:11px; margin-top:2px; }
+  #ctrl .bloco:first-of-type { border-top:none; }
+
+  .eixo { display:flex; align-items:center; gap:6px; margin-bottom:5px; }
+  .eixo b { width:14px; color:var(--fraco); font-weight:600; }
+  button { background:#2a2f38; color:var(--texto); border:1px solid var(--linha);
+    border-radius:5px; padding:5px 8px; cursor:pointer; font:inherit; font-size:12px; }
+  button:hover:not(:disabled) { background:#364050; border-color:#4a5568; }
+  button:disabled { opacity:.35; cursor:default; }
+  button.largo { flex:1; }
+  button.on { background:#2c4a36; border-color:#3d6b4d; }
+  button.aviso { background:#5a4520; border-color:#7a5f2a; color:#ffd166; }
+  .val { color:var(--fraco); font-size:11px; min-width:60px; text-align:right; }
+  .linha-btn { display:flex; gap:5px; margin-top:7px; }
+  .grade { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin-top:7px; }
+  select { background:#2a2f38; color:var(--texto); border:1px solid var(--linha);
+    border-radius:5px; padding:4px 6px; font:inherit; font-size:12px; }
+  input[type=range] { flex:1; accent-color:#4a6f96; }
+  #copiar { width:100%; background:#1f4f38; border-color:#2f6d4f; }
+  #saida { width:100%; height:104px; margin-top:7px; background:#101318;
+    color:var(--texto); border:1px solid var(--linha); border-radius:5px;
+    font:11px/1.4 ui-monospace,monospace; padding:8px; resize:vertical; }
+  .nota { color:var(--fraco); font-size:11px; margin-top:7px; }
+  .km { display:flex; align-items:center; gap:6px; margin-bottom:3px; font-size:11px; }
+  .km span { flex:1; color:var(--fraco); }
+  .km button { min-width:62px; font:11px ui-monospace,monospace; padding:2px 6px; }
+  .km button.capturando { background:#5a4520; border-color:#7a5f2a; color:#ffd166; }
+</style>
+</head>
+<body>
+
+<div id="lateral">
+  <h1>Suprema correr 2F
+    <small>cena — hierarquia e visibilidade</small></h1>
+  <div id="lista"></div>
+</div>
+
+<div id="palco">
+  <button id="recolher" title="Recolher/expandir o painel">&laquo;</button>
+  <canvas id="tela"></canvas>
+
+  <div id="hud">
+    <div class="vista" id="hud-vista">PERSPECTIVE</div>
+    <div>
+      <span class="tag" id="tag-ferr">SELEÇÃO</span>
+      <span class="tag" id="tag-eixo">AXIS: FREE</span>
+      <span class="tag" id="tag-pivo">PIVÔ: CENTRO</span>
+    </div>
+    <div>
+      <span class="tag" id="tag-snap">SNAP OFF</span>
+      <span class="tag" id="tag-modo">SHADED</span>
+    </div>
+    <div class="msg" id="hud-msg"></div>
+  </div>
+
+  <div id="vistas">
+    <button data-vista="TOP">TOP</button>
+    <button data-vista="FRONT">FRONT</button>
+    <button data-vista="LEFT">LEFT</button>
+    <button data-vista="RIGHT">RIGHT</button>
+    <button data-vista="PERSPECTIVE" class="on">PERSP</button>
+  </div>
+
+  <div id="dica">
+    arrastar = orbitar · botão do meio (ou Shift) = pan · roda = zoom no cursor<br>
+    clique = selecionar · Ctrl+clique = somar/tirar · atalhos configuráveis no painel
+  </div>
+
+  <div id="ctrl">
+    <div class="topo">
+      <div class="alvo" id="alvo">nada selecionado</div>
+      <div class="meta" id="meta">clique numa peça no 3D ou na lista</div>
+    </div>
+
+    <div class="bloco" id="b-transf">
+      <h2><span class="seta">▾</span> Mover</h2>
+      <div class="corpo">
+        <div class="linha-btn" style="margin-top:0">
+          <button id="mover" class="largo">mover</button>
+          <button id="espelhar" class="largo">espelhar</button>
+        </div>
+        <div class="linha-btn">
+          <button id="alinhar" class="largo">alinhar ⇉ paralelo</button>
+        </div>
+        <div style="color:var(--fraco);font-size:10px;margin-top:9px">RESTRIÇÃO DE EIXO</div>
+        <div class="grade">
+          <button data-eixo="FREE" class="on">livre</button>
+          <button data-eixo="X">X</button>
+          <button data-eixo="Y">Y</button>
+          <button data-eixo="Z">Z</button>
+          <button data-eixo="XY">XY</button>
+          <button data-eixo="XZ">XZ</button>
+          <button data-eixo="YZ">YZ</button>
+        </div>
+        <div style="color:var(--fraco);font-size:10px;margin-top:9px">PIVÔ DE MANIPULAÇÃO</div>
+        <div class="grade" style="grid-template-columns:repeat(4,1fr)">
+          <button data-pivo="CENTER" class="on">centro</button>
+          <button data-pivo="INICIO">início</button>
+          <button data-pivo="FIM">fim</button>
+          <button data-pivo="AUTO">auto</button>
+        </div>
+        <div class="linha-btn"><button id="pick-vert" class="largo">pegar vértice…</button></div>
+        <div class="nota" style="margin-top:5px">O pivô é só o ponto de pega da
+          viewport. Não muda geometria nem posição construtiva.</div>
+
+        <div class="eixo" style="margin-top:10px"><b>X</b>
+          <button data-gira="x" data-d="90" class="largo">↻ +90°</button>
+          <button data-gira="x" data-d="-90" class="largo">↺ −90°</button>
+          <span class="val" id="v-rx">—</span></div>
+        <div class="eixo"><b>Y</b>
+          <button data-gira="y" data-d="90" class="largo">↻ +90°</button>
+          <button data-gira="y" data-d="-90" class="largo">↺ −90°</button>
+          <span class="val" id="v-ry">—</span></div>
+        <div class="eixo"><b>Z</b>
+          <button data-gira="z" data-d="90" class="largo">↻ +90°</button>
+          <button data-gira="z" data-d="-90" class="largo">↺ −90°</button>
+          <span class="val" id="v-rz">—</span></div>
+        <div class="linha-btn" style="align-items:center">
+          <span style="color:var(--fraco);font-size:11px">passo</span>
+          <select id="passo">
+            <option>1</option><option>5</option><option>10</option>
+            <option selected>25</option><option>50</option>
+          </select>
+          <span style="color:var(--fraco);font-size:11px">mm</span>
+        </div>
+        <div class="eixo" style="margin-top:8px"><b>X</b>
+          <button data-move="x" data-s="1" class="largo">+</button>
+          <button data-move="x" data-s="-1" class="largo">−</button>
+          <span class="val" id="v-tx">—</span></div>
+        <div class="eixo"><b>Y</b>
+          <button data-move="y" data-s="1" class="largo">+</button>
+          <button data-move="y" data-s="-1" class="largo">−</button>
+          <span class="val" id="v-ty">—</span></div>
+        <div class="eixo"><b>Z</b>
+          <button data-move="z" data-s="1" class="largo">+</button>
+          <button data-move="z" data-s="-1" class="largo">−</button>
+          <span class="val" id="v-tz">—</span></div>
+        <div class="linha-btn">
+          <button id="reset-peca" class="largo">resetar seleção</button>
+          <button id="reset-grupo" class="largo">resetar grupo</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="bloco fechado" id="b-snap">
+      <h2><span class="seta">▾</span> Snap e bloqueio</h2>
+      <div class="corpo">
+        <div class="linha-btn" style="margin-top:0">
+          <button id="snap" class="largo">snap vértice</button>
+        </div>
+        <div class="linha-btn">
+          <button id="lock" class="largo">🔒 bloquear</button>
+          <button id="unlock" class="largo">🔓 liberar</button>
+        </div>
+        <div class="nota">Peça bloqueada não move nem gira, mas continua
+          servindo de alvo para snap e de referência para alinhar.</div>
+      </div>
+    </div>
+
+    <div class="bloco fechado" id="b-folhas">
+      <h2><span class="seta">▾</span> Folhas — abrir / fechar</h2>
+      <div class="corpo">
+        <div class="eixo" style="margin-top:0"><b style="width:auto">interna</b>
+          <input type="range" id="ab-int" min="0" max="100" value="0">
+          <span class="val" id="v-abint">0 mm</span></div>
+        <div class="eixo"><b style="width:auto">externa</b>
+          <input type="range" id="ab-ext" min="0" max="100" value="0">
+          <span class="val" id="v-abext">0 mm</span></div>
+        <div class="linha-btn">
+          <button id="fechar-folhas" class="largo">fechar as duas</button>
+        </div>
+        <div class="nota">Simulação visual. Este deslocamento NÃO entra no
+          estado de montagem nem no export.</div>
+      </div>
+    </div>
+
+    <div class="bloco" id="b-visu">
+      <h2><span class="seta">▾</span> Visualização</h2>
+      <div class="corpo">
+        <div class="linha-btn" style="margin-top:0">
+          <button id="wire" class="largo">wireframe</button>
+          <button id="edged" class="largo">edged faces</button>
+        </div>
+        <div class="linha-btn">
+          <button id="shade" class="largo on">shade selected</button>
+        </div>
+        <div class="grade" style="grid-template-columns:repeat(5,1fr);">
+          <button data-vista="TOP">TOP</button>
+          <button data-vista="FRONT">FRO</button>
+          <button data-vista="LEFT">LEF</button>
+          <button data-vista="RIGHT">RIG</button>
+          <button data-vista="PERSPECTIVE" class="on">PER</button>
+        </div>
+        <div class="linha-btn">
+          <button id="isolar" class="largo">isolar</button>
+          <button id="esconder" class="largo">esconder</button>
+        </div>
+        <div class="linha-btn">
+          <button id="mostrar-sel" class="largo">mostrar sel.</button>
+          <button id="mostrar-tudo" class="largo">mostrar todos</button>
+        </div>
+        <div class="linha-btn">
+          <button id="enquadrar" class="largo"
+            title="Ajusta a câmera para mostrar todos os objetos atualmente visíveis.">ZOOM EXTENTS</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="bloco fechado" id="b-export">
+      <h2><span class="seta">▾</span> Exportar estado</h2>
+      <div class="corpo">
+        <button id="copiar">COPIAR ESTADO AJUSTADO</button>
+        <textarea id="saida" readonly placeholder="Ajuste alguma peça e clique em COPIAR ESTADO."></textarea>
+        <div class="nota">Cole este texto na conversa. Nada aqui altera o
+          código sozinho. Abertura das folhas, pivô, câmera e atalhos não
+          entram no export.</div>
+      </div>
+    </div>
+
+    <div class="bloco fechado" id="b-keymap">
+      <h2><span class="seta">▾</span> Atalhos / keymap</h2>
+      <div class="corpo">
+        <div id="km-lista"></div>
+        <div class="linha-btn"><button id="km-reset" class="largo">restaurar padrões</button></div>
+        <div class="nota">Clique no atalho e pressione a tecla nova. Fica
+          salvo neste navegador.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DADOS = /*__DADOS__*/null;
+
+const SECOES = [
+  {id:"QUADRO",        titulo:"QUADRO"},
+  {id:"FOLHA_INTERNA", titulo:"FOLHA INTERNA"},
+  {id:"FOLHA_EXTERNA", titulo:"FOLHA EXTERNA"},
+  {id:"BAGUETES",      titulo:"BAGUETES"},
+];
+const REFERENCIA_FIXA = "QUADRO-INFERIOR";
+
+// Quatro famílias de cor realmente distintas. O baguete deixou de ser uma
+// variação clara da folha: com dois conjuntos de baguete parecidos com as
+// duas folhas, era fácil pegar a peça errada — foi o que aconteceu na
+// montagem manual do Bruno.
+// Quatro famílias distintas entre si E distintas do AZUL, que é reservado
+// ao ESTADO de seleção. A folha externa era azulada e parecia
+// permanentemente selecionada — categoria nenhuma pode imitar um estado.
+const COR = {
+  QUADRO:        [186,186,180],   // cinza quente
+  FOLHA_INTERNA: [214,168, 88],   // ouro
+  FOLHA_EXTERNA: [198,112,150],   // rosa
+  BAGUETES:      [124,182,124],   // verde
+};
+const COR_BAG_INT = [140,190,120], COR_BAG_EXT = [110,176,146];
+
+function secaoDe(p){
+  if (p.grupo==="QUADRO") return "QUADRO";
+  if (p.grupo==="BAGUETES") return "BAGUETES";
+  return p.plano==="PLANO_EXTERNO" ? "FOLHA_EXTERNA" : "FOLHA_INTERNA";
+}
+function corDe(p){
+  if (p.grupo==="QUADRO") return COR.QUADRO;
+  const ext = p.plano==="PLANO_EXTERNO";
+  if (p.grupo==="BAGUETES") return ext ? COR_BAG_EXT : COR_BAG_INT;
+  return ext ? COR.FOLHA_EXTERNA : COR.FOLHA_INTERNA;
+}
+
+// --- estado ---------------------------------------------------------------
+const pecas = DADOS.instancias.map((i,k)=>({
+  ...i, idx:k, t:{...i.inicial}, visivel:i.grupo==="QUADRO",
+  bloqueado:i.rotulo===REFERENCIA_FIXA, secao:null,
+}));
+pecas.forEach(p=>p.secao=secaoDe(p));
+for (const cod in DADOS.geometrias) {
+  const g=DADOS.geometrias[cod];
+  g.aMax=Math.max(...g.externo.map(p=>p[0]));
+}
+
+let sel=new Set(), ativoId=null;
+let modo="SHADED", ferramenta="SELECT";
+let snapOn=false, snapOrigem=null, snapAlvoVis=null;
+let alinhando=false, pegandoVertice=false;
+let eixoTravado="FREE";                       // FREE|X|Y|Z|XY|XZ|YZ
+let pivoModo="CENTER";                        // CENTER|INICIO|FIM|VERTICE|AUTO
+let sombrearSel=true;                         // F2 — Shade Selected
+let arestas=false;                            // F4 — Edged Faces
+// Um clique some 1-2px de tremida; um orbit passa MUITO disso. Só acima
+// deste limiar a câmera é considerada em rotação.
+const LIMIAR_ORBITA=4;
+let pivoVertice=null;                         // {pecaId,a,b,t} — pega manual
+let vista="PERSPECTIVE";
+let ultimoMouse={x:0,y:0};
+const abertura={PLANO_INTERNO:0, PLANO_EXTERNO:0};
+const cam={alvo:[1000,600,0], dist:3400, yaw:-28, pitch:20, orto:false};
+
+// --- sessão suja / rascunho local -----------------------------------------
+// Recarregar a página perdia o trabalho inteiro em silêncio. `sujo()` marca
+// que existe ajuste manual; o navegador passa a avisar antes de sair, e um
+// rascunho fica em localStorage para o caso do acidente acontecer mesmo
+// assim. O rascunho NÃO é estado oficial da composição — é rede de proteção.
+const CHAVE_RASCUNHO="esquadriacore_viewport_rascunho_v1";
+let temAlteracao=false;
+function sujo(){
+  // A PRIMEIRA alteração grava na hora: é justamente ela que se perde se o
+  // acidente acontecer nos primeiros segundos. As seguintes esperam um
+  // pouco, para não gravar a cada clique de +1mm.
+  const primeira=!temAlteracao;
+  temAlteracao=true;
+  if (primeira) return salvaRascunho();
+  clearTimeout(sujo._t);
+  sujo._t=setTimeout(salvaRascunho,800);
+}
+function salvaRascunho(){
+  try{
+    localStorage.setItem(CHAVE_RASCUNHO,JSON.stringify({
+      quando:new Date().toISOString(),
+      pecas:pecas.map(p=>({id:p.id,t:p.t,bloqueado:p.bloqueado,visivel:p.visivel})),
+    }));
+  }catch(e){}
+}
+addEventListener("beforeunload",e=>{
+  if (!temAlteracao) return;              // sem alteração, sem incômodo
+  e.preventDefault(); e.returnValue="";
+});
+
+const MASCARA={FREE:[1,1,1], X:[1,0,0], Y:[0,1,0], Z:[0,0,1],
+               XY:[1,1,0], XZ:[1,0,1], YZ:[0,1,1]};
+
+// --- álgebra --------------------------------------------------------------
+const rad=g=>g*Math.PI/180;
+function matriz(rx,ry,rz){
+  const [cx,sx]=[Math.cos(rad(rx)),Math.sin(rad(rx))];
+  const [cy,sy]=[Math.cos(rad(ry)),Math.sin(rad(ry))];
+  const [cz,sz]=[Math.cos(rad(rz)),Math.sin(rad(rz))];
+  const X=[[1,0,0],[0,cx,-sx],[0,sx,cx]];
+  const Y=[[cy,0,sy],[0,1,0],[-sy,0,cy]];
+  const Z=[[cz,-sz,0],[sz,cz,0],[0,0,1]];
+  const mul=(A,B)=>A.map(r=>[0,1,2].map(j=>r[0]*B[0][j]+r[1]*B[1][j]+r[2]*B[2][j]));
+  return mul(mul(Z,Y),X);
+}
+const aplica=(M,p)=>[M[0][0]*p[0]+M[0][1]*p[1]+M[0][2]*p[2],
+                     M[1][0]*p[0]+M[1][1]*p[1]+M[1][2]*p[2],
+                     M[2][0]*p[0]+M[2][1]*p[1]+M[2][2]*p[2]];
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+const soma=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]];
+const cruz=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const pto=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+const norm=v=>{const n=Math.hypot(...v)||1;return [v[0]/n,v[1]/n,v[2]/n];};
+const mascara=d=>{const m=MASCARA[eixoTravado];return [d[0]*m[0],d[1]*m[1],d[2]*m[2]];};
+
+const desloqAbertura=p=>(p.plano&&abertura[p.plano])?abertura[p.plano]:0;
+function mundo(p,aVal,bVal,t){
+  const a=p.t.espelhado?DADOS.geometrias[p.codigo].aMax-aVal:aVal;
+  const M=p.M||(p.M=matriz(p.t.rx,p.t.ry,p.t.rz));
+  const q=aplica(M,[t,bVal,a]);
+  return [q[0]+p.t.tx+desloqAbertura(p), q[1]+p.t.ty, q[2]+p.t.tz];
+}
+const invalida=p=>{p.M=null;};
+
+function facesDe(p){
+  const g=DADOS.geometrias[p.codigo], L=p.comprimento, out=[];
+  for (const anel of [g.externo,...g.vazios]) {
+    const ini=anel.map(q=>mundo(p,q[0],q[1],0));
+    const fim=anel.map(q=>mundo(p,q[0],q[1],L));
+    for (let i=0;i<anel.length;i++){
+      const j=(i+1)%anel.length;
+      out.push({pts:[ini[i],ini[j],fim[j],fim[i]],peca:p});
+    }
+  }
+  for (const t of [0,L]) {
+    const aneis=[g.externo,...g.vazios].map(an=>an.map(q=>mundo(p,q[0],q[1],t)));
+    out.push({tampa:aneis,pts:aneis[0],peca:p});
+  }
+  return out;
+}
+function caixa(lista){
+  let mn=[1e9,1e9,1e9],mx=[-1e9,-1e9,-1e9];
+  for (const p of lista) {
+    const g=DADOS.geometrias[p.codigo];
+    for (const t of [0,p.comprimento]) for (const q of g.externo) {
+      const w=mundo(p,q[0],q[1],t);
+      for (let i=0;i<3;i++){ mn[i]=Math.min(mn[i],w[i]); mx[i]=Math.max(mx[i],w[i]); }
+    }
+  }
+  return {mn,mx};
+}
+// Centro da seção transversal numa das pontas — é o que dá "início" e "fim".
+function centroDaPonta(p,t){
+  const g=DADOS.geometrias[p.codigo];
+  let s=[0,0,0];
+  for (const q of g.externo){ const w=mundo(p,q[0],q[1],t); s=soma(s,w); }
+  return s.map(v=>v/g.externo.length);
+}
+const ativo=()=>pecas.find(p=>p.id===ativoId) || selecionadas()[0] || null;
+
+function centroDaPeca(p){
+  const {mn,mx}=caixa([p]);
+  return [(mn[0]+mx[0])/2,(mn[1]+mx[1])/2,(mn[2]+mx[2])/2];
+}
+// AUTO / FOLLOW VIEW: numa barra longa com zoom numa das pontas, o pivô fixo
+// no centro fica fora da tela e o gizmo some da região de trabalho. No modo
+// AUTO escolhe-se, entre INÍCIO / CENTRO / FIM, o que projeta mais perto de
+// onde o Bruno está olhando. Isso NÃO move a peça nem altera coordenada
+// alguma — troca só o ponto de pega da interface.
+function pontoAuto(a){
+  const W=tela.clientWidth,H=tela.clientHeight;
+  const B=baseCam(),esc=escalaBase(W,H);
+  const foco=[ultimoMouse.x||W/2, ultimoMouse.y||H/2];
+  let melhor=null,d2=Infinity;
+  for (const P of [centroDaPonta(a,0),centroDaPeca(a),centroDaPonta(a,a.comprimento)]) {
+    const s=projeta(P,B,W/2,H/2,esc);
+    if (!cam.orto && s[2]<=1) continue;
+    const d=(s[0]-foco[0])**2+(s[1]-foco[1])**2;
+    if (d<d2){ d2=d; melhor=P; }
+  }
+  return melhor||centroDaPeca(a);
+}
+function pontoDePega(){
+  const a=ativo(); if (!a) return null;
+  // Escolha manual do Bruno é autoridade e nunca é substituída pelo AUTO.
+  if (pivoModo==="VERTICE" && pivoVertice) {
+    const p=pecas.find(x=>x.id===pivoVertice.pecaId);
+    if (p) return mundo(p,pivoVertice.a,pivoVertice.b,pivoVertice.t);
+  }
+  if (pivoModo==="INICIO") return centroDaPonta(a,0);
+  if (pivoModo==="FIM") return centroDaPonta(a,a.comprimento);
+  if (pivoModo==="AUTO") return pontoAuto(a);
+  return centroDaPeca(a);
+}
+
+// --- câmera ---------------------------------------------------------------
+function baseCam(){
+  const y=rad(cam.yaw), p=rad(cam.pitch);
+  const dir=[Math.cos(p)*Math.sin(y),Math.sin(p),Math.cos(p)*Math.cos(y)];
+  const olho=[cam.alvo[0]+dir[0]*cam.dist,cam.alvo[1]+dir[1]*cam.dist,
+              cam.alvo[2]+dir[2]*cam.dist];
+  const fw=norm(sub(cam.alvo,olho));
+  const ref=Math.abs(fw[1])>0.999?[0,0,-1]:[0,1,0];
+  const dirH=norm(cruz(fw,ref));
+  return {olho,fw,dir:dirH,cima:cruz(dirH,fw)};
+}
+const escalaBase=(W,H)=>Math.min(W,H)*1.15;
+function projeta(p,B,cx,cy,esc){
+  const v=sub(p,B.olho), z=pto(v,B.fw);
+  const k=cam.orto?esc/cam.dist:esc/Math.max(z,1);
+  return [cx+pto(v,B.dir)*k, cy-pto(v,B.cima)*k, z];
+}
+function mundoSobCursor(sx,sy){
+  const W=tela.clientWidth,H=tela.clientHeight;
+  const B=baseCam(), esc=escalaBase(W,H), k=esc/cam.dist;
+  const u=(sx-W/2)/k, v=-(sy-H/2)/k;
+  return [cam.alvo[0]+B.dir[0]*u+B.cima[0]*v,
+          cam.alvo[1]+B.dir[1]*u+B.cima[1]*v,
+          cam.alvo[2]+B.dir[2]*u+B.cima[2]*v];
+}
+const ANGULO_USUARIO={yaw:-28,pitch:20};
+const PRESETS_ORTO=[[0,90],[0,0],[90,0],[-90,0]];   // TOP, FRONT, RIGHT, LEFT
+function defineVista(v){
+  const eraPreset=PRESETS_ORTO.some(([y,p])=>cam.yaw===y&&cam.pitch===p);
+  vista=v;
+  if (v==="PERSPECTIVE") {
+    cam.orto=false;
+    // Sair de uma vista ortográfica só desligando a projeção deixaria a
+    // câmera olhando exatamente de cima (ou de frente) — uma "perspectiva"
+    // sem nenhuma perspectiva, em que uma barra vertical vira um ponto.
+    // Voltar ao ângulo 3/4 é o que qualquer viewport faz.
+    if (eraPreset) { cam.yaw=ANGULO_USUARIO.yaw; cam.pitch=ANGULO_USUARIO.pitch; }
+  }
+  else {
+    cam.orto=true;
+    if (v==="TOP"){cam.yaw=0;cam.pitch=90;}
+    if (v==="FRONT"){cam.yaw=0;cam.pitch=0;}
+    if (v==="RIGHT"){cam.yaw=90;cam.pitch=0;}
+    if (v==="LEFT"){cam.yaw=-90;cam.pitch=0;}
+  }
+  document.querySelectorAll("[data-vista]").forEach(b=>
+    b.classList.toggle("on",b.dataset.vista===v));
+  pintaHud(); desenha();
+}
+// Z: aproxima no ponto sob o cursor, sem mexer no enquadramento geral.
+function zoomNoCursor(){
+  const alvoNovo=mundoSobCursor(ultimoMouse.x,ultimoMouse.y);
+  cam.alvo=alvoNovo;
+  cam.dist=Math.max(120,cam.dist*0.45);
+  msg("zoom no ponto sob o cursor");
+  desenha();
+}
+
+// --- desenho --------------------------------------------------------------
+const tela=document.getElementById("tela"), ctx=tela.getContext("2d");
+function dimensiona(){
+  const r=window.devicePixelRatio||1;
+  tela.width=tela.clientWidth*r; tela.height=tela.clientHeight*r;
+  ctx.setTransform(r,0,0,r,0,0);
+}
+const LUZ=norm([0.45,0.75,0.5]);
+let vertsTela=[];
+
+function preparaFaces(B,cx,cy,esc){
+  const prep=[];
+  for (const p of pecas) {
+    if (!p.visivel) continue;
+    for (const f of facesDe(p)) {
+      const proj=f.pts.map(q=>projeta(q,B,cx,cy,esc));
+      if (!cam.orto && proj.some(q=>q[2]<=1)) continue;
+      let z=0; for (const q of proj) z+=q[2];
+      prep.push({f,proj,z:z/proj.length,
+        tampa:f.tampa&&f.tampa.map(an=>an.map(q=>projeta(q,B,cx,cy,esc)))});
+    }
+  }
+  prep.sort((a,b)=>b.z-a.z);
+  return prep;
+}
+function traca(c,it){
+  c.beginPath();
+  for (const anel of (it.tampa||[it.proj])) {
+    c.moveTo(anel[0][0],anel[0][1]);
+    for (let k=1;k<anel.length;k++) c.lineTo(anel[k][0],anel[k][1]);
+    c.closePath();
+  }
+}
+
+function desenha(){
+  const W=tela.clientWidth,H=tela.clientHeight;
+  ctx.clearRect(0,0,W,H);
+  const B=baseCam(),cx=W/2,cy=H/2,esc=escalaBase(W,H);
+  const prep=preparaFaces(B,cx,cy,esc);
+
+  if (modo==="WIREFRAME") {
+    ctx.lineWidth=1;
+    for (const it of prep) {
+      const p=it.f.peca,s=sel.has(p.id),c=corDe(p);
+      ctx.strokeStyle=s?"rgba(150,200,255,.95)":`rgba(${c[0]},${c[1]},${c[2]},.42)`;
+      traca(ctx,it); ctx.stroke();
+    }
+  } else {
+    for (const it of prep) {
+      const p=it.f.peca,s=sel.has(p.id);
+      const n=norm(cruz(sub(it.f.pts[1],it.f.pts[0]),sub(it.f.pts[2],it.f.pts[0])));
+      const i=0.32+0.68*Math.abs(pto(n,LUZ));
+      let base=corDe(p);
+      // SHADE SELECTED: o realce entra na FACE, sem apagar a cor da
+      // categoria — a peça continua legível como quadro/folha/baguete. Com
+      // o modo desligado a seleção aparece só pelo contorno.
+      if (s && sombrearSel)
+        base=base.map((c,k)=>Math.round(c*0.72+[168,196,224][k]*0.28));
+      const cor=base.map(c=>Math.round(Math.min(255,c*i)));
+      ctx.fillStyle=`rgb(${cor[0]},${cor[1]},${cor[2]})`;
+      ctx.strokeStyle = s ? "rgba(127,180,232,.95)"
+                          : (arestas ? "rgba(16,18,22,.85)" : "rgba(20,22,26,.55)");
+      ctx.lineWidth = s ? 1.4 : (arestas ? 1 : .5);
+      traca(ctx,it); ctx.fill("evenodd"); ctx.stroke();
+    }
+  }
+
+  vertsTela=[];
+  if (snapOn||pegandoVertice) {
+    for (const p of pecas) {
+      if (!p.visivel) continue;
+      const g=DADOS.geometrias[p.codigo];
+      for (const t of [0,p.comprimento]) for (const q of g.externo) {
+        const w=mundo(p,q[0],q[1],t);
+        const s=projeta(w,B,cx,cy,esc);
+        if (!cam.orto && s[2]<=1) continue;
+        vertsTela.push({x:s[0],y:s[1],w,peca:p,a:q[0],b:q[1],t});
+      }
+    }
+    if (snapAlvoVis) {
+      ctx.fillStyle="#ffd166";
+      ctx.beginPath(); ctx.arc(snapAlvoVis.x,snapAlvoVis.y,4.5,0,6.284); ctx.fill();
+    }
+  }
+  desenhaEixos(B,cx,cy,esc);
+  if (ferramenta==="MOVE" && sel.size) desenhaGizmo(B,cx,cy,esc);
+}
+
+function desenhaEixos(B,cx,cy,esc){
+  const T=420,o=projeta([0,0,0],B,cx,cy,esc);
+  if (!cam.orto && o[2]<=1) return;
+  ctx.lineWidth=2;
+  for (const [v,rot,cor] of [[[T,0,0],"X","#e05c5c"],[[0,T,0],"Y","#5ce07a"],
+                             [[0,0,T],"Z","#5c9ce0"]]) {
+    const q=projeta(v,B,cx,cy,esc);
+    if (!cam.orto && q[2]<=1) continue;
+    ctx.strokeStyle=cor; ctx.beginPath();
+    ctx.moveTo(o[0],o[1]); ctx.lineTo(q[0],q[1]); ctx.stroke();
+    ctx.fillStyle=cor; ctx.font="bold 12px ui-monospace,monospace";
+    ctx.fillText(rot,q[0]+4,q[1]+4);
+  }
+}
+
+const EIXOS_GIZMO=[{e:"X",dir:[1,0,0],cor:"#e05c5c"},
+                   {e:"Y",dir:[0,1,0],cor:"#5ce07a"},
+                   {e:"Z",dir:[0,0,1],cor:"#5c9ce0"}];
+function gizmo(){
+  const P=pontoDePega(); if (!P) return null;
+  const W=tela.clientWidth,H=tela.clientHeight;
+  const B=baseCam(),cx=W/2,cy=H/2,esc=escalaBase(W,H);
+  const o=projeta(P,B,cx,cy,esc), L=cam.dist*0.09;
+  return {P,o,braços:EIXOS_GIZMO.map(a=>({...a,
+    q:projeta(soma(P,[a.dir[0]*L,a.dir[1]*L,a.dir[2]*L]),B,cx,cy,esc),L}))};
+}
+function desenhaGizmo(){
+  const g=gizmo(); if (!g) return;
+  for (const b of g.braços) {
+    const ativoEixo = eixoTravado===b.e || eixoTravado.includes(b.e);
+    ctx.strokeStyle=b.cor;
+    ctx.globalAlpha = (eixoTravado==="FREE"||ativoEixo)?1:0.25;
+    ctx.lineWidth=ativoEixo&&eixoTravado!=="FREE"?5:3;
+    ctx.beginPath(); ctx.moveTo(g.o[0],g.o[1]); ctx.lineTo(b.q[0],b.q[1]); ctx.stroke();
+    ctx.fillStyle=b.cor;
+    ctx.beginPath(); ctx.arc(b.q[0],b.q[1],5,0,6.284); ctx.fill();
+    ctx.globalAlpha=1;
+  }
+  ctx.fillStyle = pivoModo==="CENTER" ? "rgba(255,255,255,.85)" : "#ffd166";
+  ctx.beginPath(); ctx.arc(g.o[0],g.o[1],4.5,0,6.284); ctx.fill();
+}
+function distSeg(px,py,a,b){
+  const vx=b[0]-a[0],vy=b[1]-a[1],L2=vx*vx+vy*vy||1;
+  let t=((px-a[0])*vx+(py-a[1])*vy)/L2; t=Math.max(0,Math.min(1,t));
+  return Math.hypot(px-(a[0]+vx*t),py-(a[1]+vy*t));
+}
+function bracoEm(sx,sy){
+  const g=gizmo(); if (!g) return null;
+  if (Math.hypot(sx-g.o[0],sy-g.o[1])<9) return {livre:true};
+  for (const b of g.braços) if (distSeg(sx,sy,g.o,b.q)<8) return {eixo:b.e};
+  return null;
+}
+
+// Ponto dentro de um conjunto de anéis, regra par-ímpar — a MESMA que o
+// desenho usa em `fill("evenodd")`, então o que se vê e o que se clica são a
+// mesma figura, furos inclusive.
+function dentroDosAneis(x,y,aneis){
+  let cruzamentos=0;
+  for (const an of aneis) {
+    for (let i=0,j=an.length-1;i<an.length;j=i++) {
+      const a=an[i], b=an[j];
+      if ((a[1]>y)!==(b[1]>y)) {
+        const xi=a[0]+(y-a[1])*(b[0]-a[0])/(b[1]-a[1]);
+        if (x<xi) cruzamentos++;
+      }
+    }
+  }
+  return (cruzamentos&1)===1;
+}
+
+// Seleção ANALÍTICA: testa o ponto contra os polígonos já projetados, da
+// frente para o fundo.
+//
+// A versão anterior desenhava a cena num canvas oculto com uma cor por peça
+// e lia o pixel de volta. Essa leitura se mostrou não confiável duas vezes:
+// primeiro devolvendo uma cor mesclada que não corresponde a peça nenhuma, e
+// depois devolvendo peça mesmo com TODAS as peças ocultas — buffer obsoleto.
+// O sintoma para o Bruno era o clique não selecionar (ou selecionar o que não
+// estava na tela). Sem leitura de volta, o problema não tem como existir.
+function pecaEm(sx,sy){
+  const W=tela.clientWidth,H=tela.clientHeight;
+  const B=baseCam(),prep=preparaFaces(B,W/2,H/2,escalaBase(W,H));
+  for (let i=prep.length-1;i>=0;i--) {          // prep vem do fundo p/ frente
+    const it=prep[i];
+    if (dentroDosAneis(sx,sy,it.tampa||[it.proj])) return it.f.peca;
+  }
+  return null;
+}
+// --- interação ------------------------------------------------------------
+let arrasta=null;
+tela.addEventListener("contextmenu",e=>e.preventDefault());
+tela.addEventListener("mousedown",e=>{
+  const r=tela.getBoundingClientRect();
+  const sx=e.clientX-r.left, sy=e.clientY-r.top;
+  arrasta={x:e.clientX,y:e.clientY,botao:e.button,moveu:false,sx,sy};
+  if (e.button===1) e.preventDefault();
+  // Modo ALINHAR ou PEGAR VÉRTICE consome o clique inteiro: sem isto o
+  // mousedown iniciava arrasto de gizmo e o mouseup retornava antes do
+  // clique — foi exatamente por isso que o Align não funcionou no uso real.
+  if (alinhando || pegandoVertice) return;
+  if (e.button===0 && ferramenta==="MOVE" && sel.size && !e.shiftKey) {
+    let b=bracoEm(sx,sy);
+    if (b && b.eixo) defineEixo(b.eixo);          // clicar na seta trava o eixo
+    if (!b) {
+      const sob=pecaEm(sx,sy);
+      if (sob && sel.has(sob.id)) b={livre:true};
+    }
+    if (b) {
+      const moviveis=selecionadas().filter(p=>!p.bloqueado);
+      if (!moviveis.length) { msg("seleção bloqueada — 🔓 liberar para mover"); return; }
+      arrasta.gizmo={base:moviveis.map(p=>({p,t:{...p.t}})), pega:pontoDePega()};
+    }
+  }
+});
+addEventListener("mouseup",e=>{
+  if (arrasta && arrasta.gizmo) {
+    if (arrasta.moveu) sujo();
+    arrasta=null; sincroniza(); return;
+  }
+  if (arrasta && !arrasta.moveu && e.button===0) clique(e,arrasta);
+  arrasta=null;
+});
+addEventListener("mousemove",e=>{
+  const r=tela.getBoundingClientRect();
+  const sx=e.clientX-r.left, sy=e.clientY-r.top;
+  ultimoMouse={x:sx,y:sy};
+  if (!arrasta) {
+    // `cursor()` consulta o buffer de selecão, que re-renderiza a cena;
+    // fazer isso a cada pixel travaria a viewport. 70ms é imperceptível para
+    // a mão e barato para a máquina.
+    const agora=performance.now();
+    if (agora-(ultimoMouse.quando||0)>70) {
+      ultimoMouse.quando=agora;
+      tela.style.cursor=cursor(sx,sy);
+    }
+    if (snapOn||pegandoVertice) {
+      const antes=snapAlvoVis;
+      snapAlvoVis=maisProximo(sx,sy,pegandoVertice);
+      if (antes!==snapAlvoVis) desenha();
+    }
+    if (pivoModo==="AUTO" && ferramenta==="MOVE" && sel.size) desenha();
+    return;
+  }
+  const dx=e.clientX-arrasta.x, dy=e.clientY-arrasta.y;
+  if (Math.abs(dx)+Math.abs(dy)>2) arrasta.moveu=true;
+  if (arrasta.gizmo) { arrastaGizmo(arrasta,sx,sy); return; }
+  arrasta.x=e.clientX; arrasta.y=e.clientY;
+  const pan=arrasta.botao===1||e.shiftKey;
+  if (pan) {
+    const B=baseCam();
+    const k=cam.dist/escalaBase(tela.clientWidth,tela.clientHeight);
+    for (let i=0;i<3;i++) cam.alvo[i]-=(B.dir[i]*dx-B.cima[i]*dy)*k;
+  } else if (arrasta.botao===0) {
+    // Só um ORBIT DE VERDADE tira a vista ortográfica. Antes, qualquer
+    // tremida de 1px durante um clique já jogava a viewport em PERSPECTIVE —
+    // era o que fazia o clique no vazio "sair do TOP" sozinho.
+    arrasta.acumulado=(arrasta.acumulado||0)+Math.abs(dx)+Math.abs(dy);
+    if (arrasta.acumulado<LIMIAR_ORBITA) return;
+    if (vista!=="PERSPECTIVE") defineVista("PERSPECTIVE");
+    cam.yaw-=dx*0.4;
+    cam.pitch=Math.max(-88,Math.min(88,cam.pitch+dy*0.4));
+  }
+  desenha();
+});
+
+// Um único caminho de movimento: calcula o deslocamento bruto, aplica o snap
+// (se houver) e SÓ ENTÃO passa pela máscara do eixo travado. Assim o snap
+// nunca quebra a restrição em silêncio — no máximo fica parcial, e o HUD diz.
+function arrastaGizmo(a,sx,sy){
+  const gz=a.gizmo;
+  gz.base.forEach(b=>{ b.p.t={...b.t}; invalida(b.p); });
+  const p0=mundoSobCursor(a.sx,a.sy), p1=mundoSobCursor(sx,sy);
+  let d=sub(p1,p0), viaSnap=false;
+  if (snapOn && gz.pega) {
+    const cand=maisProximo(sx,sy,false,gz.base.map(b=>b.p.id));
+    snapAlvoVis=cand;
+    if (cand) { d=sub(cand.w,gz.pega); viaSnap=true; }
+  }
+  const dm=mascara(d);
+  if (viaSnap && eixoTravado!=="FREE") {
+    const perdeu=d.some((v,i)=>Math.abs(v-dm[i])>1e-9);
+    if (perdeu) msg(`snap limitado pelo eixo ${eixoTravado}`);
+  }
+  gz.base.forEach(b=>{ b.p.t.tx=b.t.tx+dm[0]; b.p.t.ty=b.t.ty+dm[1];
+                       b.p.t.tz=b.t.tz+dm[2]; invalida(b.p); });
+  desenha(); pintaCtrl();
+}
+
+tela.addEventListener("wheel",e=>{
+  e.preventDefault();
+  const r=tela.getBoundingClientRect();
+  const antes=mundoSobCursor(e.clientX-r.left,e.clientY-r.top);
+  const nova=Math.max(120,Math.min(30000,cam.dist*(e.deltaY>0?1.12:0.893)));
+  const razao=nova/cam.dist; cam.dist=nova;
+  for (let i=0;i<3;i++) cam.alvo[i]=antes[i]+(cam.alvo[i]-antes[i])*razao;
+  desenha();
+},{passive:false});
+
+function maisProximo(sx,sy,soSelecionadas,excluirIds,semLimite){
+  let melhor=null,d2=semLimite?Infinity:30*30;
+  for (const v of vertsTela) {
+    if (soSelecionadas && !sel.has(v.peca.id)) continue;
+    if (excluirIds && excluirIds.includes(v.peca.id)) continue;
+    const d=(v.x-sx)**2+(v.y-sy)**2;
+    if (d<d2){ d2=d; melhor=v; }
+  }
+  return melhor;
+}
+
+function clique(e,a){
+  const p=pecaEm(a.sx,a.sy);
+  if (pegandoVertice) return pegaVertice(a);
+  if (alinhando) return aplicaAlinhamento(p);
+  if (snapOn && ferramenta!=="MOVE") return cliqueSnap(a);
+  if (!p) { if (!e.ctrlKey) { sel.clear(); ativoId=null; sincroniza(); } return; }
+  seleciona(p,e.ctrlKey);
+}
+function seleciona(p,somar){
+  if (somar) { if (sel.has(p.id)) { sel.delete(p.id); if (ativoId===p.id) ativoId=[...sel][0]||null; }
+               else { sel.add(p.id); ativoId=p.id; } }
+  else { sel.clear(); sel.add(p.id); ativoId=p.id; }
+  sincroniza();
+}
+
+function cliqueSnap(a){
+  const v=maisProximo(a.sx,a.sy);
+  if (!v) { msg("snap: nenhum vértice perto do cursor"); return; }
+  if (!snapOrigem) {
+    if (!sel.has(v.peca.id)) { msg("snap: escolha primeiro um vértice da peça SELECIONADA"); return; }
+    snapOrigem=v; msg("snap: agora clique no vértice de DESTINO"); desenha(); return;
+  }
+  const d=mascara(sub(v.w,snapOrigem.w));
+  const moviveis=selecionadas().filter(p=>!p.bloqueado);
+  if (!moviveis.length) { msg("seleção bloqueada — 🔓 liberar para mover"); snapOrigem=null; return; }
+  moviveis.forEach(p=>{ p.t.tx+=d[0]; p.t.ty+=d[1]; p.t.tz+=d[2]; invalida(p); });
+  snapOrigem=null; sujo(); msg("snap aplicado"); sincroniza();
+}
+
+function pegaVertice(a){
+  const v=maisProximo(a.sx,a.sy,true);
+  pegandoVertice=false;
+  document.getElementById("pick-vert").classList.remove("aviso");
+  if (!v) { msg("pega: nenhum vértice da seleção perto do cursor"); desenha(); return; }
+  pivoVertice={pecaId:v.peca.id,a:v.a,b:v.b,t:v.t};
+  definePivo("VERTICE");
+  msg("pivô no vértice escolhido");
+}
+
+let msgTimer=null;
+function msg(t){
+  document.getElementById("hud-msg").textContent=t;
+  clearTimeout(msgTimer);
+  msgTimer=setTimeout(()=>document.getElementById("hud-msg").textContent="",4500);
+}
+
+// --- alinhar paralelo -----------------------------------------------------
+const ANG=[0,90,180,270];
+const eixoExtrusao=t=>aplica(matriz(t.rx,t.ry,t.rz),[1,0,0]);
+function traco(A,B){ let s=0; for(let i=0;i<3;i++) for(let j=0;j<3;j++) s+=A[i][j]*B[i][j]; return s; }
+// Alinha a ORIENTAÇÃO INTEIRA à da referência, não só o eixo de extrusão.
+//
+// A versão anterior exigia apenas que o eixo ficasse paralelo e, entre os
+// candidatos, escolhia o MAIS PARECIDO COM O ATUAL. O efeito prático era que
+// ela não fazia nada nos dois casos mais comuns:
+//   · peça com o eixo já paralelo, mas ROLADA no próprio eixo → devolvia a
+//     mesma rotação;
+//   · peça com o eixo invertido 180° → idem, porque |dot| = 1 também conta
+//     como paralelo.
+// Ou seja: só corrigia quando o eixo estava perpendicular. Em tudo o mais o
+// Bruno via a mensagem de confirmação e a peça parada.
+//
+// Agora a referência é quem manda: entre os candidatos com eixo paralelo,
+// vence o mais próximo da orientação DA REFERÊNCIA — o que normaliza também
+// o rolamento. O sentido do eixo atual é preservado quando existe candidato
+// com o mesmo sentido, para não virar a peça ponta com ponta sem pedido.
+function alinhaParalelo(alvo,refT){
+  const eixoRef=eixoExtrusao(refT), eixoAtual=eixoExtrusao(alvo);
+  const refM=matriz(refT.rx,refT.ry,refT.rz);
+  const sentidoAtual=Math.sign(pto(eixoAtual,eixoRef));
+  let melhor=null,score=-1e9;
+  for (const rx of ANG) for (const ry of ANG) for (const rz of ANG) {
+    const M=matriz(rx,ry,rz);
+    const d=pto(aplica(M,[1,0,0]),eixoRef);
+    if (Math.abs(Math.abs(d)-1)>1e-6) continue;      // eixo não paralelo
+    const mesmoSentido = sentidoAtual===0 || Math.sign(d)===sentidoAtual;
+    const s=traco(refM,M)+(mesmoSentido?10:0);
+    if (s>score){ score=s; melhor={rx,ry,rz}; }
+  }
+  return melhor;
+}
+function entraAlinhar(){
+  if (!sel.size) { msg("alinhar: selecione antes a peça a corrigir"); return; }
+  alinhando=!alinhando;
+  document.getElementById("alinhar").classList.toggle("aviso",alinhando);
+  msg(alinhando?"ALINHAR PARALELO → escolha a REFERÊNCIA (3D ou lista). Esc cancela.":"alinhar: cancelado");
+  desenha();
+}
+function aplicaAlinhamento(ref){
+  alinhando=false;
+  document.getElementById("alinhar").classList.remove("aviso");
+  if (!ref) { msg("alinhar: cancelado (nenhuma referência)"); desenha(); return; }
+  const alvos=selecionadas().filter(p=>!p.bloqueado && p.id!==ref.id);
+  if (!alvos.length) {
+    msg(selecionadas().some(p=>p.bloqueado)
+      ? "alinhar: a seleção está bloqueada — 🔓 liberar primeiro"
+      : "alinhar: nada para girar (referência é a própria seleção)");
+    sincroniza(); return;
+  }
+  let n=0, iguais=0;
+  for (const p of alvos) {
+    const r=alinhaParalelo(p.t,ref.t);
+    if (!r) continue;
+    const mudou = r.rx!==p.t.rx || r.ry!==p.t.ry || r.rz!==p.t.rz;
+    Object.assign(p.t,r); invalida(p);
+    if (mudou) n++; else iguais++;
+  }
+  // Silêncio é o pior resultado possível aqui: se nada mudou, dizer que nada
+  // mudou — e por quê.
+  msg(n ? `${ref.codigo}/${ref.rotulo} como referência → ${n} peça(s) alinhada(s)`
+        : `já estava(m) paralela(s) a ${ref.codigo}/${ref.rotulo} — nada a girar`);
+  if (n) sujo();
+  sincroniza();
+}
+
+// --- keymap ---------------------------------------------------------------
+const ACOES=[
+  ["mover","Mover","W"], ["espelhar","Espelhar (mirror)","M"],
+  ["snap","Snap","S"], ["wire","Wireframe","F3"],
+  ["shade","Shade selected","F2"], ["edged","Edged faces","F4"],
+  ["zoomCursor","Zoom no cursor","Z"], ["zoomExt","Zoom extents","E"],
+  ["align","Alinhar paralelo","A"], ["esconder","Esconder","H"],
+  ["isolar","Isolar","I"], ["mostrar","Mostrar todos","G"],
+  ["lock","Bloquear","K"], ["unlock","Liberar","U"],
+  ["top","Top","T"], ["front","Front","F"], ["left","Left","L"],
+  ["right","Right","R"], ["persp","Perspective","P"],
+  ["eixoFree","Eixo livre","1"], ["eixoX","Eixo X","2"],
+  ["eixoY","Eixo Y","3"], ["eixoZ","Eixo Z","4"],
+  ["pivoCentro","Pivô centro","5"], ["pivoInicio","Pivô início","6"],
+  ["pivoFim","Pivô fim","7"], ["pivoVert","Pegar vértice","8"],
+  ["pivoAuto","Pivô auto (follow view)","9"],
+];
+const CHAVE_KM="esquadriacore_viewport_keymap_v1";
+let keymap={};
+function keymapPadrao(){ const k={}; ACOES.forEach(([id,,tec])=>k[id]=tec); return k; }
+function carregaKeymap(){
+  keymap=keymapPadrao();
+  try {
+    const s=localStorage.getItem(CHAVE_KM);
+    if (s) Object.assign(keymap,JSON.parse(s));
+  } catch(e) {}
+}
+function salvaKeymap(){ try{ localStorage.setItem(CHAVE_KM,JSON.stringify(keymap)); }catch(e){} }
+
+const EXECUTA={
+  mover:()=>alternaFerramenta(), snap:()=>alternaSnap(), wire:()=>alternaModo(),
+  espelhar:()=>espelha(), shade:()=>alternaSombra(), edged:()=>alternaArestas(),
+  pivoAuto:()=>definePivo("AUTO"),
+  zoomCursor:()=>zoomNoCursor(), zoomExt:()=>enquadrar(), align:()=>entraAlinhar(),
+  esconder:()=>{selecionadas().forEach(p=>p.visivel=false);sincroniza();},
+  isolar:()=>{ if(sel.size){pecas.forEach(p=>p.visivel=sel.has(p.id));sincroniza();enquadrar();} },
+  mostrar:()=>{pecas.forEach(p=>p.visivel=true);sincroniza();enquadrar();},
+  lock:()=>{selecionadas().forEach(p=>p.bloqueado=true);msg("bloqueado");sincroniza();},
+  unlock:()=>{selecionadas().forEach(p=>p.bloqueado=false);msg("liberado");sincroniza();},
+  top:()=>defineVista("TOP"), front:()=>defineVista("FRONT"),
+  left:()=>defineVista("LEFT"), right:()=>defineVista("RIGHT"),
+  persp:()=>defineVista("PERSPECTIVE"),
+  eixoFree:()=>defineEixo("FREE"), eixoX:()=>defineEixo("X"),
+  eixoY:()=>defineEixo("Y"), eixoZ:()=>defineEixo("Z"),
+  pivoCentro:()=>definePivo("CENTER"), pivoInicio:()=>definePivo("INICIO"),
+  pivoFim:()=>definePivo("FIM"), pivoVert:()=>iniciaPegaVertice(),
+};
+const nomeTecla=e=>e.key.length===1?e.key.toUpperCase():e.key;
+
+let capturando=null;
+addEventListener("keydown",e=>{
+  if (capturando) {
+    e.preventDefault();
+    const tec=nomeTecla(e);
+    if (tec==="Escape") { capturando=null; montaKeymap(); return; }
+    const dono=Object.keys(keymap).find(k=>keymap[k]===tec && k!==capturando);
+    if (dono) {
+      const rotulo=ACOES.find(a=>a[0]===dono)[1];
+      if (!confirm(`Atalho já usado por ${rotulo}. Substituir?`)) { capturando=null; montaKeymap(); return; }
+      delete keymap[dono];
+    }
+    keymap[capturando]=tec; capturando=null; salvaKeymap(); montaKeymap();
+    return;
+  }
+  if (["TEXTAREA","SELECT","INPUT"].includes(e.target.tagName)) return;
+  const tec=nomeTecla(e);
+  if (tec==="Escape") {
+    sel.clear(); ativoId=null; snapOrigem=null; alinhando=false; pegandoVertice=false;
+    document.getElementById("alinhar").classList.remove("aviso");
+    document.getElementById("pick-vert").classList.remove("aviso");
+    sincroniza(); return;
+  }
+  const acao=Object.keys(keymap).find(k=>keymap[k]===tec);
+  if (acao && EXECUTA[acao]) { e.preventDefault(); EXECUTA[acao](); }
+});
+
+function montaKeymap(){
+  const el=document.getElementById("km-lista");
+  el.innerHTML="";
+  for (const [id,rotulo] of ACOES) {
+    const d=document.createElement("div");
+    d.className="km";
+    d.innerHTML=`<span>${rotulo}</span>`;
+    const b=document.createElement("button");
+    b.textContent = capturando===id ? "pressione…" : (keymap[id]||"—");
+    b.className = capturando===id ? "capturando" : "";
+    b.onclick=()=>{ capturando=id; montaKeymap(); };
+    d.appendChild(b); el.appendChild(d);
+  }
+}
+
+// --- ferramentas / estados ------------------------------------------------
+function alternaModo(){
+  modo = modo==="SHADED"?"WIREFRAME":"SHADED";
+  document.getElementById("wire").classList.toggle("on",modo==="WIREFRAME");
+  pintaHud(); desenha();
+}
+function alternaSnap(){
+  snapOn=!snapOn; snapOrigem=null; snapAlvoVis=null;
+  document.getElementById("snap").classList.toggle("on",snapOn);
+  msg(snapOn?(ferramenta==="MOVE"
+      ?"snap: arraste a peça — ela gruda pelo pivô no vértice de destino"
+      :"snap: clique um vértice da peça selecionada (origem)"):"");
+  pintaHud(); desenha();
+}
+function alternaFerramenta(){
+  ferramenta = ferramenta==="MOVE"?"SELECT":"MOVE";
+  document.getElementById("mover").classList.toggle("on",ferramenta==="MOVE");
+  pintaHud(); desenha();
+}
+function alternaSombra(){
+  sombrearSel=!sombrearSel;
+  document.getElementById("shade").classList.toggle("on",sombrearSel);
+  msg("shade selected "+(sombrearSel?"ligado":"desligado"));
+  pintaHud(); desenha();
+}
+function alternaArestas(){
+  arestas=!arestas;
+  document.getElementById("edged").classList.toggle("on",arestas);
+  msg("edged faces "+(arestas?"ligado":"desligado"));
+  pintaHud(); desenha();
+}
+// MIRROR: espelha a seção no eixo local, o mesmo espelhamento que a
+// composição já sabia representar. Transformação VISUAL de curadoria — não
+// afirma que existe uma barra espelhada de fábrica.
+function espelha(){
+  mexe(p=>p.t.espelhado=!p.t.espelhado);
+  const s=selecionadas().filter(p=>!p.bloqueado);
+  if (s.length) msg(`espelhado: ${s.map(p=>p.codigo).join(", ")}`);
+}
+
+// Cursor contextual: o Bruno precisa saber pelo cursor o que vai acontecer
+// ANTES de clicar.
+function cursor(sx,sy){
+  if (arrasta) {
+    if (arrasta.gizmo) return "grabbing";
+    if (arrasta.botao===1) return "move";
+    return "grabbing";
+  }
+  if (alinhando || pegandoVertice) return "crosshair";
+  if (ferramenta==="MOVE" && sel.size) {
+    const b=bracoEm(sx,sy);
+    if (b) return b.livre ? "grab" : (b.eixo==="Y" ? "ns-resize" : "ew-resize");
+  }
+  const p=pecaEm(sx,sy);
+  if (!p) return "default";
+  return (ferramenta==="MOVE" && sel.has(p.id)) ? "grab" : "pointer";
+}
+function defineEixo(e){
+  eixoTravado=e;
+  document.querySelectorAll("[data-eixo]").forEach(b=>
+    b.classList.toggle("on",b.dataset.eixo===e));
+  pintaHud(); desenha();
+}
+function definePivo(p){
+  pivoModo=p;
+  document.querySelectorAll("[data-pivo]").forEach(b=>
+    b.classList.toggle("on",b.dataset.pivo===p));
+  pintaHud(); desenha();
+}
+function iniciaPegaVertice(){
+  if (!sel.size) { msg("pegar vértice: selecione antes a peça"); return; }
+  pegandoVertice=true;
+  document.getElementById("pick-vert").classList.add("aviso");
+  msg("clique num vértice da peça SELECIONADA para virar o pivô");
+  desenha();
+}
+const NOME_PIVO={CENTER:"CENTRO",INICIO:"INÍCIO",FIM:"FIM",VERTICE:"VÉRTICE",
+                 AUTO:"AUTO"};
+function pintaHud(){
+  document.getElementById("hud-vista").textContent=vista;
+  const f=document.getElementById("tag-ferr");
+  f.textContent=ferramenta==="MOVE"?"MOVER":"SELEÇÃO";
+  f.classList.toggle("on",ferramenta==="MOVE");
+  const ex=document.getElementById("tag-eixo");
+  ex.textContent="AXIS: "+eixoTravado;
+  ex.className="tag"+(eixoTravado!=="FREE"?" aviso":"");
+  const pv=document.getElementById("tag-pivo");
+  pv.textContent="PIVÔ: "+NOME_PIVO[pivoModo];
+  pv.className="tag"+(pivoModo!=="CENTER"?" aviso":"");
+  const s=document.getElementById("tag-snap");
+  s.textContent=snapOn?"SNAP ON":"SNAP OFF"; s.classList.toggle("on",snapOn);
+  const m=document.getElementById("tag-modo");
+  m.textContent=modo+(arestas?" +EDGED":"")+(sombrearSel?"":" (sem shade sel)");
+  m.classList.toggle("on",modo==="WIREFRAME"||arestas);
+}
+
+// --- painel ---------------------------------------------------------------
+const alterada=p=>["tx","ty","tz","rx","ry","rz"].some(k=>p.t[k]!==p.inicial[k])
+                  ||p.t.espelhado!==p.inicial.espelhado;
+const selecionadas=()=>pecas.filter(p=>sel.has(p.id));
+
+function montaLista(){
+  const el=document.getElementById("lista");
+  const fechadas=new Set([...el.querySelectorAll(".bloco.fechado")].map(b=>b.dataset.sec));
+  el.innerHTML="";
+  for (const s of SECOES) {
+    const membros=pecas.filter(p=>p.secao===s.id);
+    const vis=membros.filter(p=>p.visivel).length;
+    const estado = vis===0?"off" : (vis===membros.length?"":"misto");
+    const bl=document.createElement("div");
+    bl.className="bloco"+(fechadas.has(s.id)?" fechado":"");
+    bl.dataset.sec=s.id;
+    bl.innerHTML=`<h2><span class="olho ${estado}" data-olhog="${s.id}"
+        title="Mostrar/ocultar o grupo">👁</span><span class="seta">▾</span>
+      ${s.titulo} <span style="color:var(--fraco);text-transform:none;
+        letter-spacing:0">(${membros.length})</span></h2>
+      <div class="corpo"><div style="padding:0 14px 5px">
+        <button data-lockg="${s.id}" style="padding:1px 6px;font-size:10px">🔒 grupo</button>
+        <button data-resetg="${s.id}" style="padding:1px 6px;font-size:10px">restaurar</button>
+      </div></div>`;
+    const corpo=bl.querySelector(".corpo");
+    for (const p of membros) {
+      const c=corDe(p);
+      const d=document.createElement("div");
+      d.className="item"+(sel.has(p.id)?" sel":"")+(p.id===ativoId?" ativo":"")
+                 +(p.visivel?"":" oculto");
+      d.innerHTML=`<span class="olho ${p.visivel?"":"off"}" data-olho="${p.id}"
+          title="Mostrar/ocultar">👁</span>
+        <span class="pino" style="background:rgb(${c[0]},${c[1]},${c[2]})"></span>
+        <span class="cod">${p.codigo}</span>
+        <span class="rot">${p.rotulo}</span>
+        <span class="est">${p.bloqueado?"🔒":""}${alterada(p)?"•":""}</span>`;
+      d.onclick=ev=>{
+        if (ev.target.dataset.olho) return;
+        // A lista também serve de referência para o Alinhar — antes só o 3D
+        // funcionava, e clicar na lista simplesmente trocava a seleção.
+        if (alinhando) return aplicaAlinhamento(p);
+        seleciona(p,ev.ctrlKey);
+      };
+      corpo.appendChild(d);
+    }
+    bl.querySelector("h2").onclick=ev=>{
+      if (ev.target.dataset.olhog) return;
+      bl.classList.toggle("fechado");
+    };
+    el.appendChild(bl);
+  }
+  // Olho por peça: toggle de verdade, nos dois sentidos, sem depender de
+  // restaurar. Era este o defeito relatado no uso real.
+  el.querySelectorAll("[data-olho]").forEach(o=>o.onclick=ev=>{
+    ev.stopPropagation();
+    const p=pecas.find(x=>x.id===o.dataset.olho);
+    p.visivel=!p.visivel; sujo(); sincroniza();
+  });
+  // Olho do grupo vive no cabeçalho, então continua clicável com o grupo
+  // recolhido.
+  el.querySelectorAll("[data-olhog]").forEach(o=>o.onclick=ev=>{
+    ev.stopPropagation();
+    const membros=pecas.filter(p=>p.secao===o.dataset.olhog);
+    const ligar=!membros.every(p=>p.visivel);
+    membros.forEach(p=>p.visivel=ligar);
+    sincroniza(); if (ligar) enquadrar();
+  });
+  el.querySelectorAll("[data-lockg]").forEach(b=>b.onclick=ev=>{
+    ev.stopPropagation();
+    const membros=pecas.filter(p=>p.secao===b.dataset.lockg);
+    const travar=membros.some(p=>!p.bloqueado);
+    membros.forEach(p=>p.bloqueado=travar);
+    msg(`${b.dataset.lockg}: ${travar?"bloqueado":"liberado"}`); sincroniza();
+  });
+  el.querySelectorAll("[data-resetg]").forEach(b=>b.onclick=ev=>{
+    ev.stopPropagation();
+    pecas.filter(p=>p.secao===b.dataset.resetg&&!p.bloqueado)
+         .forEach(p=>{ p.t={...p.inicial}; invalida(p); });
+    sincroniza();
+  });
+}
+
+function pintaCtrl(){
+  const s=selecionadas(), on=s.length>0;
+  const livres=s.filter(p=>!p.bloqueado).length;
+  // Os botões de transformação seguem HABILITADOS mesmo com a seleção
+  // bloqueada: desabilitado não explica nada, e a exigência é recusar a
+  // transformação DIZENDO por quê. Quem recusa é `mexe`.
+  document.querySelectorAll("#ctrl button").forEach(b=>{
+    if (["mostrar-tudo","enquadrar","wire","snap","fechar-folhas","shade",
+         "edged","copiar","km-reset"].includes(b.id)) return;
+    if (b.dataset.eixo||b.dataset.pivo||b.dataset.vista) return;
+    b.disabled=!on;
+  });
+  const alvo=document.getElementById("alvo"), meta=document.getElementById("meta");
+  if (!on) {
+    alvo.textContent="nada selecionado";
+    meta.textContent="clique numa peça no 3D ou na lista";
+    ["rx","ry","rz","tx","ty","tz"].forEach(k=>
+      document.getElementById("v-"+k).textContent="—");
+    return;
+  }
+  const a=ativo();
+  if (s.length===1) {
+    const p=s[0];
+    alvo.textContent=`${p.codigo} / ${p.rotulo}`;
+    meta.textContent=[p.secao.replace("_"," "), p.plano||null,
+      p.bloqueado?(p.rotulo===REFERENCIA_FIXA?"🔒 REFERÊNCIA":"🔒 bloqueado"):null]
+      .filter(Boolean).join(" · ");
+  } else {
+    alvo.textContent=`${s.length} peças selecionadas`;
+    const trav=s.length-livres;
+    meta.textContent=(a?`ativo: ${a.codigo}/${a.rotulo}`:"")
+      +(trav?`  ·  ${trav} bloqueada(s)`:"");
+  }
+  ["rx","ry","rz","tx","ty","tz"].forEach(k=>{
+    const v=new Set(s.map(p=>p.t[k]));
+    document.getElementById("v-"+k).textContent =
+      v.size===1?(["rx","ry","rz"].includes(k)?[...v][0]+"°":Math.round([...v][0])+" mm")
+                :"vários";
+  });
+}
+function sincroniza(){ montaLista(); pintaCtrl(); desenha(); }
+
+const passo=()=>parseFloat(document.getElementById("passo").value);
+function mexe(fn){
+  const todas=selecionadas();
+  const s=todas.filter(p=>!p.bloqueado);
+  if (!s.length) {
+    const ref=todas.some(p=>p.rotulo===REFERENCIA_FIXA);
+    msg(ref ? "SU-002 é a REFERÊNCIA da montagem e está bloqueado — 🔓 liberar para alterar"
+            : `bloqueada: ${todas.map(p=>p.codigo).join(", ")} — 🔓 liberar para alterar`);
+    return;
+  }
+  if (s.length<todas.length)
+    msg(`${todas.length-s.length} peça(s) bloqueada(s) foram ignoradas`);
+  sujo();
+  s.forEach(p=>{ fn(p); invalida(p); });
+  sincroniza();
+}
+document.querySelectorAll("[data-gira]").forEach(b=>b.onclick=()=>mexe(p=>{
+  const k="r"+b.dataset.gira;
+  p.t[k]=((p.t[k]+parseInt(b.dataset.d))%360+360)%360;
+}));
+document.querySelectorAll("[data-move]").forEach(b=>b.onclick=()=>mexe(p=>{
+  p.t["t"+b.dataset.move]+=parseInt(b.dataset.s)*passo();
+}));
+document.querySelectorAll("[data-eixo]").forEach(b=>b.onclick=()=>defineEixo(b.dataset.eixo));
+document.querySelectorAll("[data-pivo]").forEach(b=>b.onclick=()=>definePivo(b.dataset.pivo));
+// Os botões de vista estavam SEM handler: as vistas só respondiam pelo
+// teclado, e os testes anteriores nunca clicaram nesses botões.
+document.querySelectorAll("[data-vista]").forEach(b=>b.onclick=()=>defineVista(b.dataset.vista));
+document.getElementById("pick-vert").onclick=iniciaPegaVertice;
+document.getElementById("mover").onclick=alternaFerramenta;
+document.getElementById("espelhar").onclick=espelha;
+document.getElementById("snap").onclick=alternaSnap;
+document.getElementById("wire").onclick=alternaModo;
+document.getElementById("shade").onclick=alternaSombra;
+document.getElementById("edged").onclick=alternaArestas;
+document.getElementById("alinhar").onclick=entraAlinhar;
+document.getElementById("lock").onclick=()=>{
+  selecionadas().forEach(p=>p.bloqueado=true); sujo(); msg("bloqueado"); sincroniza(); };
+document.getElementById("unlock").onclick=()=>{
+  const ref=selecionadas().some(p=>p.rotulo===REFERENCIA_FIXA);
+  selecionadas().forEach(p=>p.bloqueado=false);
+  msg(ref?"liberado — atenção: o SU-002 é a referência da montagem":"liberado");
+  sincroniza(); };
+document.getElementById("esconder").onclick=()=>{
+  selecionadas().forEach(p=>p.visivel=false); sincroniza(); };
+document.getElementById("mostrar-sel").onclick=()=>{
+  selecionadas().forEach(p=>p.visivel=true); sincroniza(); };
+document.getElementById("isolar").onclick=()=>{
+  if (!sel.size) return;
+  pecas.forEach(p=>p.visivel=sel.has(p.id)); sincroniza(); enquadrar(); };
+document.getElementById("mostrar-tudo").onclick=()=>{
+  pecas.forEach(p=>p.visivel=true); sincroniza(); enquadrar(); };
+document.getElementById("reset-peca").onclick=()=>mexe(p=>p.t={...p.inicial});
+document.getElementById("reset-grupo").onclick=()=>{
+  const gs=new Set(selecionadas().map(p=>p.secao));
+  pecas.filter(p=>gs.has(p.secao)&&!p.bloqueado)
+       .forEach(p=>{ p.t={...p.inicial}; invalida(p); });
+  sincroniza(); };
+document.getElementById("enquadrar").onclick=()=>enquadrar();
+document.getElementById("km-reset").onclick=()=>{
+  keymap=keymapPadrao(); salvaKeymap(); montaKeymap(); msg("atalhos restaurados"); };
+document.getElementById("recolher").onclick=()=>{
+  document.body.classList.toggle("recolhido");
+  document.getElementById("recolher").innerHTML=
+    document.body.classList.contains("recolhido")?"&raquo;":"&laquo;";
+  setTimeout(()=>{ dimensiona(); desenha(); },200);
+};
+document.querySelectorAll("#ctrl .bloco > h2, #lateral > .bloco > h2").forEach(h=>
+  h.onclick=()=>h.parentElement.classList.toggle("fechado"));
+
+// --- abrir / fechar folha -------------------------------------------------
+function limiteAbertura(plano){
+  const membros=pecas.filter(p=>p.plano===plano);
+  if (!membros.length) return 0;
+  const salvo=abertura[plano]; abertura[plano]=0;
+  const c=caixa(membros), q=caixa(pecas.filter(p=>p.grupo==="QUADRO"));
+  abertura[plano]=salvo;
+  return Math.max(0, plano==="PLANO_INTERNO"?q.mx[0]-c.mx[0]:c.mn[0]-q.mn[0]);
+}
+function aplicaAbertura(plano,frac){
+  const d=limiteAbertura(plano)*frac/100;
+  abertura[plano]= plano==="PLANO_INTERNO"?d:-d;
+  document.getElementById(plano==="PLANO_INTERNO"?"v-abint":"v-abext")
+    .textContent=Math.round(Math.abs(abertura[plano]))+" mm";
+  desenha();
+}
+document.getElementById("ab-int").oninput=e=>aplicaAbertura("PLANO_INTERNO",+e.target.value);
+document.getElementById("ab-ext").oninput=e=>aplicaAbertura("PLANO_EXTERNO",+e.target.value);
+document.getElementById("fechar-folhas").onclick=()=>{
+  document.getElementById("ab-int").value=0;
+  document.getElementById("ab-ext").value=0;
+  aplicaAbertura("PLANO_INTERNO",0); aplicaAbertura("PLANO_EXTERNO",0); };
+
+function enquadrar(){
+  const vis=pecas.filter(p=>p.visivel);
+  if (!vis.length) return;
+  const {mn,mx}=caixa(vis);
+  cam.alvo=[0,1,2].map(i=>(mn[i]+mx[i])/2);
+  cam.dist=Math.max(...[0,1,2].map(i=>mx[i]-mn[i]))*1.9+300;
+  desenha();
+}
+
+// --- exportação -----------------------------------------------------------
+document.getElementById("copiar").onclick=()=>{
+  const mud=pecas.filter(alterada);
+  let txt="AJUSTE VISUAL — Suprema correr 2F (viewport diagnóstica)\n";
+  txt+="base: estado atual da composicao (PR #15)\n";
+  txt+="convencao: +X local = extrusao, +Y local = contorno[1], "
+     + "+Z local = contorno[0]; R = Rz*Ry*Rx\n";
+  txt+="ATENCAO: ajuste VISUAL de curadoria. Nao e medida de fabricacao.\n";
+  txt+="camera, painel, wireframe, snap, pivo, atalhos e ABERTURA das folhas "
+     + "sao preferencias da viewport e nao entram aqui.\n\n";
+  if (!mud.length) txt+="(nenhuma peca alterada em relacao ao estado atual)\n";
+  else for (const s of SECOES) {
+    const doGrupo=mud.filter(p=>p.secao===s.id);
+    if (!doGrupo.length) continue;
+    txt+=`== ${s.titulo} ==\n`;
+    for (const p of doGrupo) {
+      txt+=`${p.codigo} / ${p.rotulo}${p.plano?"  ["+p.plano+"]":""}\n`;
+      txt+=`  x = ${Math.round(p.t.tx)}   y = ${Math.round(p.t.ty)}   z = ${Math.round(p.t.tz)}\n`;
+      txt+=`  rx = ${p.t.rx}   ry = ${p.t.ry}   rz = ${p.t.rz}\n`;
+      txt+=`  espelhado = ${p.t.espelhado?"sim":"nao"}\n`;
+      txt+=`  bloqueado = ${p.bloqueado?"sim":"nao"}\n`;
+    }
+    txt+="\n";
+  }
+  const trav=pecas.filter(p=>p.bloqueado).map(p=>`${p.codigo}/${p.rotulo}`);
+  txt+=`bloqueadas: ${trav.length?trav.join(", "):"(nenhuma)"}\n`;
+  txt+=`resumo: ${mud.length} alterada(s), ${pecas.length-mud.length} inalterada(s)\n`;
+  const s=document.getElementById("saida");
+  s.value=txt; s.select();
+  navigator.clipboard && navigator.clipboard.writeText(txt).catch(()=>{});
+};
+
+// --- início ---------------------------------------------------------------
+addEventListener("resize",()=>{ dimensiona(); desenha(); });
+carregaKeymap(); montaKeymap();
+
+// Rascunho de sessão anterior: só oferece restauro se houver de fato algo
+// diferente do estado inicial da composição.
+function ofereceRascunho(){
+  let r=null;
+  try{ r=JSON.parse(localStorage.getItem(CHAVE_RASCUNHO)||"null"); }catch(e){}
+  if (!r||!r.pecas) return;
+  const porId=Object.fromEntries(r.pecas.map(x=>[x.id,x]));
+  const difere=pecas.some(p=>{
+    const x=porId[p.id]; if (!x) return false;
+    return ["tx","ty","tz","rx","ry","rz"].some(k=>x.t[k]!==p.inicial[k])
+        || x.t.espelhado!==p.inicial.espelhado;
+  });
+  if (!difere) { localStorage.removeItem(CHAVE_RASCUNHO); return; }
+  const quando=r.quando?new Date(r.quando).toLocaleString("pt-BR"):"sessão anterior";
+  if (confirm(`Foi encontrada uma sessão não finalizada (${quando}).\n`
+             +`Restaurar os ajustes?\n\nOK = restaurar   ·   Cancelar = descartar`)) {
+    pecas.forEach(p=>{ const x=porId[p.id]; if (!x) return;
+      p.t={...x.t}; p.bloqueado=!!x.bloqueado; p.visivel=!!x.visivel; invalida(p); });
+    temAlteracao=true;
+    setTimeout(()=>msg("sessão anterior restaurada"),50);
+  } else localStorage.removeItem(CHAVE_RASCUNHO);
+}
+ofereceRascunho();
+dimensiona(); pintaHud(); sincroniza(); enquadrar();
+</script>
+</body>
+</html>
