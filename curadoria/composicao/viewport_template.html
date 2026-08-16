@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suprema correr 2F — viewport diagnóstica</title>
+<style>
+  :root {
+    --bg: #14161a; --painel: #1c1f25; --linha: #2b3038; --texto: #dfe3ea;
+    --fraco: #8b94a3; --ativo: #4aa3ff; --ok: #3fbf72; --alerta: #e0a33c;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: flex; background: var(--bg); color: var(--texto);
+    font: 13px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  #lateral {
+    width: 290px; flex: 0 0 290px; background: var(--painel);
+    border-right: 1px solid var(--linha); display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  #lateral h1 { font-size: 13px; margin: 0; padding: 12px 14px 4px; }
+  #lateral h1 small { display: block; color: var(--fraco); font-weight: 400; font-size: 11px; }
+  .secao { padding: 8px 14px; border-top: 1px solid var(--linha); }
+  .secao h2 {
+    font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--fraco); margin: 0 0 8px;
+  }
+  #lista { overflow-y: auto; flex: 1; padding-bottom: 20px; }
+  .grupo-cab {
+    display: flex; align-items: center; gap: 8px; padding: 9px 14px 5px;
+    font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--fraco); position: sticky; top: 0; background: var(--painel);
+  }
+  .grupo-cab label { display: flex; align-items: center; gap: 6px; cursor: pointer; flex: 1; }
+  .item {
+    display: flex; align-items: center; gap: 8px; padding: 5px 14px;
+    cursor: pointer; border-left: 3px solid transparent;
+  }
+  .item:hover { background: #232830; }
+  .item.sel { background: #1d2e42; border-left-color: var(--ativo); }
+  .item.oculto { opacity: .38; }
+  .item .cod { font-weight: 600; min-width: 52px; }
+  .item .rot { color: var(--fraco); font-size: 11px; flex: 1;
+               overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item .mod { color: var(--alerta); font-size: 15px; line-height: 1; }
+  #palco { flex: 1; position: relative; min-width: 0; }
+  canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+  canvas:active { cursor: grabbing; }
+  #dica {
+    position: absolute; left: 14px; bottom: 12px; color: var(--fraco);
+    font-size: 11px; pointer-events: none;
+  }
+  #ctrl {
+    position: absolute; top: 12px; right: 12px; width: 268px;
+    background: rgba(28,31,37,.95); border: 1px solid var(--linha);
+    border-radius: 8px; padding: 12px;
+  }
+  #ctrl .alvo { font-weight: 600; margin-bottom: 2px; }
+  #ctrl .meta { color: var(--fraco); font-size: 11px; margin-bottom: 10px; }
+  .eixo { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+  .eixo b { width: 16px; color: var(--fraco); font-weight: 600; }
+  button {
+    background: #2a2f38; color: var(--texto); border: 1px solid var(--linha);
+    border-radius: 5px; padding: 5px 9px; cursor: pointer; font: inherit;
+    font-size: 12px;
+  }
+  button:hover:not(:disabled) { background: #364050; border-color: #4a5568; }
+  button:disabled { opacity: .35; cursor: default; }
+  button.largo { flex: 1; }
+  .val { color: var(--fraco); font-size: 11px; min-width: 62px; text-align: right; }
+  .linha-btn { display: flex; gap: 5px; margin-top: 8px; }
+  select { background: #2a2f38; color: var(--texto); border: 1px solid var(--linha);
+           border-radius: 5px; padding: 4px 6px; font: inherit; font-size: 12px; }
+  #copiar { width: 100%; background: #1f4f38; border-color: #2f6d4f; }
+  #copiar:hover { background: #276245; }
+  #saida {
+    width: 100%; height: 128px; margin-top: 8px; background: #101318;
+    color: var(--texto); border: 1px solid var(--linha); border-radius: 5px;
+    font: 11px/1.4 ui-monospace, monospace; padding: 8px; resize: vertical;
+  }
+  .nota { color: var(--fraco); font-size: 11px; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div id="lateral">
+  <h1>Suprema correr 2F
+    <small>viewport diagnóstica — estado inicial da PR #15</small></h1>
+
+  <div class="secao">
+    <h2>Exportar</h2>
+    <button id="copiar">COPIAR ESTADO AJUSTADO</button>
+    <textarea id="saida" readonly placeholder="Ajuste alguma peça e clique em COPIAR ESTADO."></textarea>
+    <div class="nota">Cole este texto na conversa. Nada aqui altera o código
+      sozinho.</div>
+  </div>
+
+  <div class="secao" style="padding-bottom:4px">
+    <h2>Peças</h2>
+  </div>
+  <div id="lista"></div>
+</div>
+
+<div id="palco">
+  <canvas id="tela"></canvas>
+  <div id="dica">arrastar = orbitar · Shift+arrastar = deslocar vista · roda = zoom</div>
+
+  <div id="ctrl">
+    <div class="alvo" id="alvo">nenhuma peça selecionada</div>
+    <div class="meta" id="meta">clique numa peça da lista</div>
+
+    <div class="eixo"><b>X</b>
+      <button data-gira="x" data-d="90" class="largo">↻ +90°</button>
+      <button data-gira="x" data-d="-90" class="largo">↺ −90°</button>
+      <span class="val" id="v-rx">—</span></div>
+    <div class="eixo"><b>Y</b>
+      <button data-gira="y" data-d="90" class="largo">↻ +90°</button>
+      <button data-gira="y" data-d="-90" class="largo">↺ −90°</button>
+      <span class="val" id="v-ry">—</span></div>
+    <div class="eixo"><b>Z</b>
+      <button data-gira="z" data-d="90" class="largo">↻ +90°</button>
+      <button data-gira="z" data-d="-90" class="largo">↺ −90°</button>
+      <span class="val" id="v-rz">—</span></div>
+
+    <div class="linha-btn" style="align-items:center">
+      <span style="color:var(--fraco);font-size:11px">passo</span>
+      <select id="passo">
+        <option>5</option><option>10</option>
+        <option selected>25</option><option>50</option>
+      </select>
+      <span style="color:var(--fraco);font-size:11px">mm</span>
+      <button id="espelho" class="largo">espelhar</button>
+    </div>
+
+    <div class="eixo" style="margin-top:8px"><b>X</b>
+      <button data-move="x" data-s="1" class="largo">+</button>
+      <button data-move="x" data-s="-1" class="largo">−</button>
+      <span class="val" id="v-tx">—</span></div>
+    <div class="eixo"><b>Y</b>
+      <button data-move="y" data-s="1" class="largo">+</button>
+      <button data-move="y" data-s="-1" class="largo">−</button>
+      <span class="val" id="v-ty">—</span></div>
+    <div class="eixo"><b>Z</b>
+      <button data-move="z" data-s="1" class="largo">+</button>
+      <button data-move="z" data-s="-1" class="largo">−</button>
+      <span class="val" id="v-tz">—</span></div>
+
+    <div class="linha-btn">
+      <button id="isolar" class="largo">isolar</button>
+      <button id="esconder" class="largo">esconder</button>
+      <button id="mostrar-tudo" class="largo">mostrar</button>
+    </div>
+    <div class="linha-btn">
+      <button id="reset-peca" class="largo">resetar peça</button>
+      <button id="reset-grupo" class="largo">resetar grupo</button>
+    </div>
+    <div class="linha-btn">
+      <button id="enquadrar" class="largo">enquadrar visíveis</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DADOS = /*__DADOS__*/null;
+const GRUPOS = ["QUADRO", "FOLHAS", "BAGUETES"];
+
+// --- estado ---------------------------------------------------------------
+// `inicial` é o estado da PR e nunca muda; `t` é o que Bruno manipula.
+const pecas = DADOS.instancias.map(i => ({
+  ...i, t: {...i.inicial}, visivel: i.grupo === "QUADRO"
+}));
+const grupoVisivel = {QUADRO: true, FOLHAS: false, BAGUETES: false};
+let sel = null;
+
+const cam = {alvo: [1000, 600, 0], dist: 3400, yaw: -28, pitch: 20};
+
+// --- álgebra --------------------------------------------------------------
+const rad = g => g * Math.PI / 180;
+function matriz(rx, ry, rz) {
+  const [cx,sx]=[Math.cos(rad(rx)),Math.sin(rad(rx))];
+  const [cy,sy]=[Math.cos(rad(ry)),Math.sin(rad(ry))];
+  const [cz,sz]=[Math.cos(rad(rz)),Math.sin(rad(rz))];
+  const X=[[1,0,0],[0,cx,-sx],[0,sx,cx]];
+  const Y=[[cy,0,sy],[0,1,0],[-sy,0,cy]];
+  const Z=[[cz,-sz,0],[sz,cz,0],[0,0,1]];
+  const mul=(A,B)=>A.map(r=>[0,1,2].map(j=>r[0]*B[0][j]+r[1]*B[1][j]+r[2]*B[2][j]));
+  return mul(mul(Z,Y),X);           // R = Rz·Ry·Rx — igual ao exportador
+}
+const aplica = (M,p) => [
+  M[0][0]*p[0]+M[0][1]*p[1]+M[0][2]*p[2],
+  M[1][0]*p[0]+M[1][1]*p[1]+M[1][2]*p[2],
+  M[2][0]*p[0]+M[2][1]*p[1]+M[2][2]*p[2]];
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+const cruz=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const pto=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+function norm(v){const n=Math.hypot(...v)||1;return [v[0]/n,v[1]/n,v[2]/n];}
+
+// Frame local: +X = extrusão, +Y = contorno[1], +Z = contorno[0].
+function mundo(peca, aVal, bVal, t) {
+  const g = DADOS.geometrias[peca.codigo];
+  const aMax = g.aMax;
+  const a = peca.t.espelhado ? aMax - aVal : aVal;
+  const M = peca.M || (peca.M = matriz(peca.t.rx, peca.t.ry, peca.t.rz));
+  const p = aplica(M, [t, bVal, a]);
+  return [p[0]+peca.t.tx, p[1]+peca.t.ty, p[2]+peca.t.tz];
+}
+const invalida = p => { p.M = null; };
+
+for (const cod in DADOS.geometrias) {
+  const g = DADOS.geometrias[cod];
+  g.aMax = Math.max(...g.externo.map(p => p[0]));
+}
+
+// --- montagem das faces ---------------------------------------------------
+function facesDe(peca) {
+  const g = DADOS.geometrias[peca.codigo], L = peca.comprimento, out = [];
+  const aneis = [g.externo, ...g.vazios];
+  for (const anel of aneis) {
+    const ini = anel.map(p => mundo(peca, p[0], p[1], 0));
+    const fim = anel.map(p => mundo(peca, p[0], p[1], L));
+    for (let i = 0; i < anel.length; i++) {
+      const j = (i + 1) % anel.length;
+      out.push({pts: [ini[i], ini[j], fim[j], fim[i]], peca});
+    }
+  }
+  for (const t of [0, L])                       // tampas: a seção transversal
+    out.push({tampa: aneis.map(an => an.map(p => mundo(peca, p[0], p[1], t))),
+              pts: g.externo.map(p => mundo(peca, p[0], p[1], t)), peca});
+  return out;
+}
+
+// --- câmera / projeção ----------------------------------------------------
+function baseCam() {
+  const y = rad(cam.yaw), p = rad(cam.pitch);
+  const dir = [Math.cos(p)*Math.sin(y), Math.sin(p), Math.cos(p)*Math.cos(y)];
+  const olho = [cam.alvo[0]+dir[0]*cam.dist, cam.alvo[1]+dir[1]*cam.dist,
+                cam.alvo[2]+dir[2]*cam.dist];
+  const fw = norm(sub(cam.alvo, olho));
+  const dir_ = norm(cruz(fw, [0,1,0]));
+  return {olho, fw, dir: dir_, cima: cruz(dir_, fw)};
+}
+function projeta(p, B, cx, cy, esc) {
+  const v = sub(p, B.olho), z = pto(v, B.fw);
+  const k = esc / Math.max(z, 1);
+  return [cx + pto(v, B.dir)*k, cy - pto(v, B.cima)*k, z];
+}
+
+// --- desenho --------------------------------------------------------------
+const tela = document.getElementById("tela"), ctx = tela.getContext("2d");
+function dimensiona() {
+  const r = window.devicePixelRatio || 1;
+  tela.width = tela.clientWidth*r; tela.height = tela.clientHeight*r;
+  ctx.setTransform(r,0,0,r,0,0);
+}
+const LUZ = norm([0.45, 0.75, 0.5]);
+
+function desenha() {
+  const W = tela.clientWidth, H = tela.clientHeight;
+  ctx.clearRect(0,0,W,H);
+  const B = baseCam(), cx = W/2, cy = H/2, esc = Math.min(W,H)*1.15;
+
+  const faces = [];
+  for (const p of pecas) if (p.visivel) faces.push(...facesDe(p));
+
+  const prep = [];
+  for (const f of faces) {
+    const proj = f.pts.map(q => projeta(q, B, cx, cy, esc));
+    if (proj.some(q => q[2] <= 1)) continue;
+    let z = 0; for (const q of proj) z += q[2];
+    prep.push({f, proj, z: z/proj.length,
+               tampa: f.tampa && f.tampa.map(an => an.map(q => projeta(q,B,cx,cy,esc)))});
+  }
+  prep.sort((a,b) => b.z - a.z);            // pintor: fundo primeiro
+
+  for (const it of prep) {
+    const p = it.f.peca, selec = sel === p.id;
+    const n = norm(cruz(sub(it.f.pts[1], it.f.pts[0]), sub(it.f.pts[2], it.f.pts[0])));
+    const i = 0.32 + 0.68*Math.abs(pto(n, LUZ));
+    const base = selec ? [96,168,255] : [176,182,192];
+    const cor = base.map(c => Math.round(Math.min(255, c*i)));
+    ctx.fillStyle = `rgb(${cor[0]},${cor[1]},${cor[2]})`;
+    ctx.strokeStyle = selec ? "rgba(74,163,255,.85)" : "rgba(20,22,26,.55)";
+    ctx.lineWidth = selec ? 1 : .5;
+    ctx.beginPath();
+    for (const anel of (it.tampa || [it.proj])) {
+      ctx.moveTo(anel[0][0], anel[0][1]);
+      for (let k=1;k<anel.length;k++) ctx.lineTo(anel[k][0], anel[k][1]);
+      ctx.closePath();
+    }
+    ctx.fill("evenodd"); ctx.stroke();
+  }
+  desenhaEixos(B, cx, cy, esc);
+}
+
+function desenhaEixos(B, cx, cy, esc) {
+  const O = [0,0,0], T = 420;
+  const eixos = [[[T,0,0],"X","#e05c5c"],[[0,T,0],"Y","#5ce07a"],[[0,0,T],"Z","#5c9ce0"]];
+  const o = projeta(O, B, cx, cy, esc);
+  if (o[2] <= 1) return;
+  ctx.lineWidth = 2;
+  for (const [v,rot,cor] of eixos) {
+    const q = projeta(v, B, cx, cy, esc);
+    if (q[2] <= 1) continue;
+    ctx.strokeStyle = cor; ctx.beginPath();
+    ctx.moveTo(o[0],o[1]); ctx.lineTo(q[0],q[1]); ctx.stroke();
+    ctx.fillStyle = cor; ctx.font = "bold 12px ui-monospace, monospace";
+    ctx.fillText(rot, q[0]+4, q[1]+4);
+  }
+}
+
+// --- interação da câmera --------------------------------------------------
+let arrasta = null;
+tela.addEventListener("mousedown", e => arrasta = {x:e.clientX, y:e.clientY, sh:e.shiftKey});
+addEventListener("mouseup", () => arrasta = null);
+addEventListener("mousemove", e => {
+  if (!arrasta) return;
+  const dx = e.clientX-arrasta.x, dy = e.clientY-arrasta.y;
+  arrasta.x = e.clientX; arrasta.y = e.clientY;
+  if (arrasta.sh || e.shiftKey) {
+    const B = baseCam(), k = cam.dist/900;
+    for (let i=0;i<3;i++) cam.alvo[i] -= (B.dir[i]*dx - B.cima[i]*dy)*k;
+  } else {
+    cam.yaw -= dx*0.4;
+    cam.pitch = Math.max(-88, Math.min(88, cam.pitch + dy*0.4));
+  }
+  desenha();
+});
+tela.addEventListener("wheel", e => {
+  e.preventDefault();
+  cam.dist = Math.max(160, Math.min(20000, cam.dist * (e.deltaY>0 ? 1.12 : 0.893)));
+  desenha();
+}, {passive:false});
+
+function enquadrar() {
+  const vis = pecas.filter(p => p.visivel);
+  if (!vis.length) return;
+  let mn=[1e9,1e9,1e9], mx=[-1e9,-1e9,-1e9];
+  for (const p of vis) {
+    const g = DADOS.geometrias[p.codigo];
+    for (const t of [0, p.comprimento]) for (const q of g.externo) {
+      const w = mundo(p, q[0], q[1], t);
+      for (let i=0;i<3;i++){ mn[i]=Math.min(mn[i],w[i]); mx[i]=Math.max(mx[i],w[i]); }
+    }
+  }
+  cam.alvo = [0,1,2].map(i => (mn[i]+mx[i])/2);
+  cam.dist = Math.max(...[0,1,2].map(i => mx[i]-mn[i])) * 1.9 + 300;
+  desenha();
+}
+
+// --- painel ---------------------------------------------------------------
+const alterada = p =>
+  ["tx","ty","tz","rx","ry","rz"].some(k => p.t[k] !== p.inicial[k])
+  || p.t.espelhado !== p.inicial.espelhado;
+
+function montaLista() {
+  const el = document.getElementById("lista");
+  el.innerHTML = "";
+  for (const g of GRUPOS) {
+    const cab = document.createElement("div");
+    cab.className = "grupo-cab";
+    cab.innerHTML = `<label><input type="checkbox" ${grupoVisivel[g]?"checked":""}
+      data-grupo="${g}"> ${g}</label>`;
+    el.appendChild(cab);
+    for (const p of pecas.filter(x => x.grupo === g)) {
+      const d = document.createElement("div");
+      d.className = "item" + (sel===p.id?" sel":"") + (p.visivel?"":" oculto");
+      d.innerHTML = `<span class="cod">${p.codigo}</span>
+        <span class="rot">${p.rotulo}</span>
+        <span class="mod">${alterada(p)?"•":""}</span>`;
+      d.onclick = () => { sel = p.id; montaLista(); pintaCtrl(); desenha(); };
+      el.appendChild(d);
+    }
+  }
+  el.querySelectorAll("[data-grupo]").forEach(c => c.onchange = () => {
+    const g = c.dataset.grupo;
+    grupoVisivel[g] = c.checked;
+    pecas.filter(p => p.grupo===g).forEach(p => p.visivel = c.checked);
+    montaLista(); desenha(); if (c.checked) enquadrar();
+  });
+}
+
+function atual() { return pecas.find(p => p.id === sel); }
+
+function pintaCtrl() {
+  const p = atual();
+  const on = !!p;
+  document.querySelectorAll("#ctrl button").forEach(b => {
+    if (!["mostrar-tudo","enquadrar"].includes(b.id)) b.disabled = !on;
+  });
+  if (!on) {
+    document.getElementById("alvo").textContent = "nenhuma peça selecionada";
+    document.getElementById("meta").textContent = "clique numa peça da lista";
+    ["rx","ry","rz","tx","ty","tz"].forEach(k =>
+      document.getElementById("v-"+k).textContent = "—");
+    return;
+  }
+  document.getElementById("alvo").textContent = `${p.codigo} / ${p.rotulo}`;
+  document.getElementById("meta").textContent =
+    p.grupo + (p.plano ? " · " + p.plano : "") + (p.t.espelhado ? " · espelhado" : "");
+  for (const k of ["rx","ry","rz"])
+    document.getElementById("v-"+k).textContent = p.t[k] + "°";
+  for (const k of ["tx","ty","tz"])
+    document.getElementById("v-"+k).textContent = Math.round(p.t[k]) + " mm";
+}
+
+const passo = () => parseFloat(document.getElementById("passo").value);
+function mexe(fn) {
+  const p = atual(); if (!p) return;
+  fn(p); invalida(p); montaLista(); pintaCtrl(); desenha();
+}
+document.querySelectorAll("[data-gira]").forEach(b => b.onclick = () => mexe(p => {
+  const k = "r" + b.dataset.gira;
+  p.t[k] = ((p.t[k] + parseInt(b.dataset.d)) % 360 + 360) % 360;
+}));
+document.querySelectorAll("[data-move]").forEach(b => b.onclick = () => mexe(p => {
+  p.t["t" + b.dataset.move] += parseInt(b.dataset.s) * passo();
+}));
+document.getElementById("espelho").onclick = () => mexe(p => p.t.espelhado = !p.t.espelhado);
+document.getElementById("esconder").onclick = () => mexe(p => p.visivel = false);
+document.getElementById("isolar").onclick = () => mexe(p => {
+  pecas.forEach(q => q.visivel = q.id === p.id); enquadrar();
+});
+document.getElementById("mostrar-tudo").onclick = () => {
+  pecas.forEach(p => p.visivel = grupoVisivel[p.grupo]);
+  montaLista(); desenha(); enquadrar();
+};
+document.getElementById("reset-peca").onclick = () => mexe(p => p.t = {...p.inicial});
+document.getElementById("reset-grupo").onclick = () => mexe(p => {
+  pecas.filter(q => q.grupo===p.grupo).forEach(q => { q.t = {...q.inicial}; invalida(q); });
+});
+document.getElementById("enquadrar").onclick = enquadrar;
+
+// --- exportação -----------------------------------------------------------
+document.getElementById("copiar").onclick = () => {
+  const mud = pecas.filter(alterada);
+  let txt = "AJUSTE VISUAL — Suprema correr 2F (viewport diagnóstica)\n";
+  txt += "base: estado inicial da PR #15\n";
+  txt += "convencao: +X local = extrusao, +Y local = contorno[1], "
+       + "+Z local = contorno[0]; R = Rz*Ry*Rx; espelho = reflexao em Z local\n";
+  txt += "ATENCAO: ajuste VISUAL de curadoria. Nao e medida de fabricacao.\n\n";
+  if (!mud.length) {
+    txt += "(nenhuma peca alterada em relacao ao estado inicial da PR)\n";
+  } else {
+    for (const g of GRUPOS) {
+      const doGrupo = mud.filter(p => p.grupo === g);
+      if (!doGrupo.length) continue;
+      txt += `== ${g} ==\n`;
+      for (const p of doGrupo) {
+        txt += `${p.codigo} / ${p.rotulo}${p.plano ? "  [" + p.plano + "]" : ""}\n`;
+        txt += `  x = ${Math.round(p.t.tx)}   y = ${Math.round(p.t.ty)}   z = ${Math.round(p.t.tz)}\n`;
+        txt += `  rx = ${p.t.rx}   ry = ${p.t.ry}   rz = ${p.t.rz}\n`;
+        txt += `  espelhado = ${p.t.espelhado ? "sim" : "nao"}\n`;
+      }
+      txt += "\n";
+    }
+  }
+  const inalt = pecas.length - mud.length;
+  txt += `resumo: ${mud.length} peca(s) alterada(s), ${inalt} inalterada(s)\n`;
+  const s = document.getElementById("saida");
+  s.value = txt;
+  s.select();
+  navigator.clipboard && navigator.clipboard.writeText(txt).catch(()=>{});
+};
+
+// --- início ---------------------------------------------------------------
+addEventListener("resize", () => { dimensiona(); desenha(); });
+dimensiona(); montaLista(); pintaCtrl(); enquadrar();
+</script>
+</body>
+</html>

@@ -28,3 +28,8 @@ curadoria/insumos/
 # Primeira visualização real da Suprema correr 2F (E.4H) — aguardando
 # validação visual do Bruno.
 !curadoria/composicao/vista_suprema_correr_2f.png
+
+# Viewport diagnóstica de curadoria (E.4H): a FONTE é versionada
+# (viewport_diagnostica.py + viewport_template.html); o HTML é gerado e
+# regenerável por `python3 curadoria/composicao/viewport_diagnostica.py`.
+curadoria/composicao/viewport_suprema_2f.html

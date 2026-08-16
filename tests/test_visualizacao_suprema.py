@@ -125,3 +125,45 @@ def test_renderiza_a_composicao_completa(tmp_path):
     import os
     assert os.path.exists(saida)
     assert os.path.getsize(saida) > 10_000
+
+
+# ---------------------------------------------------------------------------
+# Viewport diagnóstica de curadoria — a ferramenta que Bruno usa para dizer
+# qual orientação está certa. O que ela mostra TEM de ser a mesma composição
+# que o renderer produz; se divergir, Bruno estaria validando outra coisa.
+#
+# Importada por caminho porque `curadoria/composicao/` é diretório de scripts
+# standalone (sem __init__.py, ao contrário de `curadoria/aquisicao/`) — criar
+# o pacote só para o teste mudaria a convenção do diretório.
+# ---------------------------------------------------------------------------
+
+def _viewport():
+    import importlib.util
+    caminho = RAIZ / "curadoria/composicao/viewport_diagnostica.py"
+    spec = importlib.util.spec_from_file_location("viewport_diagnostica",
+                                                  caminho)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_viewport_reproduz_exatamente_a_composicao_do_renderer():
+    """`deduzir_transform` levanta se algum ângulo não reproduzir os vértices
+    do renderer dentro de 1e-6 mm — coletar sem erro é a prova."""
+    dados = _viewport().coletar()
+    assert len(dados["instancias"]) == 20
+    assert set(dados["geometrias"]) == set(CODIGOS_ESPERADOS)
+
+
+def test_viewport_expoe_apenas_angulos_de_90_graus():
+    """Bruno ajusta em cliques de 90°; um estado inicial fora da grade o
+    obrigaria a perseguir ângulos que os botões não alcançam."""
+    for inst in _viewport().coletar()["instancias"]:
+        for eixo in ("rx", "ry", "rz"):
+            assert inst["inicial"][eixo] in (0, 90, 180, 270)
+
+
+def test_viewport_cobre_os_tres_grupos_de_validacao():
+    from collections import Counter
+    grupos = Counter(i["grupo"] for i in _viewport().coletar()["instancias"])
+    assert grupos == Counter({"QUADRO": 4, "FOLHAS": 8, "BAGUETES": 8})
