@@ -55,18 +55,29 @@ def resolver_geometria(perfil: Perfil,
 # ---------------------------------------------------------------------------
 
 def extrudar_perfil(contorno_mm, comprimento_mm, rotacao_graus, posicao_mm):
+    """`rotacao_graus` em {0, 90, 180, 270}. 0/90 escolhem o eixo de extrusão
+    (horizontal/vertical) e reproduzem exatamente o comportamento anterior a
+    E.4H-visual-fix. 180/270 usam o MESMO eixo que 0/90, respectivamente, mas
+    espelham a seção transversal em torno do próprio eixo local — necessário
+    porque perfis de esquadria não são simétricos (ex.: SU-003, SU-102): duas
+    ocorrências espelhadas do mesmo perfil (lado esquerdo vs. direito de um
+    par simétrico) precisam do espelho, não de outro ângulo de extrusão."""
     contorno = np.array(contorno_mm, dtype=float)
     n = len(contorno)
     dx, dy = posicao_mm
     secao_a = contorno[:, 0]
     secao_b = contorno[:, 1]
 
-    if abs(rotacao_graus - 90) < 1e-6:
-        v_inicio = np.stack([secao_a + dx, np.full(n, dy), secao_b], axis=1)
-        v_fim = np.stack([secao_a + dx, np.full(n, dy + comprimento_mm), secao_b], axis=1)
+    vertical = abs((rotacao_graus % 180) - 90) < 1e-6
+    espelhado = rotacao_graus >= 180 - 1e-6
+    a = (secao_a.max() - secao_a) if espelhado else secao_a
+
+    if vertical:
+        v_inicio = np.stack([a + dx, np.full(n, dy), secao_b], axis=1)
+        v_fim = np.stack([a + dx, np.full(n, dy + comprimento_mm), secao_b], axis=1)
     else:
-        v_inicio = np.stack([np.full(n, dx), secao_b + dy, secao_a], axis=1)
-        v_fim = np.stack([np.full(n, dx + comprimento_mm), secao_b + dy, secao_a], axis=1)
+        v_inicio = np.stack([np.full(n, dx), secao_b + dy, a], axis=1)
+        v_fim = np.stack([np.full(n, dx + comprimento_mm), secao_b + dy, a], axis=1)
 
     faces = [v_inicio.tolist(), v_fim.tolist()]
     for i in range(n):
@@ -82,16 +93,26 @@ def extrudar_com_furos(contorno_externo, vazios_internos, comprimento_mm,
 
     Validado em protótipo externo (Sprint E.2); portado aqui para a MESMA
     convenção de eixos do extrudar_perfil (o protótipo usava frame próprio,
-    que ignoraria rotacao/posicao e reintroduziria o bug de achatamento)."""
+    que ignoraria rotacao/posicao e reintroduziria o bug de achatamento).
+
+    Espelho (`rotacao_graus` 180/270, ver `extrudar_perfil`) usa como
+    referência o `secao_a.max()` do CONTORNO EXTERNO, nunca o de cada
+    polígono isoladamente — os vazios internos (furos) têm de espelhar em
+    torno do mesmo eixo do contorno que os contém, ou o furo se desloca em
+    relação à parede."""
+    vertical = abs((rotacao_graus % 180) - 90) < 1e-6
+    espelhado = rotacao_graus >= 180 - 1e-6
+    eixo_a_max = float(np.asarray(contorno_externo, dtype=float)[:, 0].max())
+
     def _mapear(pontos_2d, avanco):
         pts = np.asarray(pontos_2d, dtype=float)
         n = len(pts)
         dx, dy = posicao_mm
-        if abs(rotacao_graus - 90) < 1e-6:
-            return np.stack([pts[:, 0] + dx, np.full(n, dy + avanco),
-                             pts[:, 1]], axis=1)
-        return np.stack([np.full(n, dx + avanco), pts[:, 1] + dy,
-                         pts[:, 0]], axis=1)
+        a = (eixo_a_max - pts[:, 0]) if espelhado else pts[:, 0]
+        if vertical:
+            return np.stack([a + dx, np.full(n, dy + avanco), pts[:, 1]],
+                            axis=1)
+        return np.stack([np.full(n, dx + avanco), pts[:, 1] + dy, a], axis=1)
 
     faces = []
     for poligono in [contorno_externo] + list(vazios_internos or []):

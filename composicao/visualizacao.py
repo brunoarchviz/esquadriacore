@@ -34,12 +34,26 @@ ALTURA_ILUSTRATIVA_MM = 1200.0
 # de desenho, para que o "encontro central" seja visível como uma lacuna, não
 # como uma sobreposição. Não é a sobreposição real (E.4E registra que ela é
 # dimensional e segue PENDENTE).
-FOLGA_ENCONTRO_CENTRAL_MM = 40.0
+#
+# 60mm, não 40mm: a largura real da geometria homologada do SU-040/SU-041 é
+# 42,4mm — com 40mm de folga as duas peças se sobrepunham em ~2,4mm em vez de
+# deixar a lacuna visível que o comentário acima promete (achado da correção
+# visual pós-validação do Bruno, PR #15).
+FOLGA_ENCONTRO_CENTRAL_MM = 60.0
 
 # Margem entre o baguete (moldura do vidro) e a face interna da folha —
 # ilustrativa, não é a folga de encaixe do vidro (pergunta aberta ao
 # especialista, ver receita.PERGUNTAS_ABERTAS).
 MARGEM_BAGUETE_MM = 60.0
+
+# Margem entre a face externa da folha (montante lateral / travessas) e o
+# quadro (marco) — ilustrativa, escolhida para exceder a maior largura de
+# perfil observada nesta composição (~71mm, SU-001/002/003), garantindo que
+# a folha não desenhe por cima do quadro. Sem essa margem, SU-039 (montante
+# lateral) e SU-053 (travessa) caíam exatamente nas mesmas coordenadas do
+# marco e ficavam ocultos atrás dele (achado da correção visual pós-validação
+# do Bruno, PR #15) — não é folga de encaixe real, é só separação de desenho.
+MARGEM_FOLHA_QUADRO_MM = 90.0
 
 _LARGURA_FOLHA = (LARGURA_ILUSTRATIVA_MM - FOLGA_ENCONTRO_CENTRAL_MM) / 2
 
@@ -101,18 +115,26 @@ def _posicao_e_comprimento(componente: ComponenteReceita) -> tuple[tuple[float, 
     x0 = _X_INICIO_FOLHA[componente.folha]
 
     if papel is PapelComponente.MONTANTE_LATERAL_FOLHA:
+        # Recuado MARGEM_FOLHA_QUADRO_MM da face do quadro (ver comentário na
+        # constante) — sem o recuo, cai exatamente sobre o marco lateral.
         lado = "esquerda" if _LADO_DO_MONTANTE_CENTRAL[componente.folha] == "direita" \
             else "direita"
-        x = x0 if lado == "esquerda" else x0 + _LARGURA_FOLHA
+        x = x0 + MARGEM_FOLHA_QUADRO_MM if lado == "esquerda" \
+            else x0 + _LARGURA_FOLHA - MARGEM_FOLHA_QUADRO_MM
         return (x, 0.0), ALTURA_ILUSTRATIVA_MM
     if papel is PapelComponente.MONTANTE_CENTRAL_FOLHA:
         lado = _LADO_DO_MONTANTE_CENTRAL[componente.folha]
         x = x0 if lado == "esquerda" else x0 + _LARGURA_FOLHA
         return (x, 0.0), ALTURA_ILUSTRATIVA_MM
-    if papel is PapelComponente.TRAVESSA_SUPERIOR_FOLHA:
-        return (x0, ALTURA_ILUSTRATIVA_MM), _LARGURA_FOLHA
-    if papel is PapelComponente.TRAVESSA_INFERIOR_FOLHA:
-        return (x0, 0.0), _LARGURA_FOLHA
+    if papel in (PapelComponente.TRAVESSA_SUPERIOR_FOLHA,
+                PapelComponente.TRAVESSA_INFERIOR_FOLHA):
+        # Recua só a ponta que toca o quadro (a ponta do encontro central já
+        # tem folga suficiente via FOLGA_ENCONTRO_CENTRAL_MM) — mesmo motivo
+        # do recuo do montante lateral, mesma constante.
+        x_travessa = x0 + MARGEM_FOLHA_QUADRO_MM if componente.folha == PLANO_INTERNO else x0
+        comprimento_travessa = _LARGURA_FOLHA - MARGEM_FOLHA_QUADRO_MM
+        y = ALTURA_ILUSTRATIVA_MM if papel is PapelComponente.TRAVESSA_SUPERIOR_FOLHA else 0.0
+        return (x_travessa, y), comprimento_travessa
 
     if papel is PapelComponente.BAGUETE:
         sufixo = _sufixo_do_componente(componente)
@@ -133,6 +155,29 @@ def _posicao_e_comprimento(componente: ComponenteReceita) -> tuple[tuple[float, 
                      f"de desenho neste módulo")
 
 
+def _deve_espelhar(componente: ComponenteReceita) -> bool:
+    """Perfis de esquadria não são simétricos (confirmado na geometria
+    homologada de SU-003 e SU-102 — refletir o contorno produz uma forma
+    mensuravelmente diferente da original, não a mesma peça). Um par visual
+    esquerda/direita ou topo/base desenhado com a MESMA seção transversal nos
+    dois lados deixa pelo menos um deles de cabeça para trás. Espelha-se
+    sempre o segundo membro do par (LATERAL-2, base, direita), mantendo o
+    primeiro (LATERAL-1, topo, esquerda) como referência não alterada.
+
+    Achado da correção visual pós-validação do Bruno (PR #15): ele não
+    conseguiu determinar visualmente qual dos dois sentidos é o correto para
+    SU-003/SU-102 — esta é a escolha de desenho proposta para nova
+    conferência, não uma afirmação de que está definitivamente certa."""
+    papel = componente.papel
+    if papel is PapelComponente.MARCO_LATERAL:
+        return componente.identificador.endswith("LATERAL-2")
+    if papel is PapelComponente.BAGUETE:
+        sufixo = _sufixo_do_componente(componente)
+        lado = _ORDEM_DE_DESENHO_DO_BAGUETE[sufixo]
+        return lado in ("base", "direita")
+    return False
+
+
 def montar_cena_suprema_2f(receita=None) -> CenaTecnica:
     """Monta a Cena a partir da topologia JÁ CONFIRMADA — não deriva, não
     completa, não inventa ocorrência. Se a topologia mudar (novo papel, nova
@@ -145,6 +190,8 @@ def montar_cena_suprema_2f(receita=None) -> CenaTecnica:
     for c in receita.componentes:
         posicao_mm, comprimento_mm = _posicao_e_comprimento(c)
         rotacao_graus = 90.0 if c.orientacao == "vertical" else 0.0
+        if _deve_espelhar(c):
+            rotacao_graus += 180.0
         instancias.append(InstanciaCena(
             instancia_id=c.identificador,
             perfil_id=c.perfil.perfil_id_oficial,
